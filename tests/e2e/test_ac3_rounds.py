@@ -198,6 +198,11 @@ def test_rear_scenes_and_subject_variations(tmp_path: Path) -> None:
     run_all(p)
     judged = next(c.prompt for c in fake.asked if "quality judge" in c.prompt)
     assert "- identity_from_behind:" in judged and "- identity:" not in judged
+    front = p.save_scene(hf.Scene(name="Arriving", refs=[hf.SceneRef(subject_id="char_001")], camera="front"))
+    p.submit(hf.SceneShot(scene_id=front.id, selection=hf.Selection(rounds=1)))
+    run_all(p)
+    control = [c.prompt for c in fake.asked if "quality judge" in c.prompt][-1]
+    assert "- identity:" in control and "identity_from_behind" not in control
 
 
 def test_reference_lighting_precedence_and_a_given_hero(ws: hf.Workspace) -> None:
