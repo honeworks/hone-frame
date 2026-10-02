@@ -1,0 +1,49 @@
+# Asset presentations (design §6.1). The hero is a clean front view on a neutral background.
+
+[[presets]]
+id = "four-views"
+version = 1
+name = "Front, side, back, three-quarter"
+description = "The object from the front, side, back and three-quarter on a plain background."
+subject_kinds = ["asset"]
+values = { outputs = [{ label = "Front", camera = "front" }, { label = "Side", camera = "profile" }, { label = "Back", camera = "rear" }, { label = "3/4", camera = "three-quarter" }] }
+
+[[presets]]
+id = "top-detail"
+version = 1
+name = "Top and detail"
+description = "A top-down view and a close detail of the most distinctive part."
+subject_kinds = ["asset"]
+values = { outputs = [{ label = "Top", camera = "overhead" }, { label = "Detail", camera = "detail" }] }
+
+[[presets]]
+id = "isolated-studio"
+version = 1
+name = "Isolated studio object"
+description = "One clean product-style shot on a seamless background."
+subject_kinds = ["asset"]
+values = { outputs = [] }
+
+[[presets]]
+id = "scale-comparison"
+version = 1
+name = "Scale comparison"
+description = "The object next to a hand for scale."
+subject_kinds = ["asset"]
+values = { outputs = [{ label = "Scale", camera = "medium", framing = "next to an adult hand for scale" }] }
+
+[[presets]]
+id = "state-comparison"
+version = 1
+name = "State comparison"
+description = "The object in each of its states (empty/full, open/closed...)."
+subject_kinds = ["asset"]
+values = { outputs = [], from_states = "condition", camera = "three-quarter" }
+
+[[presets]]
+id = "interaction-study"
+version = 1
+name = "Interaction study"
+description = "The object being held or used by a plain hand, to show how it is handled."
+subject_kinds = ["asset"]
+values = { outputs = [{ label = "In hand", camera = "medium", framing = "held naturally by a plain adult hand" }] }

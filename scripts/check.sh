@@ -21,6 +21,9 @@ step "build";        rm -rf dist && uv build
 step "wheel smoke test (fresh venv, no extras)"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 uv venv -q "$TMP/venv"
+# the honeworks siblings are not on PyPI yet: install them from their git sources first (decisions D-002)
+mapfile -t SIBLINGS < <(scripts/git-sources.py)
+if [ "${#SIBLINGS[@]}" -gt 0 ]; then uv pip install -q --python "$TMP/venv/bin/python" "${SIBLINGS[@]}"; fi
 uv pip install -q --python "$TMP/venv/bin/python" dist/*.whl
 "$TMP/venv/bin/python" - <<PY
 import importlib, sys

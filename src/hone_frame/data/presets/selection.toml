@@ -1,0 +1,37 @@
+# Selection recipes (design §4 of the brief, §8 of the design): how candidates are made and chosen.
+# Values are the fields of hf.Selection.
+
+[[presets]]
+id = "all-rounds"
+version = 1
+name = "All rounds"
+description = "Three rounds of one candidate each, every candidate judged, the best acceptable one picked."
+values = { strategy = "batch", rounds = 3, candidates = 1, auto_judge = true, auto_pick = true, stop = "all_rounds" }
+
+[[presets]]
+id = "batch-then-judge"
+version = 1
+name = "Batch then judge"
+description = "Several candidates per round, judged together; good for exploring variety."
+values = { strategy = "batch", rounds = 1, candidates = 4, auto_judge = true, auto_pick = true, stop = "all_rounds" }
+
+[[presets]]
+id = "sequential-judge-refine"
+version = 1
+name = "Sequential judge and refine"
+description = "One candidate at a time; each round's prompt uses the judge's findings from the round before."
+values = { strategy = "sequential", rounds = 3, candidates = 1, auto_judge = true, auto_pick = true, stop = "stop_on_pass" }
+
+[[presets]]
+id = "stop-on-pass"
+version = 1
+name = "Stop on pass"
+description = "Up to three rounds; stops at the first candidate that passes every required check."
+values = { strategy = "batch", rounds = 3, candidates = 1, auto_judge = true, auto_pick = true, stop = "stop_on_pass" }
+
+[[presets]]
+id = "manual-pick"
+version = 1
+name = "Manual pick"
+description = "Generate and judge, then you choose; outputs wait in Needs review."
+values = { strategy = "batch", rounds = 1, candidates = 4, auto_judge = true, auto_pick = false, stop = "all_rounds" }

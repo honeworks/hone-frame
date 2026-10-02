@@ -1,0 +1,81 @@
+# Expressions (design §5.1). Characters only.
+
+[[presets]]
+id = "neutral"
+version = 1
+name = "Neutral"
+description = "A calm, relaxed face with no particular emotion."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "neutral relaxed facial expression" }
+
+[[presets]]
+id = "happy"
+version = 1
+name = "Happy"
+description = "A warm, genuine smile."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "happy expression, a warm genuine smile, eyes slightly narrowed" }
+
+[[presets]]
+id = "sad"
+version = 1
+name = "Sad"
+description = "Downcast eyes and a slight frown."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "sad expression, downcast eyes, slight frown, lowered brows" }
+
+[[presets]]
+id = "angry"
+version = 1
+name = "Angry"
+description = "Furrowed brows and a tight jaw."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "angry expression, furrowed brows, tight jaw, glaring eyes" }
+
+[[presets]]
+id = "afraid"
+version = 1
+name = "Afraid"
+description = "Wide eyes, raised brows, tense mouth."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "afraid expression, wide eyes, raised brows, tense open mouth" }
+
+[[presets]]
+id = "surprised"
+version = 1
+name = "Surprised"
+description = "Raised eyebrows, wide eyes, open mouth."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "surprised expression, eyebrows raised, eyes wide, mouth open" }
+
+[[presets]]
+id = "tired"
+version = 1
+name = "Tired"
+description = "Heavy eyelids, a mid-yawn or slack face."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "tired expression, heavy half-closed eyelids, slack face" }
+
+[[presets]]
+id = "focused"
+version = 1
+name = "Focused"
+description = "Concentrating on a task: slight frown, steady gaze."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "focused expression, concentrating, slight frown, steady gaze" }
+
+[[presets]]
+id = "doubtful"
+version = 1
+name = "Doubtful"
+description = "One raised brow, lips pressed sideways."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "doubtful expression, one eyebrow raised, lips pressed to one side" }
+
+[[presets]]
+id = "determined"
+version = 1
+name = "Determined"
+description = "Set jaw, steady eyes, a firm mouth."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "determined expression, set jaw, steady eyes, firm mouth" }

@@ -1,0 +1,205 @@
+"""Recipes: a request becomes planned outputs (design §6.1). Models and reductions are `planning.py`'s."""
+
+from __future__ import annotations
+
+import itertools
+from typing import TYPE_CHECKING, Any
+
+from hone_frame.errors import InvalidRequest
+from hone_frame.profiles import PresetChoices
+from hone_frame.records import Scene, Subject, SubjectLink
+from hone_frame.references import scene_refs
+from hone_frame.requests import (
+    Coverage,
+    Interaction,
+    PlannedOutput,
+    PlannedRef,
+    Promote,
+    RequestBase,
+    SceneShot,
+    SequenceFrames,
+    StatePair,
+    SubjectReferences,
+    Variations,
+)
+
+if TYPE_CHECKING:
+    from hone_frame.store import ProjectStore
+
+JUDGING = {
+    "character": "character-identity",
+    "environment": "environment-continuity",
+    "asset": "object-fidelity",
+}
+HERO_CAMERA = {"character": "front", "environment": "establishing", "asset": "front"}
+
+
+class Built:
+    """What a recipe produced: the outputs, the errors found, the presets used, an optional sheet."""
+
+    def __init__(self, choices: PresetChoices) -> None:
+        self.choices = choices
+        self.outputs: list[PlannedOutput] = []
+        self.errors: list[str] = []
+        self.sheet_layout: str | None = None
+
+    def add(self, label: str, kind: str, **fields: Any) -> PlannedOutput:
+        out = PlannedOutput(id=f"o{len(self.outputs) + 1:02d}", label=label, kind=kind, **fields)
+        self.outputs.append(out)
+        return out
+
+
+def build(store: ProjectStore, request: RequestBase) -> Built:
+    from hone_frame.recipes_scenes import (  # noqa: PLC0415 - that module imports this one
+        promote_outputs,
+        sequence_outputs,
+        state_pair_outputs,
+        variation_outputs,
+    )
+    from hone_frame.recipes_subjects import (  # noqa: PLC0415 - imports this module
+        interaction,
+        subject_references,
+    )
+
+    scene = _scene_of(store, request)
+    built = Built(PresetChoices(store, request, scene.overrides if scene else None))
+    if isinstance(request, SubjectReferences):
+        subject_references(store, request, built)
+    elif isinstance(request, SceneShot | Coverage):
+        if scene is None:
+            raise InvalidRequest("a scene shot needs a scene")
+        cameras = request.cameras if isinstance(request, Coverage) else [scene.camera]
+        for camera in cameras:
+            scene_output(
+                store,
+                scene,
+                built,
+                label=(camera or scene.name) if isinstance(request, Coverage) else scene.name,
+                camera=camera,
+                seed_group="coverage" if isinstance(request, Coverage) else None,
+            )
+    elif isinstance(request, Interaction):
+        interaction(store, request, built)
+    elif isinstance(request, StatePair):
+        state_pair_outputs(store, request, scene, built)
+    elif isinstance(request, SequenceFrames):
+        sequence_outputs(store, request, built)
+    elif isinstance(request, Variations):
+        variation_outputs(store, request, scene, built)
+    elif isinstance(request, Promote):
+        promote_outputs(store, request, built)
+    return built
+
+
+def _scene_of(store: ProjectStore, request: RequestBase) -> Scene | None:
+    if isinstance(request, SceneShot):
+        return store.scene(request.scene_id, request.scene_version)
+    scene_id = getattr(request, "scene_id", None)
+    if isinstance(request, SequenceFrames):
+        scene_id = store.sequence(request.sequence_id).scene_id
+    return store.scene(scene_id) if scene_id else None
+
+
+# ------------------------------------------------------------------------------------------- prompts
+
+
+def fragment(choices: PresetChoices, category: str, value: str | None) -> str:
+    """The words of a preset (camera: its prefix; others: suffix); free text stays as it is."""
+    if not value:
+        return ""
+    preset = choices.get(category, value)
+    if preset is None:
+        return value
+    return (preset.prompt.prefix if category == "camera" else preset.prompt.suffix).strip()
+
+
+def base_inputs(choices: PresetChoices, request: RequestBase, **values: Any) -> dict[str, Any]:
+    pack = choices.get("style_pack")
+    lighting = values.pop("lighting", None) or choices.choice("lighting")
+    camera = values.pop("camera", None)
+    camera_preset = choices.get("camera", camera) if camera else None
+    inputs: dict[str, Any] = {
+        "style_prefix": pack.prompt.prefix if pack else "",
+        "style_suffix": pack.prompt.suffix if pack else "",
+        "negative": pack.prompt.negative if pack else "",
+        "lighting": fragment(choices, "lighting", lighting),
+        "camera": fragment(choices, "camera", camera),
+        "camera_angle": camera_preset.values.get("camera_angle") if camera_preset else None,
+        "expression": fragment(choices, "expression", values.pop("expression", None)),
+        "pose": fragment(choices, "pose", values.pop("pose", None)),
+        "note": request.note,
+    }
+    return inputs | {k: v for k, v in values.items() if v not in (None, "")}
+
+
+def subject_text(subject: Subject, state: str | None = None) -> str:
+    details = "; ".join(f"{k}: {_flat(v)}" for k, v in subject.fields.items() if v)
+    text = f"{subject.name} ({subject.kind}): {subject.description}" + (f"; {details}" if details else "")
+    found = subject.state(state)
+    if state:
+        text += f"; state: {found.description or found.name if found else state}"
+    return text
+
+
+def _flat(value: Any) -> str:
+    if isinstance(value, list | tuple):
+        items: list[Any] = list(value)  # pyright: ignore[reportUnknownArgumentType]
+        return ", ".join(str(v) for v in items)
+    return str(value)
+
+
+# ------------------------------------------------------------------------------------------ recipes
+
+
+def scene_conditions(store: ProjectStore, refs: list[PlannedRef], states: bool) -> list[str]:
+    roles = {r.role for r in refs}
+    flags = [f"{role}_ref" for role in ("identity", "object", "environment") if role in roles]
+    kinds = {store.subject(r.subject_id).kind for r in refs if r.subject_id}
+    return flags + (["character"] if "character" in kinds else []) + (["state"] if states else [])
+
+
+def scene_output(
+    store: ProjectStore,
+    scene: Scene,
+    built: Built,
+    *,
+    label: str,
+    camera: str | None,
+    seed_group: str | None = None,
+    extra: dict[str, Any] | None = None,
+    kind: str = "scene",
+    judging: str = "scene-fidelity",
+) -> PlannedOutput:
+    refs, errors = scene_refs(store, scene)
+    built.errors += errors
+    texts = [subject_text(store.subject(r.subject_id, r.version), r.state) for r in scene.refs]
+    request = RequestBase()
+    values: dict[str, Any] = {
+        "subjects": texts,
+        "description": scene.description,
+        "action": scene.action,
+        "framing": scene.framing,
+        "gaze": scene.gaze,
+        "camera": camera,
+        "expression": scene.expression,
+        "pose": scene.pose,
+        "lighting": scene.lighting,
+        "notes": scene.notes,
+    } | (extra or {})
+    links = [SubjectLink(subject_id=r.subject_id, version=r.version or 1) for r in scene.refs]
+    has_state = any(r.state for r in scene.refs) or bool(values.get("state"))
+    return built.add(
+        label,
+        kind,
+        subjects=links,
+        references=refs,
+        judging=judging,
+        seed_group=seed_group,
+        conditions=scene_conditions(store, refs, has_state),
+        prompt_inputs=base_inputs(built.choices, request, **values),
+    )
+
+
+def product(axes: dict[str, list[str]]) -> list[dict[str, str]]:
+    names = list(axes)
+    return [dict(zip(names, combo, strict=True)) for combo in itertools.product(*(axes[n] for n in names))]

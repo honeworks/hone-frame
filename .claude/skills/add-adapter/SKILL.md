@@ -5,11 +5,11 @@ description: Add an implementation of one of hone-frame's ports, or another opti
 
 # Add an adapter
 
-hone-frame's ports are not defined yet (`design/current.md` §3). A new port, or a change to one, is a
-design change: `plan-change` first. Once the design has ports, follow the family pattern:
+hone-frame has one port, `Models` (`design/current.md` §7.2, `src/hone_frame/ports.py`), whose default
+implementation is hone-models. A new port, or a change to one, is a design change: `plan-change` first.
+A new model provider belongs in hone-models, not here. For a new port, follow the family pattern:
 
-1. **Where.** Each port is a small `typing.Protocol` owned by hone-frame, in a ports module under
-   `src/hone_frame/`. Adapters go in an `adapters` subpackage and are imported lazily.
+1. **Where.** Each port is a small `typing.Protocol` owned by hone-frame, in `src/hone_frame/ports.py`. Adapters go in an `adapters` subpackage and are imported lazily.
 2. **Optional dependency.** Add an extra in `pyproject.toml`. Import the third-party library only inside
    the adapter module. The core must still import without it: `tests/unit/test_import_boundaries.py`
    (add the library to its blocked list).

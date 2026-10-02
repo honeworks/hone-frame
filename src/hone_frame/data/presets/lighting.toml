@@ -1,0 +1,64 @@
+# Lighting (design §5.1).
+
+[[presets]]
+id = "neutral-studio"
+version = 1
+name = "Neutral studio"
+description = "Even, soft, shadowless light on a plain light-grey background: the default for reference images."
+prompt = { prefix = "", suffix = "even soft neutral studio lighting, plain light grey background." }
+
+[[presets]]
+id = "soft-daylight"
+version = 1
+name = "Soft daylight"
+description = "Gentle daylight through a window, soft shadows."
+prompt = { prefix = "", suffix = "soft natural daylight from a window, gentle shadows." }
+
+[[presets]]
+id = "overcast"
+version = 1
+name = "Overcast"
+description = "Flat, diffused light from a cloudy sky; muted colour."
+prompt = { prefix = "", suffix = "overcast diffused daylight, muted colours, no hard shadows." }
+
+[[presets]]
+id = "dawn"
+version = 1
+name = "Dawn"
+description = "Cool early light with a warm horizon."
+prompt = { prefix = "", suffix = "early dawn light, cool blue ambience with a warm glow at the horizon." }
+
+[[presets]]
+id = "golden-hour"
+version = 1
+name = "Golden hour"
+description = "Low warm sunlight, long shadows, glowing edges."
+prompt = { prefix = "", suffix = "golden hour sunlight, low warm light, long soft shadows, rim light." }
+
+[[presets]]
+id = "moonlight"
+version = 1
+name = "Moonlight"
+description = "Cool night light with deep shadows."
+prompt = { prefix = "", suffix = "cool blue moonlight at night, deep shadows, subtle highlights." }
+
+[[presets]]
+id = "candlelight"
+version = 1
+name = "Candlelight"
+description = "Warm flickering light from a small flame; dark surroundings."
+prompt = { prefix = "", suffix = "warm candlelight, small flickering light source, dark surroundings." }
+
+[[presets]]
+id = "practical-interior"
+version = 1
+name = "Practical interior"
+description = "Light from lamps and fixtures that are visible in the room."
+prompt = { prefix = "", suffix = "lit by practical lamps and fixtures visible in the room, warm interior light." }
+
+[[presets]]
+id = "dramatic-side"
+version = 1
+name = "Dramatic side light"
+description = "Hard light from one side, strong contrast."
+prompt = { prefix = "", suffix = "dramatic hard side light, strong contrast, deep shadow on one side." }

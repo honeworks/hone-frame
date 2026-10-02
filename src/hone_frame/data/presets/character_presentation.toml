@@ -1,0 +1,51 @@
+# Character presentations (design §6.1): the outputs a SubjectReferences request makes after the hero.
+# The hero (a neutral full-body front view) always comes first; every output below takes it as identity.
+# `from_states` adds one output per state of that kind the subject has.
+
+[[presets]]
+id = "neutral-full-body"
+version = 1
+name = "Neutral full body"
+description = "One clean full-body front view in a neutral pose: the identity reference everything else uses."
+subject_kinds = ["character"]
+values = { outputs = [] }
+
+[[presets]]
+id = "portrait-detail"
+version = 1
+name = "Portrait and detail"
+description = "A close-up portrait plus a detail of the face from three-quarter."
+subject_kinds = ["character"]
+values = { outputs = [{ label = "Portrait", camera = "close-up", expression = "neutral" }, { label = "Face 3/4", camera = "three-quarter", framing = "close-up of the head" }] }
+
+[[presets]]
+id = "turnaround"
+version = 1
+name = "Turnaround"
+description = "Front, three-quarter, side and back views of the full figure in the same neutral pose."
+subject_kinds = ["character"]
+values = { outputs = [{ label = "Front", camera = "front", pose = "neutral-standing" }, { label = "3/4", camera = "three-quarter", pose = "neutral-standing" }, { label = "Side", camera = "profile", pose = "neutral-standing" }, { label = "Back", camera = "rear", pose = "neutral-standing" }] }
+
+[[presets]]
+id = "expression-study"
+version = 1
+name = "Expression study"
+description = "Head-and-shoulders views of the same face across eight expressions."
+subject_kinds = ["character"]
+values = { outputs = [{ label = "Neutral", camera = "close-up", expression = "neutral" }, { label = "Happy", camera = "close-up", expression = "happy" }, { label = "Sad", camera = "close-up", expression = "sad" }, { label = "Angry", camera = "close-up", expression = "angry" }, { label = "Surprised", camera = "close-up", expression = "surprised" }, { label = "Tired", camera = "close-up", expression = "tired" }, { label = "Focused", camera = "close-up", expression = "focused" }, { label = "Determined", camera = "close-up", expression = "determined" }] }
+
+[[presets]]
+id = "pose-study"
+version = 1
+name = "Pose study"
+description = "The full figure in six everyday poses."
+subject_kinds = ["character"]
+values = { outputs = [{ label = "Standing", camera = "wide", pose = "neutral-standing" }, { label = "Seated", camera = "wide", pose = "seated" }, { label = "Walking", camera = "wide", pose = "walking" }, { label = "Reaching", camera = "wide", pose = "reaching" }, { label = "Pointing", camera = "wide", pose = "pointing" }, { label = "Looking back", camera = "wide", pose = "looking-back" }] }
+
+[[presets]]
+id = "outfit-comparison"
+version = 1
+name = "Outfit comparison"
+description = "The same pose and view in each of the character's outfits (its outfit states)."
+subject_kinds = ["character"]
+values = { outputs = [], from_states = "outfit", camera = "front", pose = "neutral-standing" }

@@ -1,0 +1,169 @@
+"""Generation requests and plans (design §6). A request expands into planned outputs (`recipes.py`)."""
+
+from __future__ import annotations
+
+from typing import Annotated, Any, Literal
+
+from pydantic import Field
+
+from hone_frame.records import Record, Role, Selection, SubjectLink
+
+
+class RequestBase(Record):
+    """Fields every request has; each request type adds its own and a `kind` literal."""
+
+    profile: str = ""  # a profile id; empty: the project's default
+    selection: Selection | None = None  # None: the project's default
+    presets: dict[str, str] = Field(default_factory=dict[str, str])  # category -> preset id overrides
+    note: str = ""
+    title: str = ""
+
+    @property
+    def task(self) -> str:
+        """The request's `kind` ("scene", "coverage"...)."""
+        return str(self.__dict__.get("kind", "request"))
+
+
+class SubjectReferences(RequestBase):
+    """A subject's reference images: a hero, then the presentation's views (design §6.1)."""
+
+    kind: Literal["subject_references"] = "subject_references"
+    subject_id: str
+    presentation: str | None = None  # a <kind>_presentation preset id
+    expressions: list[str] = Field(default_factory=list[str])
+    poses: list[str] = Field(default_factory=list[str])
+    states: list[str] = Field(default_factory=list[str])
+    hero_image: str | None = None  # an existing image to use as the hero instead of generating one
+    sheet_layout: str | None = None  # compose a sheet of the views once all are accepted
+
+
+class SceneShot(RequestBase):
+    kind: Literal["scene"] = "scene"
+    scene_id: str
+    scene_version: int | None = None
+
+
+class Coverage(RequestBase):
+    kind: Literal["coverage"] = "coverage"
+    scene_id: str
+    cameras: list[str] = Field(min_length=1)
+
+
+class Interaction(RequestBase):
+    kind: Literal["interaction"] = "interaction"
+    character_id: str
+    asset_id: str
+    action: str  # an interaction preset id, or free text
+    pose: str | None = None
+    pose_image: str | None = None
+    environment_id: str | None = None
+
+
+class StatePair(RequestBase):
+    kind: Literal["state_pair"] = "state_pair"
+    subject_id: str | None = None
+    scene_id: str | None = None
+    state: str  # a state preset id (before/after)
+    same_framing: bool = True
+
+
+class SequenceFrames(RequestBase):
+    kind: Literal["sequence"] = "sequence"
+    sequence_id: str
+
+
+class Variations(RequestBase):
+    """The cartesian product of `axes` over one base output (design §6.1, brief §11)."""
+
+    kind: Literal["variations"] = "variations"
+    scene_id: str | None = None
+    subject_id: str | None = None
+    axes: dict[str, list[str]] = Field(
+        min_length=1
+    )  # outfit, expression, lighting, camera, state, style, pose
+
+
+class Promote(RequestBase):
+    kind: Literal["promote"] = "promote"
+    image_id: str
+    operation: Literal["upscale", "refine", "regenerate"]
+    profile: str = "final"
+
+
+Request = Annotated[
+    SubjectReferences
+    | SceneShot
+    | Coverage
+    | Interaction
+    | StatePair
+    | SequenceFrames
+    | Variations
+    | Promote,
+    Field(discriminator="kind"),
+]
+OutputMode = Literal["generate", "upscale"]
+
+
+class PlannedRef(Record):
+    image_id: str
+    subject_id: str | None = None
+    version: int | None = None
+    role: Role = "identity"
+
+
+class Dependency(Record):
+    output: str
+    role: Role = "identity"
+
+
+class PlannedOutput(Record):
+    id: str
+    label: str
+    kind: str  # character | environment | asset | interaction | scene | sequence_frame | promotion
+    subjects: list[SubjectLink] = Field(default_factory=list[SubjectLink])
+    references: list[PlannedRef] = Field(default_factory=list[PlannedRef])
+    text_refs: list[str] = Field(default_factory=list[str])  # references described in words instead
+    depends_on: list[Dependency] = Field(default_factory=list[Dependency])
+    prompt_inputs: dict[str, Any] = Field(default_factory=dict[str, Any])
+    judging: str = "scene-fidelity"
+    conditions: list[str] = Field(default_factory=list[str])
+    size: str = "1024x1024"
+    model: str = ""
+    mode: OutputMode = "generate"
+    seed_group: str | None = None
+    parent: str | None = None
+
+
+class ResolvedProfile(Record):
+    id: str
+    planner: str | None = None
+    generator: str
+    editor: str | None = None
+    judge: str | None = None
+    upscaler: str | None = None
+    size: str = "1024x1024"
+    settings: dict[str, Any] = Field(default_factory=dict[str, Any])
+    planner_think: bool = False
+    judge_think: bool = False
+
+
+class Counts(Record):
+    outputs: int = 0
+    images: int = 0
+    judge_calls: int = 0
+    planner_calls: int = 0
+
+
+class Plan(Record):
+    kind: str
+    title: str
+    request: dict[str, Any]
+    outputs: list[PlannedOutput]
+    profile: ResolvedProfile
+    selection: Selection
+    presets: dict[str, int] = Field(default_factory=dict[str, int])
+    counts: Counts = Field(default_factory=Counts)
+    estimate: dict[str, float] | None = None
+    warnings: list[str] = Field(default_factory=list[str])
+    errors: list[str] = Field(default_factory=list[str])
+    sheet_layout: str | None = None

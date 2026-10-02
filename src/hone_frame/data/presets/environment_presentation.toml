@@ -1,0 +1,42 @@
+# Environment presentations (design §6.1). The first output is the environment's hero (an establishing
+# view); the others take it as their environment reference.
+
+[[presets]]
+id = "interior-coverage"
+version = 1
+name = "Interior coverage"
+description = "An establishing view of the room, then its main walls and a detail of a key area."
+subject_kinds = ["environment"]
+values = { outputs = [{ label = "Wide", camera = "wide" }, { label = "Reverse", camera = "reverse" }, { label = "Detail", camera = "detail" }] }
+
+[[presets]]
+id = "exterior-coverage"
+version = 1
+name = "Exterior coverage"
+description = "The outside of a place from far, near and above."
+subject_kinds = ["environment"]
+values = { outputs = [{ label = "Wide", camera = "wide" }, { label = "Low angle", camera = "low-angle" }, { label = "Overhead", camera = "overhead" }] }
+
+[[presets]]
+id = "establishing-detail"
+version = 1
+name = "Establishing and detail board"
+description = "One establishing view and three details of materials and landmarks."
+subject_kinds = ["environment"]
+values = { outputs = [{ label = "Detail 1", camera = "detail" }, { label = "Detail 2", camera = "detail", framing = "another landmark of the place" }, { label = "Detail 3", camera = "detail", framing = "a material or surface close up" }] }
+
+[[presets]]
+id = "day-night"
+version = 1
+name = "Day / night comparison"
+description = "The same view by day and at night."
+subject_kinds = ["environment"]
+values = { outputs = [{ label = "Day", camera = "wide", lighting = "soft-daylight" }, { label = "Night", camera = "wide", lighting = "moonlight" }] }
+
+[[presets]]
+id = "material-landmark"
+version = 1
+name = "Material and landmark board"
+description = "Close views of the place's materials and its recurring landmarks."
+subject_kinds = ["environment"]
+values = { outputs = [{ label = "Landmarks", camera = "medium", framing = "the recurring landmark objects of the place" }, { label = "Materials", camera = "detail", framing = "the main surface materials side by side" }] }

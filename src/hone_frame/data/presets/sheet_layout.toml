@@ -1,0 +1,57 @@
+# Sheet layouts (design §11.1): defaults for the compositor. `cell` is the cell aspect ratio (w/h).
+
+[[presets]]
+id = "four-view-turnaround"
+version = 1
+name = "Four-view turnaround"
+description = "Front, three-quarter, side and back side by side in tall cells."
+values = { columns = 4, cell = 0.6, label_style = "under" }
+
+[[presets]]
+id = "expression-grid"
+version = 1
+name = "Expression grid"
+description = "Square head-and-shoulders cells, four to a row."
+values = { columns = 4, cell = 1.0, label_style = "under" }
+
+[[presets]]
+id = "pose-grid"
+version = 1
+name = "Pose grid"
+description = "Full-figure poses, three to a row."
+values = { columns = 3, cell = 0.6, label_style = "under" }
+
+[[presets]]
+id = "object-detail-board"
+version = 1
+name = "Object detail board"
+description = "One large view of the object, its other views and details in a grid beside it."
+values = { columns = 3, cell = 1.0, label_style = "under", feature_first = true }
+
+[[presets]]
+id = "environment-board"
+version = 1
+name = "Environment board"
+description = "Wide views of the place, two to a row."
+values = { columns = 2, cell = 1.5, label_style = "under" }
+
+[[presets]]
+id = "before-after"
+version = 1
+name = "Before / after"
+description = "Two images side by side with their states as labels."
+values = { columns = 2, cell = 1.0, label_style = "under" }
+
+[[presets]]
+id = "sequence-strip"
+version = 1
+name = "Sequence strip"
+description = "Frames in one row, numbered in order."
+values = { columns = 0, cell = 1.0, label_style = "numbered" }
+
+[[presets]]
+id = "contact-grid"
+version = 1
+name = "Custom contact grid"
+description = "Any images in a square-ish grid."
+values = { columns = -1, cell = 1.0, label_style = "under" }

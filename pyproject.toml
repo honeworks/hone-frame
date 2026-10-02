@@ -1,15 +1,15 @@
 [project]
 name = "hone-frame"
 dynamic = ["version"]
-description = "Hone Frame, a honeworks package. Its purpose is being defined (design/changes/0001)."
+description = "Hone Frame: a project-based visual production workspace: characters, environments and assets, judged generation rounds, Python-composed sheets, scenes with role-based references, and a live dashboard."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "Bahman Shadmehr", email = "info@bshadmehr.me" }]
-keywords = ["ai", "generative-ai", "honeworks"]
+keywords = ["ai", "generative-ai", "image-generation", "character-sheets", "honeworks"]
 classifiers = [
-    "Development Status :: 1 - Planning",
+    "Development Status :: 2 - Pre-Alpha",
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
@@ -18,7 +18,19 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Typing :: Typed",
 ]
-dependencies = []
+dependencies = [
+    "pydantic>=2.7",
+    "pillow>=10.1",        # the sheet compositor; load_default(size) needs 10.1 (design §11.2)
+    "hone-flow>=0.1",      # runs (design/decisions.md D-001)
+    "hone-models>=0.1",    # every model call
+    "hone-select>=0.1",    # picks
+]
+
+[project.optional-dependencies]
+cli = ["typer>=0.12"]
+
+[project.scripts]
+hone-frame = "hone_frame.cli:main"
 
 [dependency-groups]
 # Development tools (PEP 735): installed by `uv sync`, never published as an extra.
@@ -26,6 +38,13 @@ dev = [
     "pytest>=8", "pytest-cov>=5", "pytest-timeout>=2.3", "hypothesis>=6.100",
     "ruff>=0.6", "pyright>=1.1.380",
 ]
+
+[tool.uv.sources]
+# Development and CI only (the published metadata keeps `hone-flow>=0.1` ...): take the siblings from
+# GitHub until they are on PyPI (design/decisions.md D-001, D-002).
+hone-flow = { git = "https://github.com/honeworks/hone-flow", branch = "main" }
+hone-models = { git = "https://github.com/honeworks/hone-models", branch = "main" }
+hone-select = { git = "https://github.com/honeworks/hone-select", branch = "main" }
 
 [project.urls]
 Homepage = "https://github.com/honeworks/hone-frame"
@@ -64,8 +83,11 @@ ignore = ["PLR0913", "PLR2004"]
 max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
+"src/hone_frame/errors.py" = ["N818"]   # exception names are public API (NotFound, InvalidRequest)
+"src/hone_frame/{ports,runs,candidates}.py" = ["N818"]   # ModelFailure, StopRequested...: named for what happened
+"src/hone_frame/_operations.py" = ["PLC0415"]   # forwards to other modules lazily by design (no import cycle)
 "examples/**" = ["S101", "S603", "PT018", "PLW1510"]   # examples assert the facts they show and run subprocesses
-"tests/**" = ["S101", "S603", "PLR0915", "PLR0917", "N802", "PT018", "PLC0415", "PLW1510"]
+"tests/**" = ["S101", "S105", "S603", "PLR0915", "PLR0917", "N802", "PT018", "PLC0415", "PLW1510"]
 
 [tool.pyright]
 include = ["src", "tests"]

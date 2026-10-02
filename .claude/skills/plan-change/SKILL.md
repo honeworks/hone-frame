@@ -5,14 +5,14 @@ description: Plan a design change as a change record in design/changes/ and get 
 
 # Plan a design change
 
-1. Read `design/current.md` (§1 goals and non-goals, the sections the change touches, §5 guarantees),
+1. Read `design/current.md` (§1 goals and non-goals, the sections the change touches, §14 guarantees),
    `design/decisions.md` and the related records in `design/changes/`.
 2. Next number: the highest `design/changes/NNNN-*.md` plus one.
 3. Write `design/changes/NNNN-<short-name>.md` in the format of `design/changes/0001-initial-design.md`:
    Status `proposed`, Context, Problem, Options (at least two, one of them "leave it as it is"),
    Decision, Consequences, Migration and compatibility. Include:
    - a sketch of the public API or CLI as a user would call it;
-   - the new or changed acceptance cases, numbered after the last one in `design/current.md` §5;
+   - the new or changed acceptance cases, numbered after the last one in `design/current.md` §14;
    - the tests that will prove them.
 4. Answer each risk the change touches, in the record:
    - stored formats: new optional data is fine; anything else needs `deprecate-and-migrate`;

@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.2.0
         with: { python-version: "${{ matrix.python }}", enable-cache: true }
-      # hone-frame has no extras yet. The dev dependency group is installed by default.
+      # Every extra (cli) and the dev dependency group (installed by default).
       - run: uv sync --all-extras --frozen
       - run: uv run ruff check .
       - run: uv run ruff format --check .
@@ -34,6 +34,9 @@ jobs:
       - name: Smoke test the wheel in a clean env
         run: |
           uv venv "$RUNNER_TEMP/smoke"
+          # the honeworks siblings are not on PyPI yet: their git sources first (design/decisions.md D-002)
+          mapfile -t SIBLINGS < <(python3 scripts/git-sources.py)
+          if [ "${#SIBLINGS[@]}" -gt 0 ]; then uv pip install --python "$RUNNER_TEMP/smoke/bin/python" "${SIBLINGS[@]}"; fi
           uv pip install --python "$RUNNER_TEMP/smoke/bin/python" dist/*.whl
           "$RUNNER_TEMP/smoke/bin/python" -c "import hone_frame; print(hone_frame.__version__)"
           if [ -f examples/quickstart.py ]; then   # the README quickstart, with only the wheel installed

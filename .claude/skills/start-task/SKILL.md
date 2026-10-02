@@ -11,7 +11,7 @@ description: Start any new piece of work (feature, fix, docs, refactor) on its o
 3. `git switch -c <type>/<short-slug>`, named as in CONTRIBUTING.md "Pull requests" (`feat/first-api`).
 4. Classify the task:
    - **Design change**: it changes the purpose (`design/current.md` §1), the public API, the CLI, a
-     guarantee in `design/current.md` §5, a stored format, the records, a port, or adds an extra or a
+     guarantee in `design/current.md` §14, a stored format, the records, a port, or adds an extra or a
      dependency. Next: `plan-change`.
    - **Small change**: a fix that restores documented behaviour, docs, tests, a refactor. Next:
      `implement-change`; a judgment call goes into `design/decisions.md`.

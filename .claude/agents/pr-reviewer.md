@@ -15,7 +15,7 @@ code, the rules and the design. Do not edit files.
    - correctness: logic, edge cases (empty input, missing files, `None`), error paths;
    - explicit failure: typed errors whose message says what to do; nothing is swallowed; no silent
      fallback;
-   - the guarantees in `design/current.md` §5 still hold;
+   - the guarantees in `design/current.md` §14 still hold;
    - the core imports no extra and no other honeworks package at import time;
    - secrets never reach records, files, reports or logs;
    - determinism: explicit seeds, `hashlib` not `hash()` for ids;
