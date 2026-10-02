@@ -117,3 +117,12 @@ def test_unknown_things_raise_not_found(tmp_path: Path) -> None:
             call()
     with pytest.raises(hf.errors.InvalidRequest):
         p.add_subject("vehicle", "Car")  # pyright: ignore[reportArgumentType]
+
+
+def test_default_workspace_is_in_the_home_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("HONE_FRAME_HOME", raising=False)
+    monkeypatch.setenv("HOME", str(tmp_path / "me"))
+    monkeypatch.chdir(tmp_path)
+    assert hf.Workspace().root == (tmp_path / "me" / "hone-frame").resolve()
+    monkeypatch.setenv("HONE_FRAME_HOME", str(tmp_path / "elsewhere"))
+    assert hf.Workspace().root == (tmp_path / "elsewhere").resolve()

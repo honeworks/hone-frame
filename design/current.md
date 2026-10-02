@@ -60,7 +60,7 @@ These three are core dependencies (D-001).
 ```text
 import hone_frame as hf
 
-ws = hf.Workspace(path=None, *, models=None)   # path: HONE_FRAME_HOME, else ./hone-frame
+ws = hf.Workspace(path=None, *, models=None)   # path: HONE_FRAME_HOME, else ~/hone-frame
                                                # models: a Models port (§7.2); default hf.HoneModels()
 ws.presets -> hf.PresetCatalog                 # the built-in catalogue (§5), also hf.presets()
 ws.projects() -> list[hf.Project]

@@ -30,10 +30,10 @@ class Settings(Record):
 
 
 class Workspace:
-    """`HONE_FRAME_HOME`, else `./hone-frame`. Created on first use."""
+    """`HONE_FRAME_HOME`, else `~/hone-frame` (decisions D-018). Created on first use."""
 
     def __init__(self, path: str | Path | None = None, *, models: Models | None = None) -> None:
-        self.root = Path(path or os.environ.get("HONE_FRAME_HOME") or "hone-frame").expanduser().resolve()
+        self.root = Path(path or os.environ.get("HONE_FRAME_HOME") or "~/hone-frame").expanduser().resolve()
         (self.root / "projects").mkdir(parents=True, exist_ok=True)
         marker = self.root / "workspace.json"
         if marker.is_file():
