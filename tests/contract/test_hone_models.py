@@ -70,7 +70,7 @@ def test_ask_parses_the_judge_answer(tmp_path: Path) -> None:
         parsed = HoneModels().ask(
             "qwen2.5vl-7b", "Judge it.", images=[tmp_path / "c.png"], schema=answer_schema(SHAPE), think=False
         )
-        assert parsed.overall == 0.7 and parsed.checks.shape.verdict == "pass"
+        assert parsed.overall == 0.7 and parsed.checks.model_dump(by_alias=True)["shape"]["verdict"] == "pass"
         server.queue("/api/chat", 500, 500, 500)
         with pytest.raises(ModelFailure) as raised:
             HoneModels().ask("qwen2.5vl-7b", "Judge it.", images=[], schema=answer_schema(SHAPE), think=False)

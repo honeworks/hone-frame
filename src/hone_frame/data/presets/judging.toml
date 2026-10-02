@@ -187,7 +187,7 @@ required = false
 
 [[presets]]
 id = "scene-fidelity"
-version = 1
+version = 2
 name = "Scene fidelity"
 description = "Scenes: the selected subjects are present and recognisable, doing the action, framed as asked."
 
@@ -201,6 +201,13 @@ name = "identity"
 question = "Is the character the same as the identity reference?"
 required = true
 when = "identity_ref"
+unless = "rear"
+
+[[presets.values.checks]]
+name = "identity_from_behind"
+question = "Seen from behind, the face is not expected. Do the build, hair, clothing, colours and distinguishing features match the identity reference?"
+required = true
+when = "rear"
 
 [[presets.values.checks]]
 name = "object"

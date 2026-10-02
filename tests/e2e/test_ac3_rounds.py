@@ -182,3 +182,42 @@ def test_references_use_neutral_light_whatever_the_style_pack(ws: hf.Workspace) 
     p.update(defaults={"presets": {"lighting": "golden-hour"}})  # chosen on purpose: kept
     lights = {o.prompt_inputs["lighting"] for o in p.plan(hf.SubjectReferences(subject_id=hero)).outputs}
     assert lights == {"golden hour sunlight, low warm light, long soft shadows, rim light."}
+
+
+def test_rear_scenes_and_subject_variations(tmp_path: Path) -> None:
+    from hone_frame.testing import sample_workspace
+
+    fake = FakeModels()
+    p = sample_workspace(tmp_path / "ws", models=fake)
+    scene = p.save_scene(hf.Scene(name="Leaving", refs=[hf.SceneRef(subject_id="char_001")], camera="rear"))
+    shot = p.plan(hf.SceneShot(scene_id=scene.id)).outputs[0]
+    assert "rear" in shot.conditions
+    grid = p.plan(hf.Variations(subject_id="char_001", axes={"camera": ["rear", "front"]})).outputs
+    assert ["rear" in o.conditions for o in grid] == [True, False]
+    p.submit(hf.SceneShot(scene_id=scene.id, selection=hf.Selection(rounds=1)))
+    run_all(p)
+    judged = next(c.prompt for c in fake.asked if "quality judge" in c.prompt)
+    assert "- identity_from_behind:" in judged and "- identity:" not in judged
+
+
+def test_reference_lighting_precedence_and_a_given_hero(ws: hf.Workspace) -> None:
+    p = ws.create_project("Epic", style_pack="historical-epic")
+    hero = p.add_subject("character", "Rostam", description="a champion").id
+    p.update(defaults={"presets": {"lighting": "golden-hour"}})
+    asked = hf.SubjectReferences(subject_id=hero, presets={"lighting": "moonlight"})
+    assert {o.prompt_inputs["lighting"] for o in p.plan(asked).outputs} == {
+        "cool blue moonlight at night, deep shadows, subtle highlights."
+    }  # the request's choice beats the project's
+    p.update(defaults={"presets": {}})
+    image = p.import_image(_png(ws.root / "hero.png"), subject_id=hero)
+    given = p.plan(hf.SubjectReferences(subject_id=hero, hero_image=image.id)).outputs
+    assert given and {o.prompt_inputs["lighting"] for o in given} == {
+        "even soft neutral studio lighting, plain light grey background."
+    }
+
+
+def _png(path: Path) -> Path:
+    from PIL import Image
+
+    Image.new("RGB", (32, 48), "#888888").save(path)
+    return path

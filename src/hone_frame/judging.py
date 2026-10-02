@@ -25,14 +25,15 @@ class JudgeAnswer(BaseModel):
     judge cannot mislabel or drop a check (decisions D-020)."""
 
     description: str
-    checks: Any  # a model with one CheckAnswer field per check; a dict of them is read the same way
+    checks: BaseModel  # `answer_schema` makes it a model with one CheckAnswer field per check name
     overall: float = Field(ge=0.0, le=1.0)
     summary: str = ""
 
 
 def answer_schema(checks: list[dict[str, Any]]) -> type[JudgeAnswer]:
-    """`JudgeAnswer` whose `checks` has exactly these check names as required keys."""
-    fields: dict[str, Any] = {c["name"]: (CheckAnswer, ...) for c in checks}
+    """`JudgeAnswer` whose `checks` has exactly these check names as required keys. Field names are
+    `c0`, `c1`... with the check name as the alias, so any name (from a user's pack too) is a valid key."""
+    fields: dict[str, Any] = {f"c{i}": (CheckAnswer, Field(alias=c["name"])) for i, c in enumerate(checks)}
     named: Any = create_model("Checks", **fields)
     return create_model("JudgeAnswer", __base__=JudgeAnswer, checks=(named, ...))
 
@@ -101,8 +102,10 @@ def evaluate(
 
 def verdicts(answer: JudgeAnswer, checks: list[dict[str, Any]], judge: str) -> Evaluation:
     """Apply `min_score`, mark missing checks uncertain, and decide pass / uncertain (design §8.3)."""
-    raw: Any = answer.checks.model_dump() if isinstance(answer.checks, BaseModel) else answer.checks
-    given = {str(k): CheckAnswer.model_validate(v) for k, v in dict(raw).items()}
+    given = {
+        name: CheckAnswer.model_validate(value)
+        for name, value in answer.checks.model_dump(by_alias=True).items()
+    }
     results: list[CheckResult] = []
     for check in checks:
         found = given.get(check["name"])
