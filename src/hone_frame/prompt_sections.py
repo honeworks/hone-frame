@@ -3,6 +3,7 @@ sentence, or nothing. Dialects choose which pieces, in what order (dialects.py).
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -127,6 +128,20 @@ def features(c: Ctx) -> str:
     return ". ".join(_field(p, "features") for p in c.parts if _field(p, "features"))
 
 
+def short_outfit(text: str) -> str:
+    """Every piece of clothing named, without its details, so a long outfit fits a view's budget and no
+    piece (a helmet) is forgotten: each comma part up to its first "with", split where another garment
+    is worn over or under it ("over a tunic", not "over the hair"), six words a piece."""
+    pieces: list[str] = []
+    for part in text.split(","):
+        bare = re.split(r"\s+with\s+", part.strip(), maxsplit=1)[0]
+        pieces += [
+            p for p in re.split(r"\s+(?:worn\s+(?:over|under)|(?:over|under)(?=\s+an?\s))\s+", bare) if p
+        ]
+    short = [" ".join(piece.split()[:6]) for piece in pieces]
+    return ("the same clothes: " + ", ".join(short)) if short else "the same clothes and colours"
+
+
 def keep(c: Ctx) -> str:
     if not c.parts:
         return ""
@@ -135,7 +150,7 @@ def keep(c: Ctx) -> str:
     if c.inputs.get("outfit"):
         clothes = ""
     elif c.compact:
-        clothes = "the same clothes, armour and colours"
+        clothes = short_outfit(_field(part, "outfits"))
     else:
         clothes = _field(part, "outfits")
     kept += [x for x in (clothes, _field(part, "features")) if x]
