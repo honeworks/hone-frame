@@ -163,6 +163,16 @@ def test_bad_workspace_dialects_are_refused(tmp_path: Path, text: str, message: 
         Dialects(tmp_path)
 
 
+@pytest.mark.parametrize("phrase", ["<sks> {azimuth.foo}", "<sks> {azimuth[x]}", "<sks> {"])
+def test_any_broken_camera_phrase_is_a_typed_error(tmp_path: Path, phrase: str) -> None:
+    (tmp_path / "prompting.toml").write_text(
+        f'[dialects.x]\nmodels = ["m"]\ncamera_phrase = "{phrase}"\n[dialects.x.generate]\nsections = []\n'
+        "max_words = 50\n"
+    )
+    with pytest.raises(hf.errors.HoneFrameError, match="camera_phrase"):
+        Dialects(tmp_path)
+
+
 def test_without_a_generic_dialect_an_unmatched_model_is_an_error(tmp_path: Path) -> None:
     dialects = Dialects()
     dialects.all.pop("generic")

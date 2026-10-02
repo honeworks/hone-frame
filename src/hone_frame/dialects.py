@@ -78,7 +78,7 @@ def _check_camera_phrase(dialect: Dialect, origin: str) -> None:
         return
     try:
         dialect.camera_phrase.format(**CAMERA_PLACEHOLDERS)
-    except (KeyError, IndexError, ValueError) as exc:
+    except (KeyError, IndexError, ValueError, AttributeError, TypeError) as exc:
         raise HoneFrameError(
             f"dialect {dialect.name!r} in {origin}: camera_phrase {dialect.camera_phrase!r} is not valid "
             f"({exc!r}); use only {{azimuth}}, {{elevation}} and {{distance}}"
