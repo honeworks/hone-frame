@@ -1,0 +1,50 @@
+# Interaction templates (design §6.1, §10.4). The selected character and asset supply the actual design;
+# the template supplies the action words and its checks.
+
+[[presets]]
+id = "hold-cup"
+version = 1
+name = "Hold cup"
+description = "The character holds a cup or mug by its handle or in both hands."
+subject_kinds = ["character", "asset"]
+prompt = { prefix = "", suffix = "{character} holds {asset} naturally, fingers through or around the handle, the cup upright." }
+
+[[presets]]
+id = "grip-tool"
+version = 1
+name = "Grip weapon or tool"
+description = "A firm working grip on a tool or weapon."
+subject_kinds = ["character", "asset"]
+prompt = { prefix = "", suffix = "{character} grips {asset} firmly by its handle, ready to use it." }
+
+[[presets]]
+id = "wear-backpack"
+version = 1
+name = "Wear backpack"
+description = "A bag worn on the back with both straps over the shoulders."
+subject_kinds = ["character", "asset"]
+prompt = { prefix = "", suffix = "{character} wears {asset} on the back, both straps over the shoulders." }
+
+[[presets]]
+id = "sit-on-chair"
+version = 1
+name = "Sit on chair"
+description = "Sitting on a chair or seat, weight resting on it."
+subject_kinds = ["character", "asset"]
+prompt = { prefix = "", suffix = "{character} sits on {asset}, body weight resting naturally on the seat." }
+
+[[presets]]
+id = "open-door"
+version = 1
+name = "Open door"
+description = "A hand on the handle, the door part open."
+subject_kinds = ["character", "asset"]
+prompt = { prefix = "", suffix = "{character} opens {asset}, one hand on the handle, the door partly open." }
+
+[[presets]]
+id = "operate-appliance"
+version = 1
+name = "Operate appliance"
+description = "Using a machine: hands on its controls."
+subject_kinds = ["character", "asset"]
+prompt = { prefix = "", suffix = "{character} operates {asset}, hands on its controls, looking at what it does." }

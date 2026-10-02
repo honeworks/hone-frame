@@ -1,0 +1,285 @@
+# Judging profiles (design §8.3). `when` names the condition under which a check applies; a check
+# without `when` always applies. `required` checks gate the pick; the others only rank.
+
+[[presets]]
+id = "character-identity"
+version = 1
+name = "Character identity"
+description = "Character reference images: is it the same person, in the requested view, expression, outfit and framing, drawn correctly?"
+
+[[presets.values.checks]]
+name = "identity"
+question = "Is this the same character as the identity reference (face, hair, build, colours)?"
+required = true
+when = "identity_ref"
+
+[[presets.values.checks]]
+name = "view"
+question = "Is the camera view and angle the one requested?"
+required = true
+
+[[presets.values.checks]]
+name = "expression"
+question = "Is the facial expression the one requested?"
+required = true
+when = "expression"
+
+[[presets.values.checks]]
+name = "pose"
+question = "Is the pose the one requested?"
+required = true
+when = "pose"
+
+[[presets.values.checks]]
+name = "outfit_state"
+question = "Are the outfit and any requested state as described?"
+required = true
+
+[[presets.values.checks]]
+name = "framing"
+question = "Is the framing as requested, with nothing important cropped?"
+required = true
+
+[[presets.values.checks]]
+name = "anatomy"
+question = "Are hands, limbs and face anatomically correct (no extra or missing fingers, no distortions)?"
+required = true
+
+[[presets.values.checks]]
+name = "style"
+question = "Does it match the requested art style?"
+required = false
+
+[[presets]]
+id = "environment-continuity"
+version = 1
+name = "Environment continuity"
+description = "Environment images: right viewpoint, the place's anchors and recurring objects where they belong, materials and light."
+
+[[presets.values.checks]]
+name = "viewpoint"
+question = "Is the viewpoint the one requested?"
+required = true
+
+[[presets.values.checks]]
+name = "anchors"
+question = "Are the place's spatial anchors visible and consistent with the description and the reference?"
+required = true
+when = "anchors"
+
+[[presets.values.checks]]
+name = "recurring_objects"
+question = "Are the recurring objects present and where they belong?"
+required = true
+when = "recurring"
+
+[[presets.values.checks]]
+name = "materials"
+question = "Do the materials match the description?"
+required = true
+
+[[presets.values.checks]]
+name = "lighting"
+question = "Is the lighting the one requested?"
+required = true
+
+[[presets.values.checks]]
+name = "style"
+question = "Does it match the requested art style?"
+required = false
+
+[[presets]]
+id = "object-fidelity"
+version = 1
+name = "Object fidelity"
+description = "Object images: shape, distinctive details, material, the requested view and state."
+
+[[presets.values.checks]]
+name = "identity"
+question = "Is this the same object as the reference (shape, colour, details)?"
+required = true
+when = "identity_ref"
+
+[[presets.values.checks]]
+name = "shape"
+question = "Does the shape match the description?"
+required = true
+
+[[presets.values.checks]]
+name = "details"
+question = "Are the distinctive details present?"
+required = true
+
+[[presets.values.checks]]
+name = "material"
+question = "Does the material and colour match?"
+required = true
+
+[[presets.values.checks]]
+name = "view_state"
+question = "Is the view and the requested state as asked?"
+required = true
+
+[[presets.values.checks]]
+name = "scale_cues"
+question = "Do the scale cues make sense?"
+required = false
+
+[[presets.values.checks]]
+name = "style"
+question = "Does it match the requested art style?"
+required = false
+
+[[presets]]
+id = "interaction-plausibility"
+version = 1
+name = "Interaction plausibility"
+description = "A character using an object: identity of both, believable contact, hands and orientation."
+
+[[presets.values.checks]]
+name = "identity"
+question = "Is the character the same as the identity reference?"
+required = true
+when = "identity_ref"
+
+[[presets.values.checks]]
+name = "object"
+question = "Is the object the same as the object reference?"
+required = true
+when = "object_ref"
+
+[[presets.values.checks]]
+name = "contact"
+question = "Is the contact between the character and the object believable (touching where it should, nothing passing through)?"
+required = true
+
+[[presets.values.checks]]
+name = "hand_placement"
+question = "Are the hands placed correctly on the object, with correct fingers?"
+required = true
+
+[[presets.values.checks]]
+name = "object_orientation"
+question = "Is the object oriented the way it is used?"
+required = true
+
+[[presets.values.checks]]
+name = "scale"
+question = "Is the object's size right relative to the character?"
+required = true
+
+[[presets.values.checks]]
+name = "anatomy"
+question = "Are hands, limbs and face anatomically correct?"
+required = true
+
+[[presets.values.checks]]
+name = "style"
+question = "Does it match the requested art style?"
+required = false
+
+[[presets]]
+id = "scene-fidelity"
+version = 1
+name = "Scene fidelity"
+description = "Scenes: the selected subjects are present and recognisable, doing the action, framed as asked."
+
+[[presets.values.checks]]
+name = "subject_presence"
+question = "Are all the requested subjects present, and nothing that was not asked for prominent?"
+required = true
+
+[[presets.values.checks]]
+name = "identity"
+question = "Is the character the same as the identity reference?"
+required = true
+when = "identity_ref"
+
+[[presets.values.checks]]
+name = "object"
+question = "Is the object the same as the object reference?"
+required = true
+when = "object_ref"
+
+[[presets.values.checks]]
+name = "environment"
+question = "Is the place the same as the environment reference?"
+required = true
+when = "environment_ref"
+
+[[presets.values.checks]]
+name = "action"
+question = "Is the action the one described?"
+required = true
+
+[[presets.values.checks]]
+name = "camera"
+question = "Is the camera and framing the one requested?"
+required = true
+
+[[presets.values.checks]]
+name = "state"
+question = "Is the requested state shown (and only the intended change)?"
+required = true
+when = "state"
+
+[[presets.values.checks]]
+name = "anatomy"
+question = "Are visible hands, limbs and faces anatomically correct?"
+required = true
+when = "character"
+
+[[presets.values.checks]]
+name = "composition"
+question = "Is the composition clear and readable?"
+required = false
+
+[[presets.values.checks]]
+name = "style"
+question = "Does it match the requested art style?"
+required = false
+
+[[presets]]
+id = "sequence-continuity"
+version = 1
+name = "Sequence continuity"
+description = "A sequence frame: the scene checks, plus continuity with the previous frame and the intended change."
+
+[[presets.values.checks]]
+name = "subject_presence"
+question = "Are all the requested subjects present?"
+required = true
+
+[[presets.values.checks]]
+name = "identity"
+question = "Is the character the same as the identity reference?"
+required = true
+when = "identity_ref"
+
+[[presets.values.checks]]
+name = "action"
+question = "Is the frame's action or change the one described?"
+required = true
+
+[[presets.values.checks]]
+name = "continuity"
+question = "Apart from the intended change, does it continue the previous frame (same place, clothes, objects, light)?"
+required = true
+when = "previous"
+
+[[presets.values.checks]]
+name = "state_progression"
+question = "Is the resulting state the one this frame should end in?"
+required = true
+when = "state"
+
+[[presets.values.checks]]
+name = "anatomy"
+question = "Are visible hands, limbs and faces anatomically correct?"
+required = true
+when = "character"
+
+[[presets.values.checks]]
+name = "style"
+question = "Does it match the requested art style?"
+required = false

@@ -1,0 +1,89 @@
+# Poses and actions (design §5.1, §10.4). Pose conditioning is used only when a model supports it.
+
+[[presets]]
+id = "neutral-standing"
+version = 1
+name = "Neutral standing"
+description = "Standing upright, arms relaxed slightly away from the body."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "standing upright in a relaxed neutral pose, arms slightly away from the body, full figure visible" }
+
+[[presets]]
+id = "seated"
+version = 1
+name = "Seated"
+description = "Sitting on a chair or surface."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "sitting down, relaxed seated pose" }
+
+[[presets]]
+id = "walking"
+version = 1
+name = "Walking"
+description = "Mid-stride."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "walking, mid-stride, natural arm swing" }
+
+[[presets]]
+id = "reaching"
+version = 1
+name = "Reaching"
+description = "Stretching an arm toward something."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "reaching out with one arm toward an object" }
+
+[[presets]]
+id = "pointing"
+version = 1
+name = "Pointing"
+description = "Pointing with one hand."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "pointing with one hand" }
+
+[[presets]]
+id = "looking-back"
+version = 1
+name = "Looking back"
+description = "Turning the head to look over the shoulder."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "looking back over the shoulder" }
+
+[[presets]]
+id = "holding"
+version = 1
+name = "Holding"
+description = "Holding an object in one or both hands."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "holding an object naturally in the hands" }
+
+[[presets]]
+id = "carrying"
+version = 1
+name = "Carrying"
+description = "Carrying something with weight."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "carrying an object, its weight visible in the posture" }
+
+[[presets]]
+id = "gripping"
+version = 1
+name = "Gripping"
+description = "A firm grip on a handle or tool."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "gripping a handle firmly, fingers wrapped around it" }
+
+[[presets]]
+id = "pushing"
+version = 1
+name = "Pushing"
+description = "Leaning into a push."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "pushing forward with both hands, leaning into it" }
+
+[[presets]]
+id = "pulling"
+version = 1
+name = "Pulling"
+description = "Leaning back into a pull."
+subject_kinds = ["character"]
+prompt = { prefix = "", suffix = "pulling toward the body, leaning back" }

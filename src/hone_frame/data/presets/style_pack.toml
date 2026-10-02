@@ -1,0 +1,82 @@
+# Project style packs (design §5). A pack sets the art style's prompt fragments and the defaults of other
+# categories; each of those can still be chosen on its own. Presets never name a model (design §5.2).
+
+[[presets]]
+id = "cinematic-realism"
+version = 1
+name = "Cinematic realism"
+description = "Photographic realism with film-like light and natural colour: believable skin, fabric and materials, shallow depth of field."
+prompt = { prefix = "Cinematic photograph, realistic,", suffix = "natural colour grading, film still quality, realistic skin and material texture, sharp focus on the subject.", negative = "illustration, cartoon, painting, 3d render, text, watermark, logo" }
+values = { lighting = "neutral-studio", sheet_layout = "four-view-turnaround", character_presentation = "turnaround", environment_presentation = "interior-coverage", asset_presentation = "four-views" }
+
+[[presets]]
+id = "illustrated-storybook"
+version = 1
+name = "Illustrated storybook"
+description = "Warm hand-painted picture-book illustration: soft gouache textures, gentle shapes, readable silhouettes."
+prompt = { prefix = "Children's storybook illustration, hand-painted gouache,", suffix = "soft textured brushwork, warm limited palette, gentle rounded shapes, clear silhouettes.", negative = "photograph, photorealistic, 3d render, text, watermark" }
+values = { lighting = "soft-daylight", sheet_layout = "four-view-turnaround", character_presentation = "turnaround" }
+
+[[presets]]
+id = "clean-2d-animation"
+version = 1
+name = "Clean 2D animation"
+description = "Flat 2D animation look: clean vector line art, flat colour fills, simple shapes that are easy to keep consistent."
+prompt = { prefix = "Flat 2D vector animation style, clean line art, flat colour fills,", suffix = "simple shapes, no shading gradients, crisp outlines, 2D cartoon, not 3D.", negative = "3d render, photograph, realistic lighting, pixar style, text, watermark" }
+values = { lighting = "neutral-studio", sheet_layout = "four-view-turnaround", character_presentation = "turnaround" }
+
+[[presets]]
+id = "cel-shaded-animation"
+version = 1
+name = "Cel-shaded animation"
+description = "Anime-style cel shading: crisp outlines with hard-edged shadow shapes and bright, saturated colour."
+prompt = { prefix = "Cel-shaded animation style, anime key visual,", suffix = "crisp outlines, hard-edged two-tone shadows, saturated colour, clean backgrounds.", negative = "photograph, photorealistic, painterly, text, watermark" }
+values = { lighting = "soft-daylight", sheet_layout = "four-view-turnaround", character_presentation = "turnaround" }
+
+[[presets]]
+id = "inked-comic"
+version = 1
+name = "Inked comic"
+description = "Comic-book panels: bold ink lines, spot blacks, halftone texture and flat colour."
+prompt = { prefix = "Comic book art, bold ink linework,", suffix = "spot blacks, halftone dot texture, flat colours, dynamic panel composition.", negative = "photograph, 3d render, blurry, text, speech bubbles, watermark" }
+values = { lighting = "dramatic-side", sheet_layout = "four-view-turnaround", character_presentation = "turnaround" }
+
+[[presets]]
+id = "painterly-fantasy"
+version = 1
+name = "Painterly fantasy"
+description = "Digital fantasy painting: visible brushwork, atmospheric depth and rich, moody light."
+prompt = { prefix = "Fantasy digital painting, visible painterly brushwork,", suffix = "atmospheric perspective, rich moody light, detailed costume and props.", negative = "photograph, flat vector, cartoon, text, watermark" }
+values = { lighting = "golden-hour", sheet_layout = "four-view-turnaround", character_presentation = "turnaround" }
+
+[[presets]]
+id = "stylised-3d"
+version = 1
+name = "Stylised 3D"
+description = "Stylised 3D animated-film look: soft global illumination, appealing proportions, clean materials."
+prompt = { prefix = "Stylised 3D animated film still, appealing character design,", suffix = "soft global illumination, clean physically based materials, subtle subsurface scattering.", negative = "photograph, 2d, flat, sketch, text, watermark" }
+values = { lighting = "soft-daylight", sheet_layout = "four-view-turnaround", character_presentation = "turnaround" }
+
+[[presets]]
+id = "miniature-stop-motion"
+version = 1
+name = "Miniature stop-motion"
+description = "Hand-made stop-motion puppets and sets: felt, clay and wood textures, tiny-scale depth of field."
+prompt = { prefix = "Stop-motion animation still, handmade miniature set and puppet,", suffix = "felt, clay and wood textures, visible handcrafted details, macro lens depth of field.", negative = "photograph of real people, 2d, flat vector, text, watermark" }
+values = { lighting = "practical-interior", sheet_layout = "four-view-turnaround", character_presentation = "turnaround" }
+
+[[presets]]
+id = "historical-epic"
+version = 1
+name = "Historical epic"
+description = "Period drama with grand scale: authentic costume and architecture, painterly cinematic light."
+prompt = { prefix = "Historical epic film still, period-accurate costume and architecture,", suffix = "grand scale, dramatic cinematic light, weathered authentic materials.", negative = "modern objects, plastic, cartoon, text, watermark" }
+values = { lighting = "dramatic-side", sheet_layout = "four-view-turnaround", character_presentation = "turnaround" }
+
+[[presets]]
+id = "product-studio"
+version = 1
+name = "Product studio"
+description = "Clean commercial product photography: seamless background, controlled reflections, true colour."
+prompt = { prefix = "Commercial product photograph, studio shot,", suffix = "seamless background, controlled soft reflections, true-to-life colour, crisp detail.", negative = "clutter, people, text, watermark, illustration" }
+values = { lighting = "neutral-studio", sheet_layout = "object-detail-board", asset_presentation = "isolated-studio" }

@@ -1,0 +1,60 @@
+"""AC-9: unresolved quality failures stay visible; dependent work waits, unrelated work continues."""
+
+from pathlib import Path
+from typing import Any
+
+import hone_frame as hf
+from hone_frame.testing import FakeModels, judge_answer
+
+from .conftest import run_all
+
+
+def _fail_label(label: str) -> FakeModels:
+    def judge(_i: int, prompt: str, _images: list[Path]) -> dict[str, Any]:
+        failing = f"to show: {label} " in prompt
+        return judge_answer(prompt, fail=("view",) if failing else (), overall=0.7)
+
+    return FakeModels(judge=judge)
+
+
+def test_one_output_never_passes(tmp_path: Path) -> None:
+    ws = hf.Workspace(tmp_path, models=_fail_label("Side"))
+    p = ws.create_project("P")
+    woman = p.add_subject("character", "Woman", description="black hair")
+    run = p.submit(hf.SubjectReferences(subject_id=woman.id, presentation="turnaround"))
+    run_all(p)
+    view = p.run_view(run.id)
+    assert view.status == "needs_review"
+    assert view.accepted == ["o01", "o02", "o03", "o05"] and view.unresolved == ["o04"]
+    side = view.outputs[3]
+    assert side.selected is None and side.best_available in side.candidates
+    assert p.image(side.best_available or "").status == "best_available"
+    assert not any(p.image(c).status in ("picked", "manual_pick") for c in side.candidates)
+
+
+def test_waiting_for_a_hero_while_others_continue(tmp_path: Path) -> None:
+    ws = hf.Workspace(tmp_path, models=_fail_label("Hero"))
+    p = ws.create_project("P")
+    woman = p.add_subject("character", "Woman", description="black hair")
+    cup = p.add_subject("asset", "Cup", description="mug")
+    run_w = p.submit(hf.SubjectReferences(subject_id=woman.id, presentation="turnaround"))
+    run_c = p.submit(hf.SubjectReferences(subject_id=cup.id, presentation="isolated-studio"))
+    run_all(p)
+    view = p.run_view(run_w.id)
+    assert view.status == "needs_review"
+    assert [o.status for o in view.outputs] == ["needs_review", "waiting", "waiting", "waiting", "waiting"]
+    assert "waiting for an accepted Hero" in view.outputs[1].reason
+    assert p.run_view(run_c.id).status == "done"  # unrelated work completed (an object has no "view" check)
+
+    hero = view.outputs[0]
+    failing = p.image(hero.candidates[0])
+    record = p.pick(run_w.id, "o01", failing.id, note="good enough for the views")
+    assert record.status == "done" and record.manual and record.manual_note == "good enough for the views"
+    picked = p.image(failing.id)
+    assert picked.status == "manual_pick"
+    assert picked.evaluation is not None and not picked.evaluation.passed  # the findings stay
+    p.retry(run_w.id)
+    run_all(p)
+    final = p.run_view(run_w.id)
+    assert [o.status for o in final.outputs[1:]] == ["done"] * 4
+    assert final.status == "done"

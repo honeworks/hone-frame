@@ -1,0 +1,57 @@
+# State templates (design §6.1): a named before/after change that keeps the subject's identity.
+
+[[presets]]
+id = "clean-dirty"
+version = 1
+name = "Clean / dirty"
+description = "The same subject clean, then dirty."
+values = { before = "clean", after = "dirty", before_prompt = "clean and tidy", after_prompt = "dirty, stained and smudged" }
+
+[[presets]]
+id = "dry-wet"
+version = 1
+name = "Dry / wet"
+description = "Dry, then soaked: wet hair and fabric, droplets."
+values = { before = "dry", after = "wet", before_prompt = "completely dry", after_prompt = "soaking wet, wet hair and darkened wet fabric, water droplets" }
+
+[[presets]]
+id = "intact-damaged"
+version = 1
+name = "Intact / damaged"
+description = "Whole, then damaged: cracks, chips, dents."
+values = { before = "intact", after = "damaged", before_prompt = "intact and undamaged", after_prompt = "damaged, with cracks, chips and dents" }
+
+[[presets]]
+id = "open-closed"
+version = 1
+name = "Open / closed"
+description = "Open, then closed (a door, a box, a laptop)."
+values = { before = "open", after = "closed", before_prompt = "open", after_prompt = "closed" }
+
+[[presets]]
+id = "empty-full"
+version = 1
+name = "Empty / full"
+description = "Empty, then filled (a cup, a bowl, a shelf)."
+values = { before = "empty", after = "full", before_prompt = "empty", after_prompt = "filled to the top" }
+
+[[presets]]
+id = "on-off"
+version = 1
+name = "On / off"
+description = "Switched on (lit, running), then off."
+values = { before = "on", after = "off", before_prompt = "switched on, lights and displays lit", after_prompt = "switched off, dark and still" }
+
+[[presets]]
+id = "day-night"
+version = 1
+name = "Day / night"
+description = "The same place by day, then at night."
+values = { before = "day", after = "night", before_prompt = "in daylight", after_prompt = "at night, lit by lamps and moonlight" }
+
+[[presets]]
+id = "tidy-disordered"
+version = 1
+name = "Tidy / disordered"
+description = "Tidy, then messy: things moved, scattered, out of place."
+values = { before = "tidy", after = "disordered", before_prompt = "tidy and orderly", after_prompt = "messy and disordered, things scattered and out of place" }

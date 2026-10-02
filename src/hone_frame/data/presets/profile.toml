@@ -1,0 +1,30 @@
+# Generation profiles (design §7.1, decisions D-006). Model ids are hone-models registry ids, all local.
+# A profile describes an intended trade-off; the effective models are shown in every plan and record.
+
+[[presets]]
+id = "draft"
+version = 1
+name = "Draft"
+description = "Fast, inexpensive exploration of composition, pose and look."
+values = { planner = "gemma4-12b", generator = "z-image-turbo", editor = "flux.2-klein-4b", judge = "qwen2.5vl-7b", size = "1024x1024", settings = {} }
+
+[[presets]]
+id = "standard"
+version = 1
+name = "Standard"
+description = "Normal production with a balanced model."
+values = { planner = "gemma4-12b", generator = "flux.2-klein-4b", editor = "flux.2-klein-4b", judge = "qwen2.5vl-7b", size = "1024x1024", settings = {} }
+
+[[presets]]
+id = "final"
+version = 1
+name = "Final"
+description = "The strongest available model and settings, at the export size."
+values = { planner = "gemma4-12b", generator = "qwen-image-edit-2511", editor = "qwen-image-edit-2511", judge = "qwen2.5vl-7b", size = "1024x1024", settings = {} }
+
+[[presets]]
+id = "custom"
+version = 1
+name = "Custom"
+description = "Your own planner, generator, editor, judge, size and settings, saved with the project."
+values = { planner = "gemma4-12b", generator = "z-image-turbo", editor = "flux.2-klein-4b", judge = "qwen2.5vl-7b", size = "1024x1024", settings = {} }
