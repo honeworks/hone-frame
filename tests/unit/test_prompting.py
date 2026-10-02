@@ -139,3 +139,32 @@ def test_a_workspace_dialect_wins_and_bad_sections_are_named(tmp_path: Path) -> 
     )
     with pytest.raises(hf.errors.HoneFrameError, match=r"unknown sections \['colour'\]"):
         Dialects(tmp_path)
+
+
+@pytest.mark.parametrize(
+    ("text", "message"),
+    [
+        ("[dialects.x\n", "not valid"),
+        (
+            '[dialects.x]\nmodels = ["m"]\ncolour = 1\n'
+            "[dialects.x.generate]\nsections = []\nmax_words = 50\n",
+            "not valid",
+        ),
+        (
+            '[dialects.x]\nmodels = ["m"]\ncamera_phrase = "<sks> {angle}"\n'
+            "[dialects.x.generate]\nsections = []\nmax_words = 50\n",
+            "use only {azimuth}, {elevation} and {distance}",
+        ),
+    ],
+)
+def test_bad_workspace_dialects_are_refused(tmp_path: Path, text: str, message: str) -> None:
+    (tmp_path / "prompting.toml").write_text(text)
+    with pytest.raises(hf.errors.HoneFrameError, match=message.replace("{", r"\{").replace("}", r"\}")):
+        Dialects(tmp_path)
+
+
+def test_without_a_generic_dialect_an_unmatched_model_is_an_error(tmp_path: Path) -> None:
+    dialects = Dialects()
+    dialects.all.pop("generic")
+    with pytest.raises(hf.errors.HoneFrameError, match="no 'generic' dialect"):
+        dialects.for_model("gpt-image-1.5")

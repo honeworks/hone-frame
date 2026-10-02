@@ -264,3 +264,9 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
   `distance`; style `short` and per-dialect wording) bumps every camera preset and style pack to version
   2, so runs record that their prompts were written with the new data.
 
+## D-023: the model's prompt guide is shown, not sent to the planner  (2026-10-02)
+
+- **Choice:** since change 0002 the planner gets the dialect's rules instead of the one-line prompt guide
+  from hone-models' registry. `ModelInfo.prompt_guide` stays: the Models view shows it beside each model,
+  and it is where a person reads what a new model wants before writing a dialect for it.
+

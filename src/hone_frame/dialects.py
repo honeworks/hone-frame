@@ -69,6 +69,22 @@ class Dialects:
         return generic
 
 
+CAMERA_PLACEHOLDERS = {"azimuth": "back view", "elevation": "eye-level shot", "distance": "wide shot"}
+
+
+def _check_camera_phrase(dialect: Dialect, origin: str) -> None:
+    """A camera phrase may use only {azimuth}, {elevation} and {distance}; checked when loaded."""
+    if dialect.camera_phrase is None:
+        return
+    try:
+        dialect.camera_phrase.format(**CAMERA_PLACEHOLDERS)
+    except (KeyError, IndexError, ValueError) as exc:
+        raise HoneFrameError(
+            f"dialect {dialect.name!r} in {origin}: camera_phrase {dialect.camera_phrase!r} is not valid "
+            f"({exc!r}); use only {{azimuth}}, {{elevation}} and {{distance}}"
+        ) from exc
+
+
 def _parse(text: str, origin: str) -> dict[str, Dialect]:
     try:
         rows: dict[str, Any] = tomllib.loads(text).get("dialects", {})
@@ -76,6 +92,7 @@ def _parse(text: str, origin: str) -> dict[str, Dialect]:
     except (tomllib.TOMLDecodeError, ValidationError) as exc:
         raise HoneFrameError(f"prompt dialects in {origin} are not valid: {exc}") from exc
     for dialect in found.values():
+        _check_camera_phrase(dialect, origin)
         for mode in ("generate", "view", "compose"):
             rules: ModeRules | None = getattr(dialect, mode)
             unknown = sorted(set(rules.sections) - set(SECTIONS)) if rules else []

@@ -256,3 +256,48 @@ def test_a_planner_answer_over_budget_is_rejected(tmp_path: Path) -> None:
     assert "very very" not in fake.generated[0].prompt
     image = p.image(p.run_view(run.id).outputs[0].candidates[0])
     assert image.generation and (image.generation.dialect, image.generation.mode) == ("z-image", "generate")
+
+
+def test_a_workspace_dialect_changes_the_prompt_sent(tmp_path: Path) -> None:
+    fake = FakeModels()
+    ws = hf.Workspace(tmp_path, models=fake)
+    (tmp_path / "prompting.toml").write_text(
+        '[dialects.z-image]\nmodels = ["z-image-turbo"]\n[dialects.z-image.generate]\n'
+        'sections = ["subject"]\nmax_words = 30\n'
+    )
+    p, woman = _woman(ws)
+    p.update(defaults={"profiles": {"draft": {"planner": None}}})
+    p.submit(
+        hf.SubjectReferences(
+            subject_id=woman, presentation="neutral-full-body", selection=hf.Selection(rounds=1)
+        )
+    )
+    run_all(p)
+    assert fake.generated[0].prompt == "Woman: late twenties, black hair in a bun."
+
+
+def test_planner_rewrites_that_drop_the_camera_or_the_images_are_refused(tmp_path: Path) -> None:
+    from hone_frame.events import read_events
+    from hone_frame.prompts import PlannerAnswer
+    from hone_frame.testing import sample_workspace
+
+    class Forgetful(FakeModels):
+        def ask(self, model_id: str, prompt: str, *, images: list[Path], schema: Any, think: bool) -> Any:
+            if schema is PlannerAnswer:
+                return PlannerAnswer(prompt="A man seen from behind.")
+            return super().ask(model_id, prompt, images=images, schema=schema, think=think)
+
+    p = sample_workspace(tmp_path / "ws", models=Forgetful())
+    for profile, reason in (("final", "camera phrase"), ("draft", "no longer named")):
+        run = p.submit(
+            hf.SubjectReferences(
+                subject_id="char_001",
+                presentation="turnaround",
+                profile=profile,
+                hero_image="img_0001",
+                selection=hf.Selection(rounds=1),
+            )
+        )
+        run_all(p)
+        events = read_events(p.root / "runs" / run.id / "events.jsonl")
+        assert any(e["event"] == "planner_rejected" and reason in str(e["message"]) for e in events), profile

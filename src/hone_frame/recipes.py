@@ -135,7 +135,7 @@ def base_inputs(
     **values: Any,
 ) -> dict[str, Any]:
     """The prompt material of one output: preset wording, the camera's data, the style's forms and, for
-    `who` (subject, state), both the joined text and the structured parts the dialects use (§8.8)."""
+    `who` (subject, state), the structured parts the dialects use (§8.8)."""
     pack = choices.get("style_pack")
     lighting = values.pop("lighting", None) or choices.choice("lighting")
     camera = values.pop("camera", None)
@@ -158,7 +158,6 @@ def base_inputs(
         }
         if pack
         else {},
-        "subjects": [subject_text(s, state) for s, state in who or []],
         "subject_parts": [subject_part(s, state) for s, state in who or []],
         "expression": fragment(choices, "expression", values.pop("expression", None)),
         "pose": fragment(choices, "pose", values.pop("pose", None)),
@@ -176,25 +175,6 @@ def subject_part(subject: Subject, state: str | None = None) -> dict[str, Any]:
         "fields": dict(subject.fields),
         "state": (found.description or found.name) if found else state,
     }
-
-
-def subject_text(subject: Subject, state: str | None = None) -> str:
-    details = "; ".join(f"{k}: {_flat(v)}" for k, v in subject.fields.items() if v)
-    text = f"{subject.name} ({subject.kind}): {subject.description}" + (f"; {details}" if details else "")
-    found = subject.state(state)
-    if state:
-        text += f"; state: {found.description or found.name if found else state}"
-    return text
-
-
-def _flat(value: Any) -> str:
-    if isinstance(value, list | tuple):
-        items: list[Any] = list(value)  # pyright: ignore[reportUnknownArgumentType]
-        return ", ".join(str(v) for v in items)
-    return str(value)
-
-
-# ------------------------------------------------------------------------------------------ recipes
 
 
 def scene_conditions(store: ProjectStore, refs: list[PlannedRef], states: bool) -> list[str]:
