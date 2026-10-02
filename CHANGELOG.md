@@ -29,3 +29,13 @@ All notable changes to this project are documented here. The format follows
 - The default workspace is `~/hone-frame` (was `./hone-frame`), so the dashboard and the CLI find the
   same work from any folder; `HONE_FRAME_HOME` or `--home` still choose another. Work made under the old
   default: move the `./hone-frame` folder to `~/hone-frame`, or point `HONE_FRAME_HOME` at it.
+
+### Fixed
+- The run page of a run that has not started a stage yet no longer drops the connection (the browser
+  showed "NetworkError" right after Generate); any unexpected API error is now a JSON 500 with its
+  message, and the run page retries a failed poll instead of stopping.
+- Editing a subject's states with an unknown kind dropped the connection ("network error"); invalid input
+  is now a 400 that names the field. The subject editor has the kind's fields (appearance, build,
+  distinguishing features, default outfit for a character; anchors, materials... for places and objects)
+  and one row per state with its name, kind and description. A list field is edited one item per line;
+  a field left untouched keeps its stored value and type.

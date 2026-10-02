@@ -76,13 +76,19 @@ async function runPage(main, project, runId) {
       h("section", { class: "panel", "aria-label": "Live activity" }, h("div", { class: "panel-head" }, h("h2", {}, "Live activity")), parts.activity, h("hr", { class: "divider" }), parts.actions)),
     h("section", { class: "panel", style: "margin-top:24px", "aria-label": "Completed outputs" }, parts.outputs));
 
+  let misses = 0;
   async function tick() {
     try {
       const data = await api(`/runs/${project}/${runId}?since=${since}`);
       since = data.next;
+      misses = 0;
       draw(data);
       if (LIVE.has(data.run.status)) timer = setTimeout(tick, 2000);
-    } catch (error) { failure(error); }
+    } catch (error) {
+      misses += 1;  // a dropped poll is retried; a run of failures is shown once
+      if (misses === 3 || error.status === 404) failure(error);
+      if (error.status !== 404) timer = setTimeout(tick, Math.min(2000 * misses, 10000));
+    }
   }
 
   function draw(data) {

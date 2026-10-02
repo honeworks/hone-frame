@@ -1,5 +1,6 @@
 // Library: flat tabs for characters, environments, assets and images, with a details side panel.
-import { api, empty, failure, field, h, icon, img, pill, projectPath, replace, select, state, toast, when } from "../core.js";
+import { api, empty, failure, h, icon, img, pill, projectPath, replace, select, state, toast, when } from "../core.js";
+import { subjectDialog } from "./subject_form.js";
 
 const TABS = [["characters", "Characters", "character"], ["environments", "Environments", "environment"], ["assets", "Assets", "asset"], ["images", "Images", null]];
 
@@ -140,27 +141,6 @@ async function exportSelection(ids) {
     const done = await api(projectPath("/exports"), { method: "POST", body: { kind: "sheet", id: sheet.id, sources: true } });
     location.href = done.url;
   } catch (error) { failure(error); }
-}
-
-function subjectDialog(kind, subject) {
-  const name = h("input", { class: "input", required: true, value: subject?.name || "" });
-  const description = h("textarea", { class: "input", value: subject?.description || "" });
-  const states = h("input", { class: "input", value: (subject?.states || []).map((s) => `${s.name}:${s.kind}`).join(", "), placeholder: "wet:condition, pyjamas:outfit" });
-  const dialog = h("dialog", { "aria-label": subject ? `Edit ${subject.name}` : `Add ${kind}` },
-    h("form", { class: "stack", method: "dialog", onsubmit: async (e) => {
-      e.preventDefault();
-      const parsed = states.value.split(",").map((x) => x.trim()).filter(Boolean).map((x) => { const [n, k] = x.split(":"); return { name: n.trim(), kind: (k || "other").trim() }; });
-      try {
-        if (subject) await api(projectPath(`/subjects/${subject.id}`), { method: "PATCH", body: { name: name.value, description: description.value, states: parsed } });
-        else await api(projectPath("/subjects"), { method: "POST", body: { kind, name: name.value, description: description.value, states: parsed } });
-        dialog.close(); toast(subject ? "Saved as a new version." : "Added."); window.dispatchEvent(new HashChangeEvent("hashchange"));
-      } catch (error) { failure(error); }
-    } }, h("h2", {}, subject ? `Edit ${subject.name}` : `Add ${kind}`), field("Name", name), field("Description", description, "Appearance, materials, distinguishing features: what must stay the same."),
-      field("States", states, "name:kind pairs; kinds are outfit, expression, condition, lighting, other."),
-      h("div", { class: "row" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", onclick: () => dialog.close() }, "Cancel"), h("button", { class: "btn primary", type: "submit" }, subject ? "Save version" : "Add"))));
-  document.body.append(dialog);
-  dialog.addEventListener("close", () => dialog.remove());
-  dialog.showModal();
 }
 
 async function generateRefs(s) {

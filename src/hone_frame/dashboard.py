@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import mimetypes
 import threading
 from http import HTTPStatus
@@ -11,6 +12,8 @@ from importlib import resources
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit
+
+from pydantic import ValidationError
 
 from hone_frame._dashboard_api import ApiError, route
 from hone_frame.engine import Runner
@@ -30,6 +33,7 @@ PAGE_CSP = (  # inline styles carry no data; scripts only from the page itself (
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self'"
 )
+LOG = logging.getLogger("hone_frame.dashboard")
 MAX_BODY = 64 * 1024 * 1024
 
 
@@ -138,6 +142,12 @@ class Handler(BaseHTTPRequestHandler):
             result = route(self.ws, method, path.removeprefix("/api"), query, body)
         except ApiError as exc:
             self._json(exc.status, {"error": str(exc)})
+        except ValidationError as exc:  # a body that does not fit the record: say which field and why
+            problems = [f"{'.'.join(map(str, e['loc']))}: {e['msg']}" for e in exc.errors()]
+            self._json(
+                HTTPStatus.BAD_REQUEST,
+                {"error": "invalid input: " + "; ".join(problems), "problems": problems},
+            )
         except InvalidRequest as exc:
             self._json(HTTPStatus.BAD_REQUEST, {"error": str(exc), "problems": exc.problems})
         except NotFound as exc:
@@ -146,6 +156,11 @@ class Handler(BaseHTTPRequestHandler):
             self._json(HTTPStatus.CONFLICT, {"error": str(exc)})
         except HoneFrameError as exc:
             self._json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+        except Exception as exc:
+            LOG.exception("dashboard API %s %s failed", method, path)
+            self._json(
+                HTTPStatus.INTERNAL_SERVER_ERROR, {"error": f"internal error: {type(exc).__name__}: {exc}"}
+            )
         else:
             self._json(HTTPStatus.OK, result)
 
