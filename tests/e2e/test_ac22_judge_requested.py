@@ -10,7 +10,7 @@ def test_the_judge_is_told_what_was_asked(rostam_project: hf.ProjectStore) -> No
     plan = rostam_project.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["poses", "turnaround"]))
     running = next(o for o in plan.outputs if o.item == "Running")
     prompt = judge_prompt(running, checks_for(rostam_project.workspace.presets, running), "a man standing", 1)
-    assert "Requested pose: running, mid-stride" in prompt and "Requested background:" in prompt
+    assert "Requested pose: running fast, leaning forward" in prompt and "Requested background:" in prompt
     assert "Requested: empty hands" in prompt
     back = next(o for o in plan.outputs if o.item == "Back")
     names = [c["name"] for c in checks_for(rostam_project.workspace.presets, back)]
