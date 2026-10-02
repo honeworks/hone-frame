@@ -165,3 +165,14 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
 - **Choice:** a subject's section in the Library lists images whose only subject it is; images of several
   subjects (scenes, interactions) are under Images (kind "scene") and on their scene.
 - **Reason:** a scene shot is not a reference image of each character in it.
+
+## D-014: HoneModels starts a local server that is not running and keeps it  (2026-10-02)
+
+- **Question:** hone-models' ComfyUI provider requires a running server (`mk.session("comfyui")` starts
+  one from `HONE_COMFYUI_START`); a run makes many image calls.
+- **Choice:** on the first call to an Ollama or ComfyUI model, `HoneModels` enters `mk.session(provider)`
+  and keeps it until the process ends (`close()`, or at exit). A server that was already running is used
+  and never stopped. Models are still freed after every call by hone-models.
+- **Reason:** starting ComfyUI once per call would cost tens of seconds per image; the dashboard is a
+  long-running process anyway.
+

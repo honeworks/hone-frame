@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import atexit
+import threading
+from contextlib import ExitStack
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -17,7 +20,32 @@ LOCAL_PROVIDERS = {"ollama", "comfyui", "command", "faster_whisper", "kokoro", "
 
 
 class HoneModels:
-    """Every call goes through `mk.image` / `mk.text`; GPU leases and records are hone-models' (§7.2)."""
+    """Every call goes through `mk.image` / `mk.text`; GPU leases and records are hone-models' (§7.2).
+
+    A local server (Ollama, ComfyUI) that is not running is started on first use through
+    `mk.session(provider)` and kept for the life of the process; one that was already running is left
+    alone (decisions D-014)."""
+
+    def __init__(self) -> None:
+        self._servers = ExitStack()
+        self._open: set[str] = set()
+        self._lock = threading.Lock()
+        atexit.register(self.close)
+
+    def close(self) -> None:
+        """Stop the servers this object started (models are freed after every call anyway)."""
+        with self._lock:
+            self._servers.close()
+            self._open.clear()
+
+    def _server(self, model_id: str) -> None:
+        provider = mk.registry.load().get(model_id).provider
+        if provider not in ("ollama", "comfyui") or provider in self._open:
+            return
+        with self._lock:
+            if provider not in self._open:
+                self._servers.enter_context(mk.session(provider))
+                self._open.add(provider)
 
     def generate(
         self,
@@ -30,6 +58,7 @@ class HoneModels:
         inputs: dict[str, Any],
     ) -> Generated:
         try:
+            self._server(model_id)
             client = mk.image(model_id)
             accepted = set(client.inputs)
             kwargs = {k: v for k, v in inputs.items() if k in accepted and v is not None}
@@ -55,6 +84,7 @@ class HoneModels:
         content: list[dict[str, Any]] = [{"type": "text", "text": prompt}]
         content += [{"type": "image", "path": str(p)} for p in images]
         try:
+            self._server(model_id)
             result = mk.text(model_id).complete(
                 [{"role": "user", "content": content}], schema=schema, think=think, temperature=0.2
             )

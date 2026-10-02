@@ -24,6 +24,7 @@ def test_generate_maps_results_and_failures(tmp_path: Path, monkeypatch: pytest.
     fake = FakeMedia.like("z-image-turbo")
     monkeypatch.setattr(models_module.mk, "image", lambda _model_id: fake)
     port = HoneModels()
+    monkeypatch.setattr(port, "_server", lambda _model_id: None)  # no ComfyUI server in tests
     done = port.generate(
         "z-image-turbo",
         "a cup",
