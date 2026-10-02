@@ -73,3 +73,26 @@ def test_a_failing_judge_blocks_the_auto_pick(ws: hf.Workspace, fake: FakeModels
     assert view.outputs[0].status == "needs_review"
     assert "no candidate has an evaluation" in view.outputs[0].reason
     assert json.loads((p.root / "images" / "img_0001.json").read_text())["evaluation"] is None
+
+
+class NoInfo(FakeModels):
+    broken = False  # the registry breaks after the plan was made
+
+    def info(self, model_id: str) -> hf.ModelInfo:
+        if self.broken and model_id == "z-image-turbo":
+            raise hf.ModelFailure("the registry could not be read", transient=False)
+        return super().info(model_id)
+
+
+def test_model_info_unavailable_is_recorded(tmp_path: Path) -> None:
+    fake = NoInfo()
+    ws = hf.Workspace(tmp_path, models=fake)
+    p, run = _one(ws)
+    fake.broken = True
+    run_all(p)
+    events = _events(p, run, "model_info_unavailable")
+    assert len(events) == 1 and "registry could not be read" in str(events[0]["message"])
+    view = p.run_view(run)
+    assert view.status == "done"
+    assert "none given" in next(c.prompt for c in fake.asked if "write the prompt" in c.prompt)
+    assert all("local" not in e for e in _events(p, run, "generated")) and view.usage["gpu_s"] is None
