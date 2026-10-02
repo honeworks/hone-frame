@@ -19,7 +19,9 @@ if TYPE_CHECKING:
     from hone_frame.store import ProjectStore
     from hone_frame.workspace import Workspace
 
-OutputStatus = Literal["queued", "running", "done", "needs_review", "waiting", "failed", "paused", "canceled"]
+OutputStatus = Literal[
+    "queued", "running", "done", "needs_review", "waiting", "failed", "paused", "canceled", "replaced"
+]
 RunStatus = Literal["queued", "pausing", "running", "paused", "canceled", "failed", "needs_review", "done"]
 ACTIVE: set[str] = set()  # runs this process is executing right now (engine.Runner)
 STAGES = ("planning", "generating", "judging", "selecting", "refining", "composing", "exporting")
@@ -53,6 +55,7 @@ class OutputRecord(Record):
     manual_at: str | None = None
     manual_note: str = ""
     reason: str = ""
+    replaced_by: dict[str, str] | None = None  # {"run", "output"}: a person asked for it again
     retries: int = 0
     error: str | None = None
     prompt: str = ""
@@ -210,7 +213,7 @@ def view(store: ProjectStore, run: RunRecord, *, durations: dict[Any, list[float
         current=current if run_status in ("running", "pausing") else None,
         outputs=outs,
         accepted=[o.id for o in outs if o.status == "done"],
-        unresolved=[o.id for o in outs if o.status != "done"],
+        unresolved=[o.id for o in outs if o.status not in ("done", "replaced")],
         progress={
             "done": min(finished, planned),
             "planned": planned,
@@ -243,7 +246,7 @@ def _done_per_output(events: list[dict[str, Any]], outs: list[OutputRecord]) -> 
         elif e["event"] in ("judged", "judge_failed"):
             out["judged"] += 1
     for o in outs:
-        done[o.id]["finished"] = int(o.status in ("done", "needs_review", "failed"))
+        done[o.id]["finished"] = int(o.status in ("done", "needs_review", "failed", "replaced"))
     return done
 
 

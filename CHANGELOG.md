@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- "Generate again" for one output on the run page (also "None of these" when choosing a candidate):
+  a new run for that output with a note added to its prompt and, optionally, another profile and number
+  of rounds; the old output becomes "Replaced" and keeps its images.
 - The repository skeleton: packaging, quality gates (`scripts/check.sh`), CI, the design folder and the
   contributor workflow.
 - The first-product design: [0001](design/changes/0001-initial-design.md), `design/current.md`, the

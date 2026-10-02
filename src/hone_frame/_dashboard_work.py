@@ -8,7 +8,7 @@ from typing import Any
 
 from hone_frame._dashboard_api import ID, ApiError, P, api, json_body, subject_card
 from hone_frame._dashboard_data import image_card, run_page, run_summary
-from hone_frame.records import Scene, Sequence, SheetRecipe
+from hone_frame.records import Scene, Selection, Sequence, SheetRecipe
 from hone_frame.runs import all_runs, view
 from hone_frame.workspace import Workspace
 
@@ -117,7 +117,16 @@ def run_action(
         )
         return record.model_dump(mode="json")
     if action == "rerun":
-        return run_summary(store.rerun(run_id, str(data.get("output"))))
+        selection = _with_rounds(store.run_view(run_id).selection, data.get("rounds"))
+        return run_summary(
+            store.rerun(
+                run_id,
+                str(data.get("output")),
+                note=str(data.get("note") or ""),
+                profile=data.get("profile") or None,
+                selection=selection,
+            )
+        )
     return run_summary(getattr(store, action)(run_id))
 
 
@@ -136,3 +145,13 @@ def export(ws: Workspace, project_id: str, *, body: Any, **_: Any) -> dict[str, 
     if kind not in makers:
         raise ApiError(f"export kind must be one of {sorted(makers)}")
     return {"file": makers[kind]().name, "url": f"/downloads/{out.name}"}
+
+
+def _with_rounds(current: dict[str, Any], rounds: Any) -> Selection | None:
+    """The run's selection with another number of rounds, or None to keep it."""
+    if rounds in (None, ""):
+        return None
+    try:
+        return Selection.model_validate(current | {"rounds": int(rounds)})
+    except (TypeError, ValueError) as exc:  # a ValidationError is a ValueError
+        raise ApiError("rounds must be a whole number from 1 to 10") from exc

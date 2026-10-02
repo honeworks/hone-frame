@@ -1,5 +1,5 @@
 // Queue: the run table, and the run page of mockup 1 (stages, current task, evaluation, live activity).
-import { api, clock, duration, empty, failure, h, icon, img, pill, progressBar, range, replace, state, toast, words } from "../core.js";
+import { api, clock, duration, empty, failure, field, h, icon, img, pill, presetOptions, progressBar, range, replace, select, state, toast, words } from "../core.js";
 
 const LIVE = new Set(["running", "pausing", "queued"]);
 
@@ -210,16 +210,16 @@ function completed(project, data) {
 function outputCard(project, run, o, images) {
   const card = images[o.selected || o.best_available] || images[o.candidates[o.candidates.length - 1]];
   const pickable = o.status === "needs_review" && o.candidates.length;
+  const redoable = ["done", "needs_review", "failed"].includes(o.status) && !LIVE.has(run.status);
   return h("div", { class: "cand" }, h("div", { class: "thumb" }, card ? img(card) : h("span", { class: "caption" }, words(o.status))),
     h("div", { class: "stack", style: "padding:8px 12px;gap:4px" },
       h("div", { class: "row" }, h("strong", {}, o.label), h("span", { class: "spacer" }), pill(o.status)),
       card ? h("span", { class: "caption mono" }, `${card.width} × ${card.height}`) : null,
       o.reason ? h("span", { class: "caption", style: "white-space:normal" }, o.reason) : null,
-      pickable ? pickButton(project, run, o, images) : null));
-}
-
-function pickButton(project, run, o, images) {
-  return h("button", { class: "btn small", onclick: () => pickDialog(project, run, o, images) }, "Choose a candidate");
+      o.replaced_by ? h("a", { class: "caption", href: `#/queue/${project}/${o.replaced_by.run}` }, "Open the new attempt") : null,
+      h("div", { class: "row", style: "gap:6px" },
+        pickable ? h("button", { class: "btn small", onclick: () => pickDialog(project, run, o, images) }, "Choose a candidate") : null,
+        redoable ? h("button", { class: "btn small", onclick: () => redoDialog(project, run, o) }, "Generate again") : null)));
 }
 
 function pickDialog(project, run, o, images) {
@@ -238,7 +238,36 @@ function pickDialog(project, run, o, images) {
       } }, h("div", { class: "thumb" }, img(card)), h("div", { class: "foot" }, h("span", { class: "mono caption" }, id),
         card?.overall !== null && card ? h("span", { class: "mono" }, card.overall.toFixed(2)) : null));
     })),
-    note, h("div", { class: "row", style: "margin-top:12px" }, h("span", { class: "spacer" }), h("button", { class: "btn", onclick: () => dialog.close() }, "Close")));
+    note,
+    h("div", { class: "row", style: "margin-top:12px" },
+      h("button", { class: "btn", onclick: () => { dialog.close(); redoDialog(project, run, o); } }, "None of these: generate again"),
+      h("span", { class: "spacer" }), h("button", { class: "btn", onclick: () => dialog.close() }, "Close")));
+  document.body.append(dialog);
+  dialog.addEventListener("close", () => dialog.remove());
+  dialog.showModal();
+}
+
+function redoDialog(project, run, o) {
+  const note = h("textarea", { class: "input", placeholder: "What was wrong and what you want instead, e.g. seen from directly behind, no face visible, both hands empty" });
+  const profile = select(presetOptions("profile"), run.profile.id, { "aria-label": "Profile" });
+  const rounds = h("input", { class: "input", type: "number", min: 1, max: 10, value: run.selection.rounds, "aria-label": "Rounds" });
+  const dialog = h("dialog", { "aria-label": `Generate ${o.label} again` },
+    h("form", { class: "stack", onsubmit: async (event) => {
+      event.preventDefault();
+      try {
+        const redo = await api(`/runs/${project}/${run.id}/rerun`, { method: "POST",
+          body: { output: o.id, note: note.value, profile: profile.value, rounds: Number(rounds.value) } });
+        dialog.close();
+        toast(`${o.label}: a new attempt is queued.`);
+        location.hash = `#/queue/${redo.project}/${redo.id}`;
+      } catch (error) { failure(error); }
+    } },
+    h("h2", {}, `Generate ${o.label} again`),
+    h("p", { class: "caption", style: "margin:0" }, "A new run for this one output, with the same subject and references. The current candidates stay in the library with their findings."),
+    field("What should change", note, "Added to the prompt."),
+    h("div", { class: "row", style: "flex-wrap:nowrap" }, field("Profile", profile, "Final uses Qwen-Image-Edit, which has camera-angle control (good for side and back views)."), field("Rounds", rounds)),
+    h("div", { class: "row" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", onclick: () => dialog.close() }, "Cancel"),
+      h("button", { class: "btn primary", type: "submit" }, "Generate again"))));
   document.body.append(dialog);
   dialog.addEventListener("close", () => dialog.remove());
   dialog.showModal();

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from hone_frame.records import Selection
     from hone_frame.requests import Plan, RequestBase
     from hone_frame.runs import OutputRecord, RunView
     from hone_frame.store import ProjectStore
@@ -55,10 +56,18 @@ class ProjectOperations:
 
         return retry(self._store, run_id)
 
-    def rerun(self, run_id: str, output_id: str) -> RunView:
+    def rerun(
+        self,
+        run_id: str,
+        output_id: str,
+        *,
+        note: str = "",
+        profile: str | None = None,
+        selection: Selection | None = None,
+    ) -> RunView:
         from hone_frame.control import rerun
 
-        return rerun(self._store, run_id, output_id)
+        return rerun(self._store, run_id, output_id, note=note, profile=profile, selection=selection)
 
     def pick(self, run_id: str, output_id: str, image_id: str, *, note: str = "") -> OutputRecord:
         from hone_frame.control import pick

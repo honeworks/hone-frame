@@ -51,7 +51,7 @@ def plan(store: ProjectStore, request: RequestBase | dict[str, Any]) -> Plan:
             errors=[str(exc)],
         )
     errors += built.errors
-    checker = _ModelCheck(store, profile, errors, warnings)
+    checker = ModelCheck(store, profile, errors, warnings)
     outputs = [checker.finish(o) for o in built.outputs]
     checker.judge(selection.auto_judge)
     if selection.auto_pick and not selection.auto_judge:
@@ -75,7 +75,7 @@ def plan(store: ProjectStore, request: RequestBase | dict[str, Any]) -> Plan:
     return result
 
 
-class _ModelCheck:
+class ModelCheck:
     """Chooses each output's model and checks what the chosen models can take (design §7, §10.2)."""
 
     def __init__(
