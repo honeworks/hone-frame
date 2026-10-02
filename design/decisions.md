@@ -187,3 +187,28 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
   package could not open a single image, so an extra would only move the error later. Pillow ships
   wheels for every supported platform and has no native dependency to install.
 
+## D-016: hone-frame ships its own hone-models entries  (2026-10-02)
+
+- **Question:** the reference-editing models (flux.2-klein-4b, qwen-image-edit-2511) are in hone-models'
+  catalog without a ComfyUI workflow; their proven workflows lived only in another project's
+  `hone-models.toml`, so hone-frame worked only when started in that project's folder.
+- **Choice:** `src/hone_frame/data/hone-models.toml` and `data/workflows/` hold those entries (plus
+  `flux.2-klein-4b-text`). `HoneModels` loads hone-models' registry with this file and then
+  `<home>/hone-models.toml` (when it exists) as explicit paths, so the entries do not depend on the
+  working folder, and a workspace can still override any of them. Every call passes that registry to
+  `mk.image` / `mk.text`. They are still hone-models entries, called only through hone-models.
+- **Reason:** the owner wants hone-frame fully independent of other projects. The entries move into
+  hone-models' catalog once it ships these workflows; then this file shrinks to nothing.
+
+## D-017: flux.2-klein-4b gets every reference slot filled  (2026-10-02)
+
+- **Question:** the flux.2-klein-4b workflow has two reference slots. With one reference, hone-models
+  removes the second `LoadImage` and its links, but the `VAEEncode` behind it stays without pixels and
+  ComfyUI refuses the graph (seen on the real model: "node 14 (VAEEncode), input 'pixels': Required input
+  is missing").
+- **Choice:** `HoneModels` repeats the last reference into the free slots for the models in
+  `models.FILL_SLOTS` (only flux.2-klein-4b). The same picture twice is a stronger hint for that
+  reference and changes nothing else; the record still lists the references that were chosen.
+- **Reason:** the real fix belongs to hone-models (drop an unused slot's whole chain up to an optional
+  input); until then this keeps the editor usable with one reference.
+

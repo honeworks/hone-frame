@@ -14,9 +14,12 @@ info = fake.info("flux.2-klein-4b")
 print(info.kind, info.max_references, info.local)
 ```
 
-- Model ids are hone-models registry ids (`hone-models models list`). A project's own
-  `hone-models.toml`, in the folder where you start hone-frame, adds or overrides entries. A ComfyUI
-  model without a workflow in the registry shows as unavailable, and the plan says which role cannot run.
+- Model ids are hone-models registry ids (`hone-models models list`). hone-frame ships its own entries
+  for the reference-editing models (`flux.2-klein-4b`, `flux.2-klein-4b-text`, `qwen-image-edit-2511`,
+  with their ComfyUI workflows), so it works from any folder. To add or change models for one
+  workspace, put a `hone-models.toml` in the workspace folder (`--home`); it is loaded last and wins.
+  A ComfyUI model without a workflow shows as unavailable, and the plan says which role cannot run.
+- Local servers start by themselves: Ollama, and ComfyUI from `HONE_COMFYUI_START`, on first use.
 - Thinking is off for planners and judges (`planner_think`, `judge_think` in a profile).
 - `hf.testing.FakeModels` writes small PNGs, scripts judge verdicts (`judge=`), failures
   (`fail_generate`, `fail_ask`) and model capabilities (`infos=`). Tests and examples use it.

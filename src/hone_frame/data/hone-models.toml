@@ -1,0 +1,63 @@
+# hone-frame's own hone-models registry entries (design §7.3, decisions D-016). hone-frame loads this file
+# on top of hone-models' packaged catalog, so it works from any folder; `<home>/hone-models.toml`, when it
+# exists, is loaded after it and wins. `workflow` paths are relative to this file. Each workflow was
+# proven on the reference machine (8 GB GPU); the entries move to hone-models' catalog once it ships them.
+# `vram_gb` is set near the whole card on purpose: it makes hone-models' GPU scheduler unload the planner
+# and judge (Ollama) before an image job; without it a loaded judge left the job out of memory.
+
+# Qwen-Image-Edit 2511 (Q4 GGUF, the ComfyUI-GGUF node) with its Multiple-Angles LoRA and lightx2v's
+# 8-step Lightning LoRA (40 plain steps took about 8 minutes per picture; `lightning = 0.0, steps = 40,
+# cfg = 4.0` gives the plain model back). Up to three references; without any it draws from text.
+[models."qwen-image-edit-2511"]
+workflow = "workflows/qwen-image-edit-2511.json"
+outputs = ["40"]
+defaults = { size = "1024x1024", steps = 8, cfg = 1.0 }
+max_timeout_s = 3600.0
+capabilities = { vram_gb = 7.6 }
+[models."qwen-image-edit-2511".inputs]
+prompt = "20.prompt"
+negative = "21.prompt"
+seed = "31.seed"
+steps = "31.steps"
+cfg = "31.cfg"
+lora_strength = "2.strength_model"
+lightning = "7.strength_model"
+references = ["11.image", "12.image", "13.image"]
+width = "30.width"
+height = "30.height"
+
+# FLUX.2 klein 4B with references (generation and reference editing, 4 steps); two reference slots.
+[models."flux.2-klein-4b"]
+workflow = "workflows/flux.2-klein-4b.json"
+outputs = ["27"]
+defaults = { size = "1024x1024", steps = 4 }
+max_timeout_s = 1800.0
+capabilities = { max_references = 2, vram_gb = 7.2 }
+[models."flux.2-klein-4b".inputs]
+prompt = "4.text"
+seed = "23.noise_seed"
+steps = "21.steps"
+references = ["11.image", "13.image"]
+width = ["20.width", "21.width"]
+height = ["20.height", "21.height"]
+
+# FLUX.2 klein 4B from the prompt alone (the same model files, no reference nodes).
+[models."flux.2-klein-4b-text"]
+provider = "comfyui"
+kind = "image"
+workflow = "workflows/flux.2-klein-4b-text.json"
+outputs = ["27"]
+defaults = { size = "1024x1024", steps = 4 }
+max_timeout_s = 1800.0
+capabilities = { max_references = 0, vram_gb = 7.2, license = "Apache-2.0", commercial_use = true }
+install = { source = "https://huggingface.co/black-forest-labs/FLUX.2-klein-4B", size_gb = 16.1, tier = 1, files = [
+  { repo = "Comfy-Org/vae-text-encorder-for-flux-klein-4b", file = "split_files/diffusion_models/flux-2-klein-4b.safetensors", to = "diffusion_models" },
+  { repo = "Comfy-Org/vae-text-encorder-for-flux-klein-4b", file = "split_files/text_encoders/qwen_3_4b.safetensors", to = "text_encoders" },
+  { repo = "Comfy-Org/vae-text-encorder-for-flux-klein-4b", file = "split_files/vae/flux2-vae.safetensors", to = "vae" },
+] }
+[models."flux.2-klein-4b-text".inputs]
+prompt = "4.text"
+seed = "23.noise_seed"
+steps = "21.steps"
+width = ["20.width", "21.width"]
+height = ["20.height", "21.height"]

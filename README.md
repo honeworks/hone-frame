@@ -30,7 +30,7 @@ Not on PyPI yet. From GitHub (it brings hone-flow, hone-models and hone-select f
 
 ```bash
 uv add "hone-frame[cli] @ git+https://github.com/honeworks/hone-frame"
-hone-frame dashboard          # the local dashboard on http://127.0.0.1:8792
+hone-frame dashboard --home ./studio   # the local dashboard on http://127.0.0.1:8792, from any folder
 ```
 
 ## Quickstart

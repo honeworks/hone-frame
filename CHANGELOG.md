@@ -23,3 +23,6 @@ All notable changes to this project are documented here. The format follows
 - The deterministic sheet compositor and zip exports (sheets, reference packs, sequences, projects).
 - The Studio Minimal dashboard (`hone-frame dashboard`) and the CLI (extra `cli`).
 - `hone_frame.testing.FakeModels` and `sample_workspace`; docs and runnable examples.
+- hone-frame's own hone-models entries for the reference-editing models (flux.2-klein-4b,
+  qwen-image-edit-2511) with their workflows, and `<home>/hone-models.toml` per workspace: hone-frame no
+  longer depends on the folder it starts in.

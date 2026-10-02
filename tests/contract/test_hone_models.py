@@ -27,7 +27,7 @@ def _isolated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_generate_maps_results_and_failures(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     fake = FakeMedia.like("z-image-turbo")
-    monkeypatch.setattr(models_module.mk, "image", lambda _model_id: fake)
+    monkeypatch.setattr(models_module.mk, "image", lambda _model_id, **_: fake)
     port = HoneModels()
     monkeypatch.setattr(port, "_server", lambda _model_id: None)  # no ComfyUI server in tests
     done = port.generate(
@@ -84,7 +84,10 @@ def test_info_and_available() -> None:
     assert "size" in image.inputs and image.prompt_guide
     judge = port.info("qwen2.5vl-7b")
     assert judge.kind == "chat" and judge.vision is True
-    assert not port.info("flux.2-klein-4b").available or port.info("flux.2-klein-4b").note  # no workflow yet
+    for model_id, refs in (("flux.2-klein-4b", 2), ("qwen-image-edit-2511", 3), ("flux.2-klein-4b-text", 0)):
+        info = port.info(model_id)  # from hone-frame's own registry file, in any working folder
+        assert info.max_references == refs and info.note != "no ComfyUI workflow in the registry yet"
+        assert ("references" in info.inputs) is (refs > 0)
     assert {m.id for m in port.available("image")} >= {"z-image-turbo"}
     with pytest.raises(NotFound):
         port.info("no-such-model")
@@ -167,3 +170,33 @@ def test_a_server_that_fails_to_start_is_tried_again(tmp_path: Path, monkeypatch
     port.generate("z-image-turbo", "a cup", out=tmp_path / "b.png", seed=2, references=[], inputs={})
     assert sessions.entered == ["comfyui"]  # the failed start was not remembered as open
     port.close()
+
+
+def test_a_workspace_registry_file_wins(tmp_path: Path) -> None:
+    import hone_frame as hf
+
+    home = tmp_path / "studio"
+    home.mkdir()
+    (home / "hone-models.toml").write_text(
+        '[models."flux.2-klein-4b"]\ncapabilities = { max_references = 1 }\n'
+    )
+    assert hf.Workspace(home).models.info("flux.2-klein-4b").max_references == 1
+    assert hf.Workspace(tmp_path / "other").models.info("flux.2-klein-4b").max_references == 2
+
+
+def test_flux_reference_slots_are_filled(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fake = FakeMedia.like("flux.2-klein-4b", registry=HoneModels().registry)
+    monkeypatch.setattr(models_module.mk, "image", lambda _model_id, **_: fake)
+    port = HoneModels()
+    monkeypatch.setattr(port, "_server", lambda _model_id: None)
+    Image.new("RGB", (8, 8)).save(tmp_path / "hero.png")
+    port.generate(
+        "flux.2-klein-4b",
+        "a view",
+        out=tmp_path / "v.png",
+        seed=1,
+        references=[tmp_path / "hero.png"],
+        inputs={},
+    )
+    sent = fake.calls[-1][1]["references"]
+    assert [Path(p).name for p in sent] == ["hero.png", "hero.png"]
