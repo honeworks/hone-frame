@@ -10,7 +10,7 @@ export async function render(main, [tab = "characters", id]) {
   const current = tab === "search" ? "images" : tab;
   replace(main,
     h("div", { class: "page-head" }, h("div", {}, h("div", { class: "crumbs caption" }, h("a", { href: "#/projects" }, "Projects"), " / ", projectName()), h("h1", {}, projectName())),
-      h("a", { class: "btn primary", href: "#/create" }, "Generate")),
+      h("a", { class: "btn", href: "#/characters" }, "Characters")),
     h("nav", { class: "tabs", "aria-label": "Library" }, TABS.map(([t, label]) => h("a", { href: `#/library/${t}`, "aria-current": t === current ? "page" : null }, label)),
       h("a", { href: "#/scenes" }, "Scenes")),
     h("div", { class: "layout-side" }, body, side));

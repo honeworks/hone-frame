@@ -98,6 +98,8 @@ def image_fields(
         "status": "candidate",
         "profile": profile.id,
         "source": "promoted" if out.parent else "generated",
+        "pack": out.pack,
+        "item": out.item,
     }
 
 

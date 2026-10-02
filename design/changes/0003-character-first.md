@@ -2,7 +2,7 @@
 
 ## Status
 
-`accepted` 2026-10-02, requested by the owner after making the first real character (Rostam). Their
+`implemented` 2026-10-02 (accepted the same day), requested by the owner after making the first real character (Rostam). Their
 words, condensed: the expression issue (a new hero is drawn for every pack); poses and expressions get
 backgrounds and must be on white; "the dashboard flow is not clear"; generating a character means
 generating **everything** (expressions, poses, clothing...) at once, with only the option to leave

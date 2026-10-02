@@ -2,10 +2,10 @@
 
 [[presets]]
 id = "neutral-studio"
-version = 1
+version = 2
 name = "Neutral studio"
-description = "Even, soft, shadowless light on a plain light-grey background: the default for reference images."
-prompt = { prefix = "", suffix = "even soft neutral studio lighting, plain light grey background." }
+description = "Even, soft, shadowless studio light: the default for reference images, which stand on a plain white background (change 0003)."
+prompt = { prefix = "", suffix = "even soft neutral studio lighting, no cast shadows." }
 
 [[presets]]
 id = "soft-daylight"

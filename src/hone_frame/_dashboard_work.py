@@ -8,6 +8,7 @@ from typing import Any
 
 from hone_frame._dashboard_api import ID, ApiError, P, api, json_body, subject_card
 from hone_frame._dashboard_data import image_card, run_page, run_summary
+from hone_frame.characters import suggest_assets
 from hone_frame.records import Scene, Selection, Sequence, SheetRecipe
 from hone_frame.runs import all_runs, view
 from hone_frame.workspace import Workspace
@@ -22,7 +23,14 @@ def scenes(ws: Workspace, project_id: str, **_: Any) -> list[dict[str, Any]]:
 
 @api("POST", P + "/scenes")
 def save_scene(ws: Workspace, project_id: str, *, body: Any, **_: Any) -> dict[str, Any]:
-    return ws.project(project_id).save_scene(Scene.model_validate(json_body(body))).model_dump(mode="json")
+    """Save a scene; with `"suggest": true` the planner first adds the characters' own assets it uses
+    (change 0003)."""
+    store = ws.project(project_id)
+    data = json_body(body)
+    scene, why = Scene.model_validate(data), ""
+    if data.get("suggest"):
+        scene, why = suggest_assets(store, scene)
+    return store.save_scene(scene).model_dump(mode="json") | {"suggestion": why}
 
 
 @api("GET", P + "/scenes/" + ID)

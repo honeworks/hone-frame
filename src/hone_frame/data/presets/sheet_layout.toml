@@ -55,3 +55,10 @@ version = 1
 name = "Custom contact grid"
 description = "Any images in a square-ish grid."
 values = { columns = -1, cell = 1.0, label_style = "under" }
+
+[[presets]]
+id = "character-model-sheet"
+version = 1
+name = "Character model sheet"
+description = "A character's full figures in one row (the hero and turnaround), the face close-ups below, and a text panel (change 0003). `columns` is how many images are full figures."
+values = { columns = 5, cell = 0.58, label_style = "under" }

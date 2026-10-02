@@ -10,6 +10,7 @@ from hone_frame.profiles import PresetChoices
 from hone_frame.records import Scene, Subject, SubjectLink
 from hone_frame.references import scene_refs
 from hone_frame.requests import (
+    CharacterPacks,
     Coverage,
     Interaction,
     PlannedOutput,
@@ -33,12 +34,22 @@ JUDGING = {
 }
 HERO_CAMERA = {"character": "front", "environment": "establishing", "asset": "front"}
 CAMERA_DATA = {"view", "faces_away", "azimuth", "elevation", "distance"}
+WHITE = "a plain pure white background, no scenery, no floor, nothing else in the picture"  # change 0003
 REAR_CAMERAS = {"rear"}  # views where a face is not expected: identity is judged from behind (D-020)
 
 
 def view_flags(camera: str | None) -> list[str]:
     """Judging conditions that come from the camera."""
     return ["rear"] if camera in REAR_CAMERAS else []
+
+
+def reference_look(kind: str) -> tuple[dict[str, Any], list[str]]:
+    """A character's or object's reference image: a white background and, for a character, empty hands
+    (change 0003); the prompt inputs and the judging conditions that check them. Places keep their own."""
+    if kind == "environment":
+        return {}, []
+    hands = kind == "character"
+    return {"background": WHITE, "empty_hands": hands}, ["clean_background"] + (["no_props"] if hands else [])
 
 
 def reference_lighting(built: Built, request: RequestBase) -> str:
@@ -64,6 +75,7 @@ class Built:
 
 
 def build(store: ProjectStore, request: RequestBase) -> Built:
+    from hone_frame.recipes_packs import character_packs  # noqa: PLC0415 - imports this module
     from hone_frame.recipes_scenes import (  # noqa: PLC0415 - that module imports this one
         promote_outputs,
         sequence_outputs,
@@ -80,18 +92,7 @@ def build(store: ProjectStore, request: RequestBase) -> Built:
     if isinstance(request, SubjectReferences):
         subject_references(store, request, built)
     elif isinstance(request, SceneShot | Coverage):
-        if scene is None:
-            raise InvalidRequest("a scene shot needs a scene")
-        cameras = request.cameras if isinstance(request, Coverage) else [scene.camera]
-        for camera in cameras:
-            scene_output(
-                store,
-                scene,
-                built,
-                label=(camera or scene.name) if isinstance(request, Coverage) else scene.name,
-                camera=camera,
-                seed_group="coverage" if isinstance(request, Coverage) else None,
-            )
+        _scene_shots(store, request, scene, built)
     elif isinstance(request, Interaction):
         interaction(store, request, built)
     elif isinstance(request, StatePair):
@@ -102,7 +103,26 @@ def build(store: ProjectStore, request: RequestBase) -> Built:
         variation_outputs(store, request, scene, built)
     elif isinstance(request, Promote):
         promote_outputs(store, request, built)
+    elif isinstance(request, CharacterPacks):
+        character_packs(store, request, built)
     return built
+
+
+def _scene_shots(
+    store: ProjectStore, request: SceneShot | Coverage, scene: Scene | None, built: Built
+) -> None:
+    if scene is None:
+        raise InvalidRequest("a scene shot needs a scene")
+    cameras = request.cameras if isinstance(request, Coverage) else [scene.camera]
+    for camera in cameras:
+        scene_output(
+            store,
+            scene,
+            built,
+            label=(camera or scene.name) if isinstance(request, Coverage) else scene.name,
+            camera=camera,
+            seed_group="coverage" if isinstance(request, Coverage) else None,
+        )
 
 
 def _scene_of(store: ProjectStore, request: RequestBase) -> Scene | None:

@@ -1,0 +1,78 @@
+# A character's packs (change 0003): the reference images made for every character, in this order.
+# Each item: `item` (its name), and the shot: `camera`, `pose`, `expression`, `framing`, `full_body`.
+# `custom` names what a person's own item text becomes (an expression, a pose, an outfit, a state, an
+# action). `from_states` adds one item per state of those kinds; `from_assets` one per character asset.
+# Every item is drawn on a plain white background; `empty_hands = false` allows objects (actions).
+
+[packs.hero]
+label = "Hero"
+description = "The identity reference: full figure, front, neutral pose, empty hands. Every other image is made from it."
+items = [{ item = "Hero", camera = "front", pose = "neutral-standing", full_body = true }]
+
+[packs.turnaround]
+label = "Turnaround"
+description = "The full figure from the front, three-quarter, side and back, in the same neutral pose."
+custom = "camera"
+items = [
+  { item = "Front", camera = "front", pose = "neutral-standing", full_body = true },
+  { item = "3/4", camera = "three-quarter", pose = "neutral-standing", full_body = true },
+  { item = "Side", camera = "profile", pose = "neutral-standing", full_body = true },
+  { item = "Back", camera = "rear", pose = "neutral-standing", full_body = true },
+]
+
+[packs.expressions]
+label = "Expressions"
+description = "Close-ups of the face, head and shoulders, one expression each."
+custom = "expression"
+framing = "a close-up portrait: the face, head and shoulders fill the frame"
+items = [
+  { item = "Neutral", camera = "close-up", expression = "neutral" },
+  { item = "Happy", camera = "close-up", expression = "happy" },
+  { item = "Sad", camera = "close-up", expression = "sad" },
+  { item = "Angry", camera = "close-up", expression = "angry" },
+  { item = "Surprised", camera = "close-up", expression = "surprised" },
+  { item = "Afraid", camera = "close-up", expression = "afraid" },
+  { item = "Determined", camera = "close-up", expression = "determined" },
+  { item = "Thinking", camera = "close-up", expression = "focused, thinking hard" },
+]
+
+[packs.poses]
+label = "Poses"
+description = "The full figure in everyday and action poses, empty hands."
+custom = "pose"
+items = [
+  { item = "Standing", camera = "front", pose = "neutral-standing", full_body = true },
+  { item = "Walking", camera = "front", pose = "walking", full_body = true },
+  { item = "Running", camera = "front", pose = "running, mid-stride, arms swinging", full_body = true },
+  { item = "Seated", camera = "front", pose = "seated", full_body = true },
+  { item = "Kneeling", camera = "front", pose = "kneeling on one knee, back straight", full_body = true },
+  { item = "Fighting stance", camera = "front", pose = "a ready fighting stance, knees bent, fists raised", full_body = true },
+]
+
+[packs.outfits]
+label = "Outfits"
+description = "The same character in each of its outfits."
+custom = "outfit"
+from_states = ["outfit"]
+items = []
+
+[packs.states]
+label = "States"
+description = "The same character in each of its other states (wet, wounded, at night...)."
+custom = "state"
+from_states = ["condition", "lighting", "other"]
+items = []
+
+[packs.assets]
+label = "Belongings"
+description = "The objects that belong to this character, each on its own."
+from_assets = true
+items = []
+
+[packs.actions]
+label = "Actions"
+description = "The character holding or using its own belongings, or doing something you describe."
+custom = "action"
+from_assets = true
+empty_hands = false
+items = []

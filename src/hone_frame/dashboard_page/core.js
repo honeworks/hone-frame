@@ -54,7 +54,9 @@ export function replace(node, ...children) {
 
 const SVG = "http://www.w3.org/2000/svg";
 const ICONS = {
-  overview: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+  project: "M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z",
+  characters: "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM2 21v-1a6 6 0 0 1 12 0v1M16 3.5a4 4 0 0 1 0 7M18 14a6 6 0 0 1 4 6v1",
+  world: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.5 3.8 5.5 3.8 9s-1.3 6.5-3.8 9c-2.5-2.5-3.8-5.5-3.8-9S9.5 5.5 12 3z",
   create: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 8v8M8 12h8",
   library: "M5 4h10a2 2 0 0 1 2 2v14H7a2 2 0 0 1-2-2zM17 6h2v14M9 8h4",
   scenes: "M3 6h18v12H3zM3 10h18M7 6l2 4M12 6l2 4M17 6l2 4",

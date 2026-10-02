@@ -11,7 +11,7 @@ export async function render(main, [id]) {
   const detail = current ? await api(projectPath(`/scenes/${current.id}`)) : null;
   const side = h("aside", { class: "side", "aria-label": "Scene builder" });
   replace(main,
-    h("div", { class: "page-head" }, h("div", {}, h("h1", {}, "Scenes"), h("p", { class: "muted" }, "A scene uses exactly the references you select, each with a purpose.")),
+    h("div", { class: "page-head" }, h("div", {}, h("h1", {}, "Scenes"), h("p", { class: "muted" }, "Choose the characters and places of a scene. When you save, the planner adds the characters' belongings the description needs.")),
       h("a", { class: "btn", href: "#/scenes/new" }, icon("plus"), "New scene")),
     h("div", { class: "layout-side" }, h("div", { class: "stack" },
       scenes.length ? h("div", { class: "chips" }, scenes.map((s) => h("a", { class: `chip${s.id === current?.id ? " accent" : ""}`, href: `#/scenes/${s.id}` }, s.name))) : null,
@@ -52,7 +52,10 @@ function builder(side, scene, subjects) {
   const rounds = h("input", { class: "input", type: "number", min: 1, max: 10, value: 3, "aria-label": "Rounds" });
   const refList = h("div", { class: "stack", style: "gap:8px" });
   const planBox = h("div", { class: "stack", style: "gap:6px" });
-  const adder = select([["", "Add a reference…"], ...subjects.map((s) => [s.id, `${s.name} (${s.kind})`])], "", { "aria-label": "Add a reference" });
+  const kindWord = (s) => s.kind === "character" ? "character" : (s.owner ? `belongs to ${byId[s.owner]?.name || s.owner}` : (s.kind === "environment" ? "place" : "object"));
+  const rank = (s) => (s.kind === "character" ? 0 : s.owner ? 2 : 1);
+  const ordered = [...subjects].sort((a, b) => rank(a) - rank(b));
+  const adder = select([["", "Add a character, place or object…"], ...ordered.map((s) => [s.id, `${s.name} (${kindWord(s)})`])], "", { "aria-label": "Add a reference" });
   adder.addEventListener("change", () => {
     if (!adder.value) return;
     refs.push({ subject_id: adder.value, role: DEFAULT_ROLE[byId[adder.value].kind], image_ids: [] });
@@ -61,7 +64,7 @@ function builder(side, scene, subjects) {
 
   const data = () => ({ id: scene?.id || "", name: name.value || "Untitled scene", description: description.value, action: action.value,
     camera: camera.value || null, expression: expression.value || null, lighting: lighting.value || null, pose: pose.value || null,
-    refs: refs.map((r) => ({ subject_id: r.subject_id, role: r.role, image_ids: r.image_ids || [], state: r.state || null })) });
+    refs: refs.map((r) => ({ subject_id: r.subject_id, role: r.role, image_ids: r.image_ids || [], state: r.state || null, suggested: Boolean(r.suggested) })) });
   const selection = () => ({ rounds: Number(rounds.value) || 3, auto_judge: judge.input.checked, auto_pick: pick.input.checked && judge.input.checked });
 
   function drawRefs() {
@@ -70,7 +73,8 @@ function builder(side, scene, subjects) {
       const role = select(ROLES.map((x) => [x, x[0].toUpperCase() + x.slice(1)]), r.role, { "aria-label": `Role of ${s.name}`, style: "width:auto;height:32px" });
       role.addEventListener("change", () => { r.role = role.value; preview(); });
       return h("div", { class: "ref" }, s.cover ? h("img", { class: "thumb-sm", src: s.cover.url, alt: "" }) : h("span", { class: "thumb-sm" }),
-        h("div", { class: "who" }, h("div", {}, s.name), h("div", { class: "caption" }, s.kind)), role,
+        h("div", { class: "who" }, h("div", {}, s.name),
+          h("div", { class: "caption" }, r.suggested ? "suggested by the planner · " : "", kindWord(s))), role,
         h("button", { class: "btn ghost small", "aria-label": `Remove ${s.name}`, onclick: () => { refs.splice(i, 1); drawRefs(); preview(); } }, icon("close")));
     }) : h("p", { class: "caption" }, "No references yet. Only what you add here is sent to the model."));
   }
@@ -91,17 +95,17 @@ function builder(side, scene, subjects) {
     }, 300);
   }
 
-  async function save() {
+  async function save(suggest = !scene?.id) {
     try {
-      const saved = await api(projectPath("/scenes"), { method: "POST", body: data() });
-      toast(scene?.id ? `Saved version ${saved.version}.` : "Scene saved.");
+      const saved = await api(projectPath("/scenes"), { method: "POST", body: { ...data(), suggest: suggest === true } });
+      toast(saved.suggestion ? `Saved. ${saved.suggestion}` : (scene?.id ? `Saved version ${saved.version}.` : "Scene saved."));
       location.hash = `#/scenes/${saved.id}`;
       return saved;
     } catch (error) { failure(error); return null; }
   }
 
   async function generate(kind, extra = {}) {
-    const saved = await save();
+    const saved = await save(false);
     if (!saved) return;
     try {
       const run = await api(projectPath("/runs"), { method: "POST", body: { kind, scene_id: saved.id, profile: profile.value, selection: selection(), ...extra } });
@@ -128,7 +132,8 @@ function builder(side, scene, subjects) {
     h("div", { class: "setting" }, h("div", {}, h("div", {}, "Auto pick"), h("div", { class: "caption" }, "Select the best result that passes; needs the judge")), pick.node),
     row("Rounds", rounds), planBox,
     h("button", { class: "btn primary", style: "height:44px", onclick: () => generate("scene") }, "Generate scene"),
-    h("div", { class: "row" }, h("button", { class: "btn small", onclick: save }, "Save"),
+    h("div", { class: "row" }, h("button", { class: "btn small", onclick: () => save() }, "Save"),
+      h("button", { class: "btn small", title: "Ask the planner again which belongings this scene needs", onclick: () => save(true) }, "Suggest belongings"),
       h("button", { class: "btn small", onclick: () => generate("coverage", { cameras: ["wide", "medium", "close-up", "reverse"] }) }, "Coverage"),
       h("button", { class: "btn small", onclick: () => { const st = prompt("State template (e.g. empty-full, dry-wet)", "empty-full"); if (st) generate("state_pair", { state: st }); } }, "State pair"),
       scene?.id ? h("button", { class: "btn small", onclick: exportPack }, icon("download"), "Pack") : null)));

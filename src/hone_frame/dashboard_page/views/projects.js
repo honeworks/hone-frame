@@ -14,14 +14,14 @@ export async function render(main) {
       const created = await api("/projects", { method: "POST", body: { name: name.value, brief: brief.value, direction: direction.value, style_pack: pack.value } });
       setProject(created.id);
       window.dispatchEvent(new Event("hf:projects"));
-      location.hash = "#/library/characters";
+      location.hash = "#/project";
     } catch (error) { failure(error); }
   } }, field("Name", name), field("Brief", brief), field("Visual direction", direction), field("Style pack", pack, "Every preset can still be changed per request."),
     h("button", { class: "btn primary", type: "submit" }, "Create project"));
   const filter = h("input", { class: "input", type: "search", placeholder: "Search projects", "aria-label": "Search projects" });
   const list = h("div", { class: "stack" });
   const draw = () => replace(list, projects.filter((p) => p.name.toLowerCase().includes(filter.value.toLowerCase())).map((p) =>
-    h("a", { class: "panel row", href: "#/overview", style: "color:inherit", onclick: () => setProject(p.id) },
+    h("a", { class: "panel row", href: "#/project", style: "color:inherit", onclick: () => setProject(p.id) },
       h("div", { style: "flex:1" }, h("h2", {}, p.name), h("div", { class: "caption" }, `${p.style_pack} · updated ${when(p.updated_at)}`)),
       p.id === state.project ? h("span", { class: "chip accent" }, "Current") : null)));
   filter.addEventListener("input", draw);

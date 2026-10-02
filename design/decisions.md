@@ -270,3 +270,32 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
   from hone-models' registry. `ModelInfo.prompt_guide` stays: the Models view shows it beside each model,
   and it is where a person reads what a new model wants before writing a dialect for it.
 
+## D-024: a white background is its own prompt piece, not the lighting  (2026-10-02)
+
+- **Choice:** change 0003's white background is the `background` input (`recipes.WHITE`) and a required
+  prompt section, set for character and object references only; `neutral-studio` (version 2) says only
+  "even soft neutral studio lighting, no cast shadows". Empty hands are the required `props` section.
+- **Reason:** the lighting preset also lit places, which must keep their scenery, and a lighting choice
+  could otherwise silently remove the white background.
+
+## D-025: older images join packs by their label  (2026-10-02)
+
+- **Choice:** an image or output without `pack` is placed in the pack whose default item has the same
+  label ("Hero", "Front", "Back", "Happy"...); the latest accepted one wins.
+- **Reason:** characters made before 0003 (Rostam) keep their accepted hero and turnaround, so a new
+  `CharacterPacks` request reuses that hero instead of drawing another.
+
+## D-026: belongings are suggested when a scene is created or when asked  (2026-10-02)
+
+- **Choice:** the dashboard sends `suggest` when a scene is saved for the first time and from **Suggest
+  belongings**; later saves keep the references as they are.
+- **Reason:** suggesting on every save would put back a belonging the person removed.
+
+## D-027: "Add" makes only the new item  (2026-10-02)
+
+- **Choice:** `CharacterPacks.only_custom` plans only the `custom` items (plus the hero when none is
+  accepted); the hero is drawn only when none is accepted or `redraw_hero` is set, even if `packs`
+  names `hero`.
+- **Reason:** "give me the hero in party clothing" must not remake the pack's other images, and ticking
+  every pack must never replace an accepted hero by accident.
+

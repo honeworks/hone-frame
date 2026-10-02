@@ -5,7 +5,7 @@ const FIELDS = {
   character: [
     ["appearance", "Appearance", "Face, skin, hair, eyes: what must look the same in every picture."],
     ["proportions", "Build and proportions", "Height, build, body proportions."],
-    ["features", "Distinguishing features", "Marks and objects that must always show (for example an armlet on the right upper arm)."],
+    ["features", "Distinguishing features", "Marks on the body or clothes that must always show (an armlet on the right upper arm, a scar). Objects the character carries are belongings: add them on the character's page."],
     ["outfits", "Default outfit", "Clothing from head to feet, with colours and materials; name every piece."],
   ],
   environment: [
@@ -44,7 +44,10 @@ function stateRow(state, remove) {
   return row;
 }
 
-export function subjectDialog(kind, subject) {
+const NOUN = { character: "character", environment: "place", asset: "object" };
+
+// `owner`: a new object that belongs to that character (a belonging, change 0003).
+export function subjectDialog(kind, subject, { owner } = {}) {
   const name = h("input", { class: "input", required: true, value: subject?.name || "" });
   const description = h("textarea", { class: "input", value: subject?.description || "" });
   const inputs = Object.fromEntries((FIELDS[kind] || []).map(([key]) =>
@@ -66,14 +69,14 @@ export function subjectDialog(kind, subject) {
     const body = { name: name.value.trim(), description: description.value.trim(), fields, states: rows };
     try {
       if (subject) await api(projectPath(`/subjects/${subject.id}`), { method: "PATCH", body });
-      else await api(projectPath("/subjects"), { method: "POST", body: { kind, ...body } });
+      else await api(projectPath("/subjects"), { method: "POST", body: { kind, ...body, ...(owner ? { owner } : {}) } });
       dialog.close();
-      toast(subject ? "Saved as a new version." : "Added.");
+      toast(subject ? "Saved. Earlier images keep the version they were made from." : "Added.");
       window.dispatchEvent(new HashChangeEvent("hashchange"));
     } catch (error) { failure(error); }
   }
 
-  const title = subject ? `Edit ${subject.name}` : `Add ${kind}`;
+  const title = subject ? `Edit ${subject.name}` : (owner ? "Add a belonging" : `Add a ${NOUN[kind] || kind}`);
   const dialog = h("dialog", { "aria-label": title, style: "width:min(640px, calc(100vw - 32px))" },
     h("form", { class: "stack", onsubmit: save },
       h("h2", {}, title),

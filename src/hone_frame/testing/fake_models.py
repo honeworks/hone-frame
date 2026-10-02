@@ -57,7 +57,7 @@ class FakeModels:
     - `generate` writes a PNG of the requested size; `fail_generate(kind, times)` scripts failures
       (`kind` "transient" raises a transient `ModelFailure`, or a hone-models `error_kind` result).
     - `ask` answers the judge with `judge(call_index, prompt, images)` (default: every check passes,
-      overall 0.8) and the planner with its draft prompt.
+      overall 0.8), the planner with its draft prompt, and a scene's belongings with those it names.
     - `infos` overrides what `info` says about a model (default: local, takes 3 references, vision).
     """
 
@@ -122,6 +122,10 @@ class FakeModels:
         if issubclass(schema, JudgeAnswer):
             judged = sum(1 for c in self.asked[: index + 1] if "quality judge" in c.prompt) - 1
             return schema.model_validate(self.judge(judged, prompt, list(images)))
+        if "use" in schema.model_fields:  # the planner's choice of a scene's belongings: those named in it
+            scene = prompt.split("Scene: ", 1)[-1].split("\n", 1)[0].lower()
+            rows = re.findall(r"^- ([a-z]+_\d+): ([^,]+),", prompt, re.M)
+            return schema.model_validate({"use": [i for i, name in rows if name.lower() in scene]})
         raise ModelFailure(f"FakeModels cannot answer {schema.__name__}", transient=False)
 
     def info(self, model_id: str) -> ModelInfo:
