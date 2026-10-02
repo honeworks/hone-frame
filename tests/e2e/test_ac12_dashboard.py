@@ -209,3 +209,17 @@ def test_invalid_subject_edits_are_a_400_naming_the_field(served: tuple[hf.Proje
         and body["fields"]["features"].startswith("onyx")
         and body["states"][0]["name"] == "helmeted"
     )
+
+
+def test_redo_through_the_api(served: tuple[hf.ProjectStore, str]) -> None:
+    store, base = served
+    scene = store.save_scene(hf.Scene(name="S", refs=[hf.SceneRef(subject_id="char_001")]))
+    run = store.submit(hf.SceneShot(scene_id=scene.id, selection=hf.Selection(rounds=1)))
+    run_all(store)
+    path = f"/api/runs/{store.id}/{run.id}/rerun"
+    status, body, _ = call(base, path, "POST", {"output": "o01", "rounds": "many"})
+    assert status == 400 and body["error"] == "rounds must be a whole number from 1 to 10"
+    status, body, _ = call(base, path, "POST", {"output": "o01", "rounds": 99})
+    assert status == 400 and "from 1 to 10" in body["error"]
+    status, body, _ = call(base, path, "POST", {"output": "o01", "rounds": 2, "note": "warmer light"})
+    assert status == 200 and body["rounds"] == 2

@@ -13,7 +13,7 @@ from hone_frame.events import EventLog, observed
 from hone_frame.planning import ModelCheck, as_request, plan
 from hone_frame.profiles import resolve_profile
 from hone_frame.records import Selection
-from hone_frame.requests import Counts, PlannedOutput, PlannedRef, RequestBase
+from hone_frame.requests import Counts, Plan, PlannedOutput, PlannedRef, RequestBase, ResolvedProfile
 from hone_frame.runs import (
     OutputRecord,
     RunRecord,
@@ -110,32 +110,11 @@ def rerun(
     run = load_run(store, run_id)
     out = next((o for o in run.plan.outputs if o.id == output_id), None)
     if out is None:
-        raise NotFound(f"run {run_id} has no output {output_id}")
-    single = _redo_output(store, run, out, note)
-    resolved = resolve_profile(store, RequestBase(profile=profile)) if profile else run.plan.profile
-    if profile:
-        errors: list[str] = []
-        single = ModelCheck(store, resolved, errors, []).finish(single.model_copy(update={"model": ""}))
-        if errors:
-            raise InvalidRequest(f"cannot redo {out.label} with the {profile} profile", errors)
-    sel = selection or run.plan.selection
-    per = sel.rounds * sel.candidates
-    counts = Counts(
-        outputs=1,
-        images=per,
-        judge_calls=per if sel.auto_judge else 0,
-        planner_calls=(sel.rounds if sel.strategy == "sequential" else 1) if resolved.planner else 0,
-    )
-    planned = run.plan.model_copy(
-        update={
-            "outputs": [single],
-            "counts": counts,
-            "sheet_layout": None,
-            "profile": resolved,
-            "selection": sel,
-            "title": f"{run.title}: {out.label} again",
-        }
-    )
+        raise NotFound(
+            f"run {run_id} has no output {output_id}; its outputs are {[o.id for o in run.plan.outputs]}"
+        )
+    single, resolved = _with_profile(store, _redo_output(store, run, out, note), run.plan.profile, profile)
+    planned = _single_plan(run, single, resolved, selection or run.plan.selection)
     new = RunRecord(
         id=new_run_id(),
         project=store.id,
@@ -147,21 +126,47 @@ def rerun(
     )
     with store.lock():
         save_run(store, new)
-        old = load_output(store, run_id, output_id)
-        if old is not None and old.status not in ("running", "queued"):
-            reason = f"asked again by a person in run {new.id}" + (f": {note}" if note else "")
-            save_output(
-                store,
-                run_id,
-                old.model_copy(
-                    update={
-                        "status": "replaced",
-                        "reason": reason,
-                        "replaced_by": {"run": new.id, "output": out.id},
-                    }
-                ),
-            )
+        _mark_replaced(store, run_id, output_id, new.id, note)
     return view(store, new)
+
+
+def _with_profile(
+    store: ProjectStore, out: PlannedOutput, current: ResolvedProfile, profile: str | None
+) -> tuple[PlannedOutput, ResolvedProfile]:
+    """The output with the model of `profile` (when another one is asked), checked like a plan."""
+    if not profile or profile == current.id:
+        return out, current
+    resolved = resolve_profile(store, RequestBase(profile=profile))
+    errors: list[str] = []
+    checked = ModelCheck(store, resolved, errors, []).finish(out.model_copy(update={"model": ""}))
+    if errors:
+        raise InvalidRequest(f"cannot redo {out.label} with the {profile} profile", errors)
+    return checked, resolved
+
+
+def _single_plan(run: RunRecord, out: PlannedOutput, profile: ResolvedProfile, sel: Selection) -> Plan:
+    per = sel.rounds * sel.candidates
+    planner = (sel.rounds if sel.strategy == "sequential" else 1) if profile.planner else 0
+    counts = Counts(outputs=1, images=per, judge_calls=per if sel.auto_judge else 0, planner_calls=planner)
+    return run.plan.model_copy(
+        update={
+            "outputs": [out],
+            "counts": counts,
+            "sheet_layout": None,
+            "profile": profile,
+            "selection": sel,
+            "title": f"{run.title}: {out.label} again",
+        }
+    )
+
+
+def _mark_replaced(store: ProjectStore, run_id: str, output_id: str, new_run: str, note: str) -> None:
+    old = load_output(store, run_id, output_id)
+    if old is None or old.status in ("running", "queued"):
+        return
+    reason = f"asked again by a person in run {new_run}" + (f": {note}" if note else "")
+    update = {"status": "replaced", "reason": reason, "replaced_by": {"run": new_run, "output": output_id}}
+    save_output(store, run_id, old.model_copy(update=update))
 
 
 def _redo_output(store: ProjectStore, run: RunRecord, out: PlannedOutput, note: str) -> PlannedOutput:

@@ -117,12 +117,7 @@ def run_action(
         )
         return record.model_dump(mode="json")
     if action == "rerun":
-        rounds = data.get("rounds")
-        selection = (
-            None
-            if not rounds
-            else Selection.model_validate(store.run_view(run_id).selection | {"rounds": int(rounds)})
-        )
+        selection = _with_rounds(store.run_view(run_id).selection, data.get("rounds"))
         return run_summary(
             store.rerun(
                 run_id,
@@ -150,3 +145,13 @@ def export(ws: Workspace, project_id: str, *, body: Any, **_: Any) -> dict[str, 
     if kind not in makers:
         raise ApiError(f"export kind must be one of {sorted(makers)}")
     return {"file": makers[kind]().name, "url": f"/downloads/{out.name}"}
+
+
+def _with_rounds(current: dict[str, Any], rounds: Any) -> Selection | None:
+    """The run's selection with another number of rounds, or None to keep it."""
+    if rounds in (None, ""):
+        return None
+    try:
+        return Selection.model_validate(current | {"rounds": int(rounds)})
+    except (TypeError, ValueError) as exc:  # a ValidationError is a ValueError
+        raise ApiError("rounds must be a whole number from 1 to 10") from exc

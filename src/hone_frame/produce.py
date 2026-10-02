@@ -53,8 +53,8 @@ class Producer:
         self._infos: dict[str, ModelInfo | None] = {}
 
     def run_output(self) -> OutputRecord:
-        if self.record.status == "done":
-            return self.record  # accepted earlier (a manual pick, or a previous call)
+        if self.record.status in ("done", "replaced"):
+            return self.record  # accepted earlier, or asked again in another run (D-019): never touched again
         self._save(status="running", started_at=self.record.started_at or now(), error=None, reason="")
         self.log.write("output_started", output=self.out.id, label=self.out.label)
         try:
