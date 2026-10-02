@@ -156,3 +156,29 @@ def test_auto_pick_needs_the_judge(ws: hf.Workspace) -> None:
     assert any("automatic pick needs automatic judging" in e for e in plan.errors)
     with pytest.raises(hf.errors.InvalidRequest, match="automatic pick"):
         p.submit(hf.SubjectReferences(subject_id=woman, selection=hf.Selection(auto_judge=False)))
+
+
+def test_rear_views_are_judged_from_behind(ws: hf.Workspace, fake: FakeModels) -> None:
+    p, woman = _woman(ws)
+    plan = p.plan(hf.SubjectReferences(subject_id=woman, presentation="turnaround"))
+    back = next(o for o in plan.outputs if o.label == "Back")
+    assert "rear" in back.conditions and "rear" not in plan.outputs[1].conditions
+    p.submit(
+        hf.SubjectReferences(subject_id=woman, presentation="turnaround", selection=hf.Selection(rounds=1))
+    )
+    run_all(p)
+    prompts = [c.prompt for c in fake.asked if "quality judge" in c.prompt]
+    back_prompt = next(q for q in prompts if "to show: Back " in q)
+    front_prompt = next(q for q in prompts if "to show: Front " in q)
+    assert "- identity_from_behind:" in back_prompt and "- identity:" not in back_prompt
+    assert "- identity:" in front_prompt and "identity_from_behind" not in front_prompt
+
+
+def test_references_use_neutral_light_whatever_the_style_pack(ws: hf.Workspace) -> None:
+    p = ws.create_project("Epic", style_pack="historical-epic")  # its mood lighting is dramatic side light
+    hero = p.add_subject("character", "Rostam", description="a champion").id
+    lights = {o.prompt_inputs["lighting"] for o in p.plan(hf.SubjectReferences(subject_id=hero)).outputs}
+    assert lights == {"even soft neutral studio lighting, plain light grey background."}
+    p.update(defaults={"presets": {"lighting": "golden-hour"}})  # chosen on purpose: kept
+    lights = {o.prompt_inputs["lighting"] for o in p.plan(hf.SubjectReferences(subject_id=hero)).outputs}
+    assert lights == {"golden hour sunlight, low warm light, long soft shadows, rim light."}

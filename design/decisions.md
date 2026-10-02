@@ -234,3 +234,27 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
 - **Reason:** the rest of the run is fine and stays accepted; each attempt is still its own faithful
   record (D-011).
 
+## D-020: the judge answers one named field per check; rear views are judged from behind  (2026-10-02)
+
+- **Question:** on the owner's first character, every Back candidate ended in "Needs review" with "the
+  judge did not answer this check" for almost every check. The call records show qwen2.5vl-7b named
+  every check "JudgeCheck" (the title of the list item's schema), so no answer matched a check, although
+  it had passed them all. The identity check also asked for a face that a back view does not show.
+- **Choice:** the schema sent to the judge has `checks` as an object with one required key per check
+  name (`judging.answer_schema`); with Ollama's constrained output the judge cannot rename or drop one.
+  Outputs whose camera is `rear` get the flag `rear`; the `character-identity` profile (version 2) then
+  asks `identity_from_behind` instead of `identity`, and its `view` question says what a rear view must
+  show.
+- **Reason:** the failure was in reading the answer, not in the images. Re-judged with the new schema,
+  three of the four real Back candidates pass every check, and the one that shows a face does not.
+- **Note:** the same re-judge passed `view` for the candidate that faces the camera; the 7B judge is
+  still lenient (D-006).
+
+## D-021: reference images use neutral studio light  (2026-10-02)
+
+- **Choice:** subject reference outputs use the `neutral-studio` lighting (even light, plain grey
+  background), not the style pack's mood lighting, unless the request or the project chose a lighting.
+  Scenes keep the pack's lighting.
+- **Reason:** brief §12 ("neutral reference lighting"); the owner's first Rostam turnaround was drawn
+  in a colonnaded hall with dramatic light because the Historical epic pack sets `dramatic-side`.
+

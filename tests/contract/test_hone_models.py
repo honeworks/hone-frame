@@ -14,9 +14,11 @@ from PIL import Image
 
 import hone_frame.models as models_module
 from hone_frame.errors import NotFound
-from hone_frame.judging import JudgeAnswer
+from hone_frame.judging import answer_schema
 from hone_frame.models import HoneModels
 from hone_frame.ports import ModelFailure
+
+SHAPE = [{"name": "shape", "question": "Is the shape right?"}]
 
 
 @pytest.fixture(autouse=True)
@@ -59,19 +61,19 @@ def test_ask_parses_the_judge_answer(tmp_path: Path) -> None:
     Image.new("RGB", (8, 8)).save(tmp_path / "c.png")
     answer = {
         "description": "a cup",
-        "checks": [{"name": "shape", "verdict": "pass", "score": 0.9, "finding": "ok"}],
+        "checks": {"shape": {"verdict": "pass", "score": 0.9, "finding": "ok"}},
         "overall": 0.7,
         "summary": "fine",
     }
     with FakeOllama() as server:
         server.queue("/api/chat", {"message": {"role": "assistant", "content": json.dumps(answer)}})
         parsed = HoneModels().ask(
-            "qwen2.5vl-7b", "Judge it.", images=[tmp_path / "c.png"], schema=JudgeAnswer, think=False
+            "qwen2.5vl-7b", "Judge it.", images=[tmp_path / "c.png"], schema=answer_schema(SHAPE), think=False
         )
-        assert parsed.overall == 0.7 and parsed.checks[0].name == "shape"
+        assert parsed.overall == 0.7 and parsed.checks.shape.verdict == "pass"
         server.queue("/api/chat", 500, 500, 500)
         with pytest.raises(ModelFailure) as raised:
-            HoneModels().ask("qwen2.5vl-7b", "Judge it.", images=[], schema=JudgeAnswer, think=False)
+            HoneModels().ask("qwen2.5vl-7b", "Judge it.", images=[], schema=answer_schema(SHAPE), think=False)
         assert raised.value.transient is True
     chat = next(q["body"] for q in server.requests if q["path"] == "/api/chat")
     assert chat["think"] is False and any("images" in m for m in chat["messages"])
@@ -208,3 +210,13 @@ def test_only_flux_with_free_slots_is_filled(tmp_path: Path) -> None:
     assert models_module._filled("flux.2-klein-4b", [a, b], registry) == [a, b]  # full: unchanged
     assert models_module._filled("flux.2-klein-4b", [], registry) == []  # nothing to repeat
     assert models_module._filled("qwen-image-edit-2511", [a], registry) == [a]  # its empty slots are fine
+
+
+def test_the_judge_schema_names_every_check() -> None:
+    """Regression (decisions D-020): a judge named every check "JudgeCheck"; the keys are now fixed."""
+    schema = answer_schema([{"name": "identity"}, {"name": "view"}]).model_json_schema()
+    checks = schema["$defs"]["Checks"]
+    assert sorted(checks["required"]) == ["identity", "view"] and set(checks["properties"]) == {
+        "identity",
+        "view",
+    }

@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, create_model
 
 from hone_frame.ports import Models
 from hone_frame.presets import PresetCatalog
@@ -13,27 +13,37 @@ from hone_frame.records import CheckResult, Evaluation
 from hone_frame.requests import PlannedOutput
 
 
-class JudgeCheck(BaseModel):
-    name: str
+class CheckAnswer(BaseModel):
     verdict: Literal["pass", "fail", "uncertain", "not_assessable"]
     score: float | None = Field(default=None, ge=0.0, le=1.0)
     finding: str = ""
 
 
 class JudgeAnswer(BaseModel):
-    """What the judge model returns; `description` first, so it looks before it decides."""
+    """What the judge returns; `description` first, so it looks before it decides. The schema sent to
+    the judge is `answer_schema(checks)`: `checks` is an object with one required key per check, so a
+    judge cannot mislabel or drop a check (decisions D-020)."""
 
     description: str
-    checks: list[JudgeCheck]
+    checks: Any  # a model with one CheckAnswer field per check; a dict of them is read the same way
     overall: float = Field(ge=0.0, le=1.0)
     summary: str = ""
+
+
+def answer_schema(checks: list[dict[str, Any]]) -> type[JudgeAnswer]:
+    """`JudgeAnswer` whose `checks` has exactly these check names as required keys."""
+    fields: dict[str, Any] = {c["name"]: (CheckAnswer, ...) for c in checks}
+    named: Any = create_model("Checks", **fields)
+    return create_model("JudgeAnswer", __base__=JudgeAnswer, checks=(named, ...))
 
 
 def checks_for(catalog: PresetCatalog, out: PlannedOutput) -> list[dict[str, Any]]:
     """The judging profile's checks whose condition holds for this output (design §8.3)."""
     checks: list[dict[str, Any]] = list(catalog.get("judging", out.judging).values.get("checks", []))
     flags = set(out.conditions)
-    applicable = [c for c in checks if not c.get("when") or c["when"] in flags]
+    applicable = [
+        c for c in checks if (not c.get("when") or c["when"] in flags) and c.get("unless") not in flags
+    ]
     if "preserve" in flags:
         applicable.append(
             {
@@ -83,7 +93,7 @@ def evaluate(
         judge,
         judge_prompt(out, checks, prompt, len(images) - 1),
         images=images,
-        schema=JudgeAnswer,
+        schema=answer_schema(checks),
         think=think,
     )
     return verdicts(answer, checks, judge)
@@ -91,7 +101,8 @@ def evaluate(
 
 def verdicts(answer: JudgeAnswer, checks: list[dict[str, Any]], judge: str) -> Evaluation:
     """Apply `min_score`, mark missing checks uncertain, and decide pass / uncertain (design §8.3)."""
-    given = {c.name: c for c in answer.checks}
+    raw: Any = answer.checks.model_dump() if isinstance(answer.checks, BaseModel) else answer.checks
+    given = {str(k): CheckAnswer.model_validate(v) for k, v in dict(raw).items()}
     results: list[CheckResult] = []
     for check in checks:
         found = given.get(check["name"])
@@ -101,7 +112,7 @@ def verdicts(answer: JudgeAnswer, checks: list[dict[str, Any]], judge: str) -> E
             )
         else:
             result = CheckResult(
-                name=found.name, verdict=found.verdict, score=found.score, finding=found.finding
+                name=check["name"], verdict=found.verdict, score=found.score, finding=found.finding
             )
             floor = check.get("min_score")
             if result.verdict == "pass" and floor is not None and (result.score or 0.0) < floor:

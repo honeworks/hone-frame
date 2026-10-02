@@ -3,7 +3,7 @@
 
 [[presets]]
 id = "character-identity"
-version = 1
+version = 2
 name = "Character identity"
 description = "Character reference images: is it the same person, in the requested view, expression, outfit and framing, drawn correctly?"
 
@@ -12,10 +12,17 @@ name = "identity"
 question = "Is this the same character as the identity reference (face, hair, build, colours)?"
 required = true
 when = "identity_ref"
+unless = "rear"
+
+[[presets.values.checks]]
+name = "identity_from_behind"
+question = "Seen from behind, the face is not expected. Do the build, hair, clothing, colours and distinguishing features match the identity reference?"
+required = true
+when = "rear"
 
 [[presets.values.checks]]
 name = "view"
-question = "Is the camera view and angle the one requested?"
+question = "Is the camera view and angle the one requested? For a rear view the character must face away: back of the head and back of the body, no face."
 required = true
 
 [[presets.values.checks]]
