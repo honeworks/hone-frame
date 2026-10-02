@@ -9,8 +9,9 @@ from typing import TYPE_CHECKING, Any
 import hone_flow as fk
 
 from hone_frame._files import now
+from hone_frame.candidates import seed_for
 from hone_frame.events import EventLog
-from hone_frame.produce import Producer, seed_for
+from hone_frame.produce import Producer
 from hone_frame.records import SheetRecipe
 from hone_frame.runs import (
     ACTIVE,

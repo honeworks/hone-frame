@@ -7,11 +7,10 @@ from typing import TYPE_CHECKING, Any
 
 from hone_frame.errors import InvalidRequest
 from hone_frame.profiles import PresetChoices
-from hone_frame.records import Scene, SceneRef, Subject, SubjectLink
-from hone_frame.references import ref_images, scene_refs
+from hone_frame.records import Scene, Subject, SubjectLink
+from hone_frame.references import scene_refs
 from hone_frame.requests import (
     Coverage,
-    Dependency,
     Interaction,
     PlannedOutput,
     PlannedRef,
@@ -51,11 +50,15 @@ class Built:
 
 
 def build(store: ProjectStore, request: RequestBase) -> Built:
-    from hone_frame._recipes_more import (  # noqa: PLC0415 - that module imports this one
+    from hone_frame.recipes_scenes import (  # noqa: PLC0415 - that module imports this one
         promote_outputs,
         sequence_outputs,
         state_pair_outputs,
         variation_outputs,
+    )
+    from hone_frame.recipes_subjects import (  # noqa: PLC0415 - imports this module
+        interaction,
+        subject_references,
     )
 
     scene = _scene_of(store, request)
@@ -148,95 +151,6 @@ def _flat(value: Any) -> str:
 # ------------------------------------------------------------------------------------------ recipes
 
 
-def subject_references(store: ProjectStore, request: SubjectReferences, built: Built) -> None:
-    subject = store.subject(request.subject_id)
-    link = SubjectLink(subject_id=subject.id, version=subject.version)
-    role = (
-        "environment"
-        if subject.kind == "environment"
-        else ("object" if subject.kind == "asset" else "identity")
-    )
-    common = {"subjects": [link], "judging": JUDGING[subject.kind]}
-    text = subject_text(subject)
-    if request.hero_image:
-        store.image(request.hero_image)
-        hero_ref: dict[str, Any] = {
-            "references": [
-                PlannedRef(
-                    image_id=request.hero_image, subject_id=subject.id, version=subject.version, role=role
-                )
-            ]
-        }
-    else:
-        own = [
-            PlannedRef(image_id=i, subject_id=subject.id, version=subject.version, role=role)
-            for i in subject.reference_images
-        ]
-        hero = built.add(
-            "Hero",
-            subject.kind,
-            references=own,
-            conditions=["identity_ref"] if own else [],
-            **common,
-            prompt_inputs=base_inputs(
-                built.choices,
-                request,
-                subjects=[text],
-                camera=HERO_CAMERA[subject.kind],
-                pose="neutral-standing" if subject.kind == "character" else None,
-                framing=_hero_framing(subject.kind),
-            ),
-        )
-        hero_ref = {"depends_on": [Dependency(output=hero.id, role=role)]}
-    for spec in _presentation(store, request, subject, built):
-        state = spec.pop("state", None)
-        label = spec.pop("label")
-        built.add(
-            label,
-            subject.kind,
-            **common,
-            **hero_ref,
-            conditions=_conditions(subject.kind, spec, state),
-            prompt_inputs=base_inputs(
-                built.choices, request, subjects=[subject_text(subject, state)], state=state, **spec
-            ),
-        )
-    built.sheet_layout = request.sheet_layout
-
-
-def _hero_framing(kind: str) -> str:
-    return {
-        "character": "full body from head to feet, centred, nothing cropped",
-        "environment": "the whole place, its main anchors visible",
-        "asset": "the whole object centred on a plain background",
-    }[kind]
-
-
-def _presentation(
-    store: ProjectStore, request: SubjectReferences, subject: Subject, built: Built
-) -> list[dict[str, Any]]:
-    category = f"{subject.kind}_presentation"
-    preset = built.choices.get(category, request.presentation)
-    if preset is None:
-        raise InvalidRequest(f"no {category} preset chosen")
-    specs: list[dict[str, Any]] = [dict(o) for o in preset.values.get("outputs", [])]
-    if kind := preset.values.get("from_states"):
-        base = {k: preset.values[k] for k in ("camera", "pose") if k in preset.values}
-        specs += [{"label": s.name, "state": s.name, **base} for s in subject.states if s.kind == kind]
-    specs += [{"label": e, "expression": e, "camera": "close-up"} for e in request.expressions]
-    specs += [{"label": p, "pose": p, "camera": "wide"} for p in request.poses]
-    specs += [{"label": s, "state": s, "camera": "front"} for s in request.states]
-    return specs
-
-
-def _conditions(kind: str, spec: dict[str, Any], state: str | None) -> list[str]:
-    flags = ["identity_ref"]
-    flags += [k for k in ("expression", "pose") if spec.get(k)]
-    flags += ["state"] if state else []
-    flags += ["character"] if kind == "character" else []
-    return flags
-
-
 def scene_conditions(store: ProjectStore, refs: list[PlannedRef], states: bool) -> list[str]:
     roles = {r.role for r in refs}
     flags = [f"{role}_ref" for role in ("identity", "object", "environment") if role in roles]
@@ -284,45 +198,6 @@ def scene_output(
         conditions=scene_conditions(store, refs, has_state),
         prompt_inputs=base_inputs(built.choices, request, **values),
     )
-
-
-def interaction(store: ProjectStore, request: Interaction, built: Built) -> None:
-    character, asset = store.subject(request.character_id), store.subject(request.asset_id)
-    preset = built.choices.get("interaction", request.action)
-    action = (preset.prompt.suffix if preset else request.action).format(
-        character=character.name, asset=asset.name
-    )
-    refs = ref_images(store, _ref(character.id, "identity")) + ref_images(store, _ref(asset.id, "object"))
-    subjects = [character, asset]
-    if request.environment_id:
-        refs += ref_images(store, _ref(request.environment_id, "environment"))
-        subjects.append(store.subject(request.environment_id))
-    if request.pose_image:
-        store.image(request.pose_image)
-        refs.append(PlannedRef(image_id=request.pose_image, role="pose"))
-    for subject in subjects:
-        if not any(r.subject_id == subject.id for r in refs):
-            built.errors.append(f"{subject.name} ({subject.id}) has no accepted image to use as a reference")
-    built.add(
-        preset.name if preset else "Interaction",
-        "interaction",
-        references=refs,
-        subjects=[SubjectLink(subject_id=s.id, version=s.version) for s in subjects],
-        judging="interaction-plausibility",
-        conditions=scene_conditions(store, refs, False),
-        prompt_inputs=base_inputs(
-            built.choices,
-            request,
-            subjects=[subject_text(s) for s in subjects],
-            action=action,
-            pose=request.pose,
-            camera="medium",
-        ),
-    )
-
-
-def _ref(subject_id: str, role: str) -> SceneRef:
-    return SceneRef.model_validate({"subject_id": subject_id, "role": role})
 
 
 def product(axes: dict[str, list[str]]) -> list[dict[str, str]]:

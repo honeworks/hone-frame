@@ -2,20 +2,28 @@
 
 from __future__ import annotations
 
-import hashlib
 import time
 from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from hone_frame._files import now
+from hone_frame.candidates import (
+    CandidateRefused,
+    checked,
+    image_fields,
+    model_inputs,
+    round_findings,
+    seed_for,
+)
+from hone_frame.errors import NotFound
 from hone_frame.events import EventLog
 from hone_frame.judging import checks_for, evaluate, findings
-from hone_frame.pick import pick
-from hone_frame.ports import Generated, ModelFailure
+from hone_frame.pick import decide
+from hone_frame.ports import Generated, ModelFailure, ModelInfo
 from hone_frame.produce_refs import resolve_refs
 from hone_frame.prompts import PlannerAnswer, planner_prompt, template_prompt
-from hone_frame.records import Generation, ImageRecord, RefUse
+from hone_frame.records import ImageRecord
 from hone_frame.requests import PlannedOutput, PlannedRef
 from hone_frame.runs import OutputRecord, RunRecord, StopRequested, control, load_output, run_dir, save_output
 
@@ -23,15 +31,6 @@ if TYPE_CHECKING:
     from hone_frame.store import ProjectStore
 
 T = TypeVar("T")
-RETRY_KINDS = {"out_of_memory", "failed", "no_output", None}
-
-
-class CandidateRefused(Exception):
-    """The model refused or rejected this one candidate's input; the output goes on (design §8.4)."""
-
-
-def seed_for(*parts: object) -> int:
-    return int(hashlib.sha256(":".join(map(str, parts)).encode()).hexdigest()[:8], 16)
 
 
 class Producer:
@@ -51,6 +50,7 @@ class Producer:
         )
         self.refs: list[tuple[PlannedRef, Path, str]] = []
         self.negative: str | None = None
+        self._infos: dict[str, ModelInfo | None] = {}
 
     def run_output(self) -> OutputRecord:
         if self.record.status == "done":
@@ -106,7 +106,7 @@ class Producer:
                     )
                 return
             if self.selection.strategy == "sequential":
-                found = _round_findings(round_images)
+                found = round_findings(round_images)
 
     def _prompt(self, found: list[str]) -> str:
         self._check()
@@ -115,7 +115,8 @@ class Producer:
         template = template_prompt(self.out, named, found)
         prompt = template
         if self.profile.planner and not self.out.prompt_inputs.get("prompt_override"):
-            guide = self._guide()
+            info = self._info(self.out.model)
+            guide = info.prompt_guide if info else ""
             try:
                 answer = self._retrying(
                     "planner",
@@ -137,23 +138,25 @@ class Producer:
         self.log.write("planned", output=self.out.id, message=prompt)
         return prompt
 
-    def _guide(self) -> str:
-        try:
-            return self.models.info(self.out.model).prompt_guide
-        except Exception:
-            return ""
+    def _info(self, model_id: str) -> ModelInfo | None:
+        """What the port says about a model; when it cannot say, an event records what was left out."""
+        if model_id not in self._infos:
+            try:
+                self._infos[model_id] = self.models.info(model_id)
+            except (NotFound, ModelFailure) as exc:
+                self.log.write(
+                    "model_info_unavailable",
+                    output=self.out.id,
+                    model=model_id,
+                    message=f"{exc}; its prompt guide and local flag are left out",
+                )
+                self._infos[model_id] = None
+        return self._infos[model_id]
 
     def _candidate(self, r: int, c: int, prompt: str) -> ImageRecord | None:
+        slot: dict[str, Any] = {"output": self.out.id, "round": r, "candidate": c, "model": self.out.model}
         self.log.write("stage", stage="generating", output=self.out.id)
-        self.log.write(
-            "generating",
-            output=self.out.id,
-            round=r,
-            candidate=c,
-            model=self.out.model,
-            label=self.out.label,
-            rounds=self.selection.rounds,
-        )
+        self.log.write("generating", **slot, label=self.out.label, rounds=self.selection.rounds)
         seed = seed_for(self.seed, r, c)
         out = self.folder / "work" / f"{self.out.id}-r{r}c{c}.png"
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -161,76 +164,28 @@ class Producer:
         try:
             result = self._retrying("generate", lambda: self._generate(prompt, out, seed))
         except CandidateRefused as exc:
-            self.log.write("candidate_failed", output=self.out.id, round=r, candidate=c, message=str(exc))
+            self.log.write("candidate_failed", **slot, message=str(exc))
             return None
         path = result.path or out  # _generate guarantees a file
-        image = self.store.add_image(path, **self._image_fields(r, c, prompt, result))
+        refs = [ref for ref, _, _ in self.refs]
+        fields = image_fields(self.run.id, self.out, self.profile, refs, slot=(r, c), prompt=prompt,
+                              negative=self.negative, result=result)  # fmt: skip
+        image = self.store.add_image(path, **fields)
         path.unlink(missing_ok=True)
-        local = self._local(self.out.model)
-        self.log.write(
-            "generated",
-            output=self.out.id,
-            round=r,
-            candidate=c,
-            model=self.out.model,
-            size=self.out.size,
-            image=image.id,
-            local=local,
-            cost_usd=result.cost_usd,
-            cost_estimated=result.cost_estimated or None,
-            job_id=result.job_id,
-            seed=seed,
-            duration_s=round(result.elapsed_s or time.monotonic() - started, 3),
-        )
+        info = self._info(self.out.model)
+        self.log.write("generated", **slot, size=self.out.size, image=image.id, seed=seed,
+                       job_id=result.job_id, local=info.local if info else None, cost_usd=result.cost_usd,
+                       cost_estimated=result.cost_estimated or None,
+                       duration_s=round(result.elapsed_s or time.monotonic() - started, 3))  # fmt: skip
         self._save(candidates=[*self._all_candidates()])
         return image
 
     def _generate(self, prompt: str, out: Path, seed: int) -> Generated:
-        refs = [p for _, p, _ in self.refs]
-        inputs: dict[str, Any] = dict(self.profile.settings) | {"size": self.out.size}
-        if negative := (self.negative or self.out.prompt_inputs.get("negative")):
-            inputs["negative"] = negative
-        if angle := self.out.prompt_inputs.get("camera_angle"):
-            inputs["camera_angle"] = angle
-        if self.out.mode == "upscale":
-            inputs["image"], refs = refs[0], []
+        inputs, refs = model_inputs(self.out, self.profile, self.negative, [p for _, p, _ in self.refs])
         result = self.models.generate(
             self.out.model, prompt, out=out, seed=seed, references=refs, inputs=inputs
         )
-        if result.error is not None or result.path is None:
-            message = f"{self.out.model}: {result.error or 'no output'} ({result.error_kind})"
-            if result.error_kind in RETRY_KINDS:
-                raise ModelFailure(message, transient=True)
-            raise CandidateRefused(message)
-        return result
-
-    def _image_fields(self, r: int, c: int, prompt: str, result: Generated) -> dict[str, Any]:
-        used = [RefUse(image_id=ref.image_id, role=ref.role) for ref, _, _ in self.refs]
-        generation = Generation(
-            model=self.out.model,
-            prompt=prompt,
-            negative=self.negative or self.out.prompt_inputs.get("negative"),
-            inputs={"size": self.out.size, **self.profile.settings},
-            references=used,
-            seed=result.seed,
-            job_id=result.job_id,
-            elapsed_s=result.elapsed_s,
-            cost_usd=result.cost_usd,
-            cost_estimated=result.cost_estimated,
-        )
-        return {
-            "subjects": self.out.subjects,
-            "label": self.out.label,
-            "run_id": self.run.id,
-            "output_id": self.out.id,
-            "round": r,
-            "candidate": c,
-            "parent": self.out.parent,
-            "generation": generation,
-            "status": "candidate",
-            "profile": self.profile.id,
-            "source": "promoted" if self.out.parent else "generated",
-        }
+        return checked(result, self.out.model)
 
     # ---------------------------------------------------------------------------------- judge and pick
 
@@ -288,26 +243,11 @@ class Producer:
         self._check()
         self.log.write("stage", stage="selecting", output=self.out.id)
         images = [self.store.image(i) for i in self._all_candidates()]
-        if not self.selection.auto_pick:
-            _, best, _ = pick(images, self.folder / "select.jsonl")
-            self._finish("needs_review", None, best, "manual pick: choose a candidate")
-            return
-        winner, best, reason = pick(images, self.folder / "select.jsonl")
-        if winner is not None:
-            self.store.update_image(winner.id, status="picked")
-        self._finish("done" if winner else "needs_review", winner, best, reason)
-
-    def _finish(self, status: str, winner: ImageRecord | None, best: ImageRecord | None, reason: str) -> None:
-        if best is not None:
-            self.store.update_image(best.id, status="best_available")
-        self._save(
-            status=status,
-            selected=winner.id if winner else None,
-            best_available=best.id if best else None,
-            reason=reason,
-            ended_at=now(),
+        status, winner, best, reason = decide(
+            self.store, images, self.selection.auto_pick, self.folder / "select.jsonl"
         )
-        self.log.write("picked", output=self.out.id, image=winner.id if winner else None, message=reason)
+        self._save(status=status, selected=winner, best_available=best, reason=reason, ended_at=now())
+        self.log.write("picked", output=self.out.id, image=winner, message=reason)
 
     # --------------------------------------------------------------------------------------- helpers
 
@@ -329,12 +269,6 @@ class Producer:
             self.log.write("stopped", output=self.out.id, message=action)
             raise StopRequested(action)
 
-    def _local(self, model_id: str) -> bool | None:
-        try:
-            return self.models.info(model_id).local
-        except Exception:
-            return None
-
     def _all_candidates(self) -> list[str]:
         mine = [i for i in self.store.images() if i.run_id == self.run.id and i.output_id == self.out.id]
         return [i.id for i in sorted(mine, key=lambda i: (i.round or 0, i.candidate or 0))]
@@ -342,11 +276,3 @@ class Producer:
     def _save(self, **fields: Any) -> None:
         self.record = self.record.model_copy(update=fields)
         save_output(self.store, self.run.id, self.record)
-
-
-def _round_findings(images: list[ImageRecord]) -> list[str]:
-    judged = [i for i in images if i.evaluation is not None]
-    if not judged:
-        return []
-    best = max(judged, key=lambda i: i.evaluation.overall if i.evaluation else 0.0)
-    return findings(best.evaluation)

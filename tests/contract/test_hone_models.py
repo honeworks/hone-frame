@@ -1,6 +1,10 @@
 """`HoneModels`, the default `Models` port, against hone-models' own fakes (design §7.2)."""
 
 import json
+import threading
+import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
@@ -83,3 +87,58 @@ def test_info_and_available() -> None:
     assert {m.id for m in port.available("image")} >= {"z-image-turbo"}
     with pytest.raises(NotFound):
         port.info("no-such-model")
+
+
+class Sessions:
+    """Counts `mk.session(provider)` entries and exits (decisions D-014)."""
+
+    def __init__(self, delay_s: float = 0.0) -> None:
+        self.entered: list[str] = []
+        self.exited: list[str] = []
+        self.delay_s = delay_s
+
+    @contextmanager
+    def __call__(self, provider: str) -> Iterator[str]:
+        time.sleep(self.delay_s)
+        self.entered.append(provider)
+        try:
+            yield f"http://fake/{provider}"
+        finally:
+            self.exited.append(provider)
+
+
+def _patched(monkeypatch: pytest.MonkeyPatch, sessions: Sessions) -> HoneModels:
+    monkeypatch.setattr(models_module.mk, "session", sessions)
+    monkeypatch.setattr(models_module.mk, "image", FakeMedia.like)
+    return HoneModels()
+
+
+def test_a_local_server_is_entered_once_and_closed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sessions = Sessions()
+    port = _patched(monkeypatch, sessions)
+    for n in range(2):
+        port.generate("z-image-turbo", "a cup", out=tmp_path / f"{n}.png", seed=n, references=[], inputs={})
+    assert sessions.entered == ["comfyui"] and sessions.exited == []
+    port.generate("gpt-image-1.5", "a cup", out=tmp_path / "h.png", seed=3, references=[], inputs={})
+    assert sessions.entered == ["comfyui"]  # a hosted model needs no local server
+    port.close()
+    assert sessions.exited == ["comfyui"]
+    port.generate("z-image-turbo", "a cup", out=tmp_path / "again.png", seed=4, references=[], inputs={})
+    assert sessions.entered == ["comfyui", "comfyui"]  # entered again after close()
+    port.close()
+
+
+def test_concurrent_calls_enter_once(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sessions = Sessions(delay_s=0.05)
+    port = _patched(monkeypatch, sessions)
+
+    def call(n: int) -> None:
+        port.generate("z-image-turbo", "a cup", out=tmp_path / f"t{n}.png", seed=n, references=[], inputs={})
+
+    threads = [threading.Thread(target=call, args=(n,)) for n in range(6)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    assert sessions.entered == ["comfyui"]
+    port.close()

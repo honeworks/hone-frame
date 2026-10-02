@@ -84,7 +84,7 @@ max-complexity = 10
 
 [tool.ruff.lint.per-file-ignores]
 "src/hone_frame/errors.py" = ["N818"]   # exception names are public API (NotFound, InvalidRequest)
-"src/hone_frame/{ports,runs,produce}.py" = ["N818"]   # ModelFailure, StopRequested...: named for what happened
+"src/hone_frame/{ports,runs,candidates}.py" = ["N818"]   # ModelFailure, StopRequested...: named for what happened
 "src/hone_frame/_operations.py" = ["PLC0415"]   # forwards to other modules lazily by design (no import cycle)
 "examples/**" = ["S101", "S603", "PT018", "PLW1510"]   # examples assert the facts they show and run subprocesses
 "tests/**" = ["S101", "S105", "S603", "PLR0915", "PLR0917", "N802", "PT018", "PLC0415", "PLW1510"]

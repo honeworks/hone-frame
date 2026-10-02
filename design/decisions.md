@@ -176,3 +176,14 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
 - **Reason:** starting ComfyUI once per call would cost tens of seconds per image; the dashboard is a
   long-running process anyway.
 
+## D-015: Pillow is a core dependency  (2026-10-02)
+
+- **Question:** sheets, reference reduction, image import (size, format) and the fakes need an image
+  library; should it be an extra?
+- **Options:** (a) an extra `sheets`; (b) a core dependency.
+- **Choice:** (b) `pillow>=10.1` (10.1 brings `ImageFont.load_default(size)`, the bundled font that makes
+  composed sheets byte-identical across machines, design §11.2).
+- **Reason:** every project imports images and every scene reduces its references; without Pillow the
+  package could not open a single image, so an extra would only move the error later. Pillow ships
+  wheels for every supported platform and has no native dependency to install.
+

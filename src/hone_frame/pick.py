@@ -5,11 +5,14 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import hone_select as hs
 
 from hone_frame.records import Evaluation, ImageRecord
+
+if TYPE_CHECKING:
+    from hone_frame.store import ProjectStore
 
 
 class _JsonlSink:
@@ -61,6 +64,25 @@ def pick(
         None,
         best,
         f"no candidate passed {', '.join(failing) or 'the required checks'}; best available {best.id}",
+    )
+
+
+def decide(
+    store: ProjectStore, images: list[ImageRecord], auto_pick: bool, sink_path: Path
+) -> tuple[str, str | None, str | None, str]:
+    """(output status, selected id, best-available id, reason), with the images' statuses updated."""
+    winner, best, reason = pick(images, sink_path)
+    if not auto_pick:
+        winner, reason = None, "manual pick: choose a candidate"
+    elif winner is not None:
+        store.update_image(winner.id, status="picked")
+    if best is not None:
+        store.update_image(best.id, status="best_available")
+    return (
+        ("done" if winner else "needs_review"),
+        winner.id if winner else None,
+        best.id if best else None,
+        reason,
     )
 
 

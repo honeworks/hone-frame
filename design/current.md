@@ -836,13 +836,13 @@ Charts use real character, environment, asset and scene work only.
 | `presets.py` + `data/presets/*.toml` | the catalogue, user packs, validation, versions |
 | `profiles.py` | profiles, selection settings, the effective preset of each category |
 | `requests.py` | request models, planned outputs, plans |
-| `recipes.py`, `_recipes_more.py` | request → planned outputs |
+| `recipes.py`, `recipes_subjects.py`, `recipes_scenes.py` | request → planned outputs: the shared parts; subject references and interactions; state pairs, sequences, grids and promotion |
 | `references.py` | reference resolution, precedence, reduction, size limits |
 | `planning.py` | `plan()`: models per output, counts, warnings, errors, preset versions, the estimate |
 | `prompts.py` | the template prompt, the planner prompt |
 | `judging.py` | judging profiles' checks, the judge prompt, verdict rules |
-| `pick.py` | hone-select selection per output |
-| `produce.py`, `produce_refs.py` | §8.2: rounds, retries, stored candidates, events; an output's references at run time |
+| `pick.py` | hone-select selection per output, and the output's resulting status |
+| `produce.py`, `produce_refs.py`, `candidates.py` | §8.2: rounds, retries, stored candidates, events; an output's references at run time; one candidate's seed, inputs, result check and record |
 | `engine.py` | the hone-flow workflow, `Runner`, `recover`, the requested sheet |
 | `control.py` | submit, pause, cancel, resume, retry, rerun, manual pick |
 | `runs.py` | run and output records, statuses, `RunView` |
@@ -851,7 +851,7 @@ Charts use real character, environment, asset and scene work only.
 | `exports.py` | zip exports |
 | `ports.py` | the `Models` Protocol and its result types |
 | `models.py` | `HoneModels` (hone-models) |
-| `dashboard.py`, `_dashboard_api.py`, `_dashboard_data.py`, `dashboard_page/` | server, API routes, view data, the static page |
+| `dashboard.py`, `_dashboard_api.py`, `_dashboard_work.py`, `_dashboard_data.py`, `dashboard_page/` | server; API routes (workspace, projects, library; scenes, sheets, runs, exports); view data; the static page |
 | `cli.py` | the CLI (extra `cli`) |
 | `testing/` | `FakeModels`, `judge_answer`, `sample_workspace` |
 

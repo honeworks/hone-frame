@@ -1,4 +1,4 @@
-"""The other recipes (design §6.1, §10.5): state pairs, sequences, variation grids and promotion."""
+"""Scene recipes (design §6.1, §10.5): state pairs, sequences, variation grids and promotion."""
 
 from __future__ import annotations
 
