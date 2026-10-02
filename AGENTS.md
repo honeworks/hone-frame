@@ -41,7 +41,7 @@ src/hone_frame/
   engine.py  control.py  runs.py        the hone-flow workflow and Runner; submit / pause / resume / pick; run records
   produce.py  produce_refs.py  candidates.py  the rounds of one output, its references, one candidate
   events.py                              events, estimates, usage
-  sheets.py  exports.py                  the Pillow compositor, zip exports
+  sheets.py  sheets_model.py  exports.py   the Pillow compositor and model sheet, zip exports
   ports.py  models.py                    the Models port; HoneModels (hone-models)
   dashboard.py  _dashboard_api.py  _dashboard_work.py  _dashboard_characters.py  _dashboard_data.py
   dashboard_page/                        the local dashboard

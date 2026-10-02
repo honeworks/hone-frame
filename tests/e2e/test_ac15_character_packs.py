@@ -67,3 +67,17 @@ def test_bad_requests_are_named(ws: hf.Workspace) -> None:
         in p.plan(hf.CharacterPacks(subject_id="char_001", custom={"assets": ["a shield"]})).errors[0]
     )
     assert "packs are made for characters" in p.plan(hf.CharacterPacks(subject_id="obj_001")).errors[0]
+
+
+def test_custom_items_need_their_pack(ws: hf.Workspace) -> None:
+    p = rostam(ws)
+    request = hf.CharacterPacks(subject_id="char_001", packs=["poses"], custom={"outfits": ["a cloak"]})
+    assert "not in packs" in p.plan(request).errors[0]
+
+
+def test_without_an_accepted_hero_the_hero_always_comes_first(ws: hf.Workspace) -> None:
+    p = rostam(ws)
+    only = hf.CharacterPacks(
+        subject_id="char_001", packs=["poses"], custom={"poses": ["bowing"]}, only_custom=True
+    )
+    assert [(o.pack, o.item) for o in p.plan(only).outputs] == [("hero", "Hero"), ("poses", "bowing")]

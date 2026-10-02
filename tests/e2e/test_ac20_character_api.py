@@ -97,3 +97,16 @@ def test_scene_save_suggests_belongings(served: tuple[hf.ProjectStore, str]) -> 
     status, scene = call(base + "/scenes", "POST", body | {"suggest": True})
     assert status == 200 and [r["subject_id"] for r in scene["refs"]] == ["char_001", "obj_001"]
     assert scene["refs"][1]["suggested"] is True
+
+
+def test_errors_say_what_to_do(served: tuple[hf.ProjectStore, str]) -> None:
+    _, base = served
+    status, body = call(base + "/characters/char_001/sheet", "POST", {})
+    assert status == 400 and "generate them first" in body["error"]
+    assert call(base + "/characters/char_009")[0] == 404
+    status, body = call(base + "/characters/char_001/generate", "POST", {"packs": "all"})
+    assert status == 400
+    status, body = call(base + "/characters/char_001/generate", "POST", {"packs": ["props"]})
+    assert status == 400 and "unknown packs" in body["error"]
+    assert call(base + "/world/generate", "POST", {"selection": ONE})[0] == 200
+    assert call(base + "/world/generate", "POST", {"subject_ids": []})[0] == 400

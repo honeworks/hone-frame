@@ -947,7 +947,7 @@ Charts use real character, environment, asset and scene work only.
 | `control.py` | submit, pause, cancel, resume, retry, rerun, manual pick |
 | `runs.py` | run and output records, statuses, `RunView` |
 | `events.py` | `events.jsonl`, estimates, usage |
-| `sheets.py` | the compositor, including the `character-model-sheet` layout |
+| `sheets.py`, `sheets_model.py` | the compositor; the `character-model-sheet` layout |
 | `exports.py` | zip exports |
 | `ports.py` | the `Models` Protocol and its result types |
 | `models.py` | `HoneModels` (hone-models) |

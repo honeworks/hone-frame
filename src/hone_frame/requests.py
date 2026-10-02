@@ -84,7 +84,8 @@ class Variations(RequestBase):
 
 
 class CharacterPacks(RequestBase):
-    """A character's references, pack by pack, from one hero (change 0003)."""
+    """A character's references, pack by pack, from one hero (change 0003). The hero is drawn when the
+    character has no accepted hero, or when `redraw_hero` is set; otherwise the accepted one is reused."""
 
     kind: Literal["character_packs"] = "character_packs"
     subject_id: str

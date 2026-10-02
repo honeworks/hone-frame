@@ -93,13 +93,19 @@ def pack_items(
 
 
 def character_packs(store: ProjectStore, request: CharacterPacks, built: Built) -> None:
-    """The hero once (unless one is accepted), then every chosen pack's items from it (change 0003)."""
+    """The hero once, then every chosen pack's items from it (change 0003). Without an accepted hero the
+    hero is always the first output, whatever `packs` and `only_custom` say: nothing else can be made
+    without it (D-027)."""
     subject = store.subject(request.subject_id)
     if subject.kind != "character":
         raise InvalidRequest(f"{subject.name} is a {subject.kind}; packs are made for characters")
     chosen = request.packs or list(packs())
     if unknown := sorted(set(chosen) - set(packs())) + sorted(set(request.custom) - set(packs())):
         raise InvalidRequest(f"unknown packs {unknown}; use {list(packs())}")
+    if left_out := sorted(set(request.custom) - set(chosen)):
+        raise InvalidRequest(
+            f"items of your own for {left_out}, which are not in packs: add them or drop the items"
+        )
     maker = _PackMaker(store, request, built, subject)
     hero = None if request.redraw_hero else accepted_hero(store, subject.id)
     maker.identity = maker.hero() if hero is None else {"references": [maker.ref(hero, subject, "identity")]}
