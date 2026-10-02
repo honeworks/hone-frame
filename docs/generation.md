@@ -77,3 +77,32 @@ out = p2.run_view(run.id).outputs[0]
 print(out.status, out.reason)
 assert out.selected == out.candidates[1]  # the only one without the anatomy failure
 ```
+
+## How prompts are written
+
+Each prompt is written for the model that draws it (its **dialect**), the task (**mode**) and the style
+(design §8.8):
+
+- **z-image-turbo, a new picture:** long and structured, shot first, every piece of clothing, a plain
+  background for references, style words at the start (and, for 2D styles, at the end too).
+- **FLUX.2 klein, another view of the same character:** a short edit instruction: "Show the same person
+  as in image 1, from directly behind… Keep exactly the same as in image 1: … Change only what is asked."
+- **Qwen-Image-Edit:** the same, opening with its camera phrase (`<sks> back view eye-level shot wide
+  shot`) for the Multiple-Angles LoRA.
+
+```python
+from hone_frame.prompts import compose
+from hone_frame.requests import PlannedRef
+
+plan = project.plan(hf.SubjectReferences(subject_id=woman.id, presentation="turnaround", profile="final"))
+back = next(o for o in plan.outputs if o.label == "Back")
+ref = [(PlannedRef(image_id="img_0001", subject_id=woman.id, role="identity"), "Woman")]
+prompt = compose(back, ref, [], project.workspace.dialects.for_model(back.model))
+print(prompt.dialect, prompt.mode)
+print(prompt.text)
+assert prompt.text.startswith("<sks> back view")
+```
+
+To change how prompts are written for a model, add `prompting.toml` to the workspace folder with a
+`[dialects.<name>]` table (the same shape as hone-frame's `data/prompting.toml`); a dialect with the same
+name replaces the shipped one.

@@ -94,5 +94,5 @@ def test_model_info_unavailable_is_recorded(tmp_path: Path) -> None:
     assert len(events) == 1 and "registry could not be read" in str(events[0]["message"])
     view = p.run_view(run)
     assert view.status == "done"
-    assert "none given" in next(c.prompt for c in fake.asked if "write the prompt" in c.prompt)
+    assert "Z-Image Turbo" in next(c.prompt for c in fake.asked if "write the prompt" in c.prompt)
     assert all("local" not in e for e in _events(p, run, "generated")) and view.usage["gpu_s"] is None

@@ -34,7 +34,8 @@ src/hone_frame/
   presets.py  data/presets/*.toml        the preset catalogue
   profiles.py  requests.py               profiles, requests, plans
   recipes.py  recipes_subjects.py  recipes_scenes.py   request -> planned outputs
-  references.py  planning.py  prompts.py reference roles and limits, plans, prompts
+  references.py  planning.py             reference roles and limits, plans
+  prompts.py  prompt_sections.py  dialects.py  data/prompting.toml   prompts per model dialect, task and style
   judging.py  pick.py                    judging profiles and verdicts, hone-select picks
   engine.py  control.py  runs.py        the hone-flow workflow and Runner; submit / pause / resume / pick; run records
   produce.py  produce_refs.py  candidates.py  the rounds of one output, its references, one candidate

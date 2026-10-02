@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from hone_frame._files import read_json
 from hone_frame.errors import InvalidRequest, NotFound
-from hone_frame.recipes import JUDGING, Built, base_inputs, product, scene_output, subject_text, view_flags
+from hone_frame.recipes import JUDGING, Built, base_inputs, product, scene_output, view_flags
 from hone_frame.records import Scene, SubjectLink
 from hone_frame.references import subject_images
 from hone_frame.requests import (
@@ -167,7 +167,7 @@ def _subject_output(
         prompt_inputs=base_inputs(
             built.choices,
             request,
-            subjects=[subject_text(subject)],
+            who=[(subject, None)],
             camera=extra.pop("camera", "front"),
             **extra,
         ),

@@ -23,7 +23,7 @@ def test_turnaround_three_rounds(ws: hf.Workspace, fake: FakeModels) -> None:
     assert [o.label for o in plan.outputs] == ["Hero", "Front", "3/4", "Side", "Back"]
     assert (plan.counts.outputs, plan.counts.images, plan.counts.judge_calls) == (5, 15, 15)
     assert all(d.output == "o01" for o in plan.outputs[1:] for d in o.depends_on)
-    assert plan.presets["profile:draft"] == 1 and plan.presets["style_pack:cinematic-realism"] == 1
+    assert plan.presets["profile:draft"] == 1 and plan.presets["style_pack:cinematic-realism"] == 2
     run = p.submit(req)
     assert run.status == "queued"
     run_all(p)
@@ -226,3 +226,33 @@ def _png(path: Path) -> Path:
 
     Image.new("RGB", (32, 48), "#888888").save(path)
     return path
+
+
+def test_a_planner_answer_over_budget_is_rejected(tmp_path: Path) -> None:
+    from hone_frame.prompts import PlannerAnswer
+
+    class Wordy(FakeModels):
+        def ask(self, model_id: str, prompt: str, *, images: list[Path], schema: Any, think: bool) -> Any:
+            if schema is PlannerAnswer:
+                return PlannerAnswer(prompt="very " * 400)
+            return super().ask(model_id, prompt, images=images, schema=schema, think=think)
+
+    fake = Wordy()
+    ws = hf.Workspace(tmp_path, models=fake)
+    p, woman = _woman(ws)
+    run = p.submit(
+        hf.SubjectReferences(
+            subject_id=woman, presentation="neutral-full-body", selection=hf.Selection(rounds=1)
+        )
+    )
+    run_all(p)
+    from hone_frame.events import read_events
+
+    events = read_events(p.root / "runs" / run.id / "events.jsonl")
+    rejected = [e for e in events if e["event"] == "planner_rejected"]
+    assert rejected and "over the 250-word budget" in str(rejected[0]["message"])
+    planned = next(e for e in events if e["event"] == "planned")
+    assert planned["dialect"] == "z-image" and planned["mode"] == "generate"
+    assert "very very" not in fake.generated[0].prompt
+    image = p.image(p.run_view(run.id).outputs[0].candidates[0])
+    assert image.generation and (image.generation.dialect, image.generation.mode) == ("z-image", "generate")

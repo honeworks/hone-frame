@@ -32,6 +32,7 @@ JUDGING = {
     "asset": "object-fidelity",
 }
 HERO_CAMERA = {"character": "front", "environment": "establishing", "asset": "front"}
+CAMERA_DATA = {"view", "faces_away", "azimuth", "elevation", "distance"}
 REAR_CAMERAS = {"rear"}  # views where a face is not expected: identity is judged from behind (D-020)
 
 
@@ -126,7 +127,15 @@ def fragment(choices: PresetChoices, category: str, value: str | None) -> str:
     return (preset.prompt.prefix if category == "camera" else preset.prompt.suffix).strip()
 
 
-def base_inputs(choices: PresetChoices, request: RequestBase, **values: Any) -> dict[str, Any]:
+def base_inputs(
+    choices: PresetChoices,
+    request: RequestBase,
+    *,
+    who: list[tuple[Subject, str | None]] | None = None,
+    **values: Any,
+) -> dict[str, Any]:
+    """The prompt material of one output: preset wording, the camera's data, the style's forms and, for
+    `who` (subject, state), both the joined text and the structured parts the dialects use (§8.8)."""
     pack = choices.get("style_pack")
     lighting = values.pop("lighting", None) or choices.choice("lighting")
     camera = values.pop("camera", None)
@@ -138,11 +147,35 @@ def base_inputs(choices: PresetChoices, request: RequestBase, **values: Any) -> 
         "lighting": fragment(choices, "lighting", lighting),
         "camera": fragment(choices, "camera", camera),
         "camera_angle": camera_preset.values.get("camera_angle") if camera_preset else None,
+        "camera_values": {
+            k: v for k, v in (camera_preset.values if camera_preset else {}).items() if k in CAMERA_DATA
+        },
+        "style": {
+            "prefix": pack.prompt.prefix,
+            "suffix": pack.prompt.suffix,
+            "short": pack.values.get("short", ""),
+            "dialects": pack.values.get("dialects", {}),
+        }
+        if pack
+        else {},
+        "subjects": [subject_text(s, state) for s, state in who or []],
+        "subject_parts": [subject_part(s, state) for s, state in who or []],
         "expression": fragment(choices, "expression", values.pop("expression", None)),
         "pose": fragment(choices, "pose", values.pop("pose", None)),
         "note": request.note,
     }
     return inputs | {k: v for k, v in values.items() if v not in (None, "")}
+
+
+def subject_part(subject: Subject, state: str | None = None) -> dict[str, Any]:
+    found = subject.state(state)
+    return {
+        "name": subject.name,
+        "kind": subject.kind,
+        "description": subject.description,
+        "fields": dict(subject.fields),
+        "state": (found.description or found.name) if found else state,
+    }
 
 
 def subject_text(subject: Subject, state: str | None = None) -> str:
@@ -185,10 +218,9 @@ def scene_output(
 ) -> PlannedOutput:
     refs, errors = scene_refs(store, scene)
     built.errors += errors
-    texts = [subject_text(store.subject(r.subject_id, r.version), r.state) for r in scene.refs]
+    who = [(store.subject(r.subject_id, r.version), r.state) for r in scene.refs]
     request = RequestBase()
     values: dict[str, Any] = {
-        "subjects": texts,
         "description": scene.description,
         "action": scene.action,
         "framing": scene.framing,
@@ -209,7 +241,7 @@ def scene_output(
         judging=judging,
         seed_group=seed_group,
         conditions=scene_conditions(store, refs, has_state) + view_flags(camera),
-        prompt_inputs=base_inputs(built.choices, request, **values),
+        prompt_inputs=base_inputs(built.choices, request, who=who, **values),
     )
 
 

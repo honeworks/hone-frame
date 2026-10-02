@@ -3,112 +3,112 @@
 
 [[presets]]
 id = "establishing"
-version = 1
+version = 2
 name = "Establishing"
 description = "A very wide view that shows the whole place and where the subject is in it."
 prompt = { prefix = "Establishing shot, very wide view of the whole location,", suffix = "" }
-values = { camera_angle = "wide" }
+values = { view = "as a very wide establishing view of the whole place", faces_away = false, azimuth = "front view", elevation = "elevated shot", distance = "wide shot", camera_angle = "wide" }
 
 [[presets]]
 id = "wide"
-version = 1
+version = 2
 name = "Wide"
 description = "The full figure with plenty of surroundings."
 prompt = { prefix = "Wide shot, full body with the surroundings visible,", suffix = "" }
-values = { camera_angle = "wide" }
+values = { view = "as a wide view with the whole figure and its surroundings", faces_away = false, azimuth = "front view", elevation = "eye-level shot", distance = "wide shot", camera_angle = "wide" }
 
 [[presets]]
 id = "medium"
-version = 1
+version = 2
 name = "Medium"
 description = "Waist up: the subject and what they are doing."
 prompt = { prefix = "Medium shot from the waist up,", suffix = "" }
-values = { camera_angle = "front" }
+values = { view = "from the waist up", faces_away = false, azimuth = "front view", elevation = "eye-level shot", distance = "medium shot", camera_angle = "front" }
 
 [[presets]]
 id = "close-up"
-version = 1
+version = 2
 name = "Close-up"
 description = "Head and shoulders, for expression."
 prompt = { prefix = "Close-up shot of the head and shoulders,", suffix = "" }
-values = { camera_angle = "close_up" }
+values = { view = "as a close-up of the head and shoulders", faces_away = false, azimuth = "front view", elevation = "eye-level shot", distance = "close-up", camera_angle = "close_up" }
 
 [[presets]]
 id = "extreme-close-up"
-version = 1
+version = 2
 name = "Extreme close-up"
 description = "A single feature fills the frame: eyes, hands, a detail."
 prompt = { prefix = "Extreme close-up filling the frame,", suffix = "" }
-values = { camera_angle = "close_up" }
+values = { view = "as an extreme close-up of one feature", faces_away = false, azimuth = "front view", elevation = "eye-level shot", distance = "close-up", camera_angle = "close_up" }
 
 [[presets]]
 id = "detail"
-version = 1
+version = 2
 name = "Detail"
 description = "A close view of one object or material detail."
 prompt = { prefix = "Detail shot, close view of the object and its material,", suffix = "" }
-values = { camera_angle = "close_up" }
+values = { view = "as a close view of a detail", faces_away = false, azimuth = "front view", elevation = "eye-level shot", distance = "close-up", camera_angle = "close_up" }
 
 [[presets]]
 id = "front"
-version = 1
+version = 2
 name = "Front"
 description = "Straight on from the front, eye level."
 prompt = { prefix = "Front view, facing the camera straight on, eye level,", suffix = "" }
-values = { camera_angle = "front" }
+values = { view = "from the front, facing the camera", faces_away = false, azimuth = "front view", elevation = "eye-level shot", distance = "medium shot", camera_angle = "front" }
 
 [[presets]]
 id = "profile"
-version = 1
+version = 2
 name = "Profile"
 description = "A side view: exactly 90 degrees from the front."
 prompt = { prefix = "Side profile view, turned 90 degrees to the camera, eye level,", suffix = "" }
-values = { camera_angle = "right_side" }
+values = { view = "from the side, in profile, turned 90 degrees to the camera", faces_away = false, azimuth = "right side view", elevation = "eye-level shot", distance = "medium shot", camera_angle = "right_side" }
 
 [[presets]]
 id = "rear"
-version = 1
+version = 2
 name = "Rear"
 description = "Seen from behind."
 prompt = { prefix = "Rear view, seen from directly behind, eye level,", suffix = "" }
-values = { camera_angle = "back" }
+values = { view = "from directly behind: the back of the head and the back of the body", faces_away = true, azimuth = "back view", elevation = "eye-level shot", distance = "medium shot", camera_angle = "back" }
 
 [[presets]]
 id = "three-quarter"
-version = 1
+version = 2
 name = "Three-quarter"
 description = "Turned 45 degrees: the classic turnaround angle between front and side."
 prompt = { prefix = "Three-quarter view, turned 45 degrees from the front, eye level,", suffix = "" }
-values = { camera_angle = "right_45" }
+values = { view = "turned 45 degrees, in three-quarter view", faces_away = false, azimuth = "front-right quarter view", elevation = "eye-level shot", distance = "medium shot", camera_angle = "right_45" }
 
 [[presets]]
 id = "overhead"
-version = 1
+version = 2
 name = "Overhead"
 description = "Looking straight down from above."
 prompt = { prefix = "Overhead shot looking straight down from above,", suffix = "" }
-values = { camera_angle = "high_angle" }
+values = { view = "from directly above", faces_away = false, azimuth = "front view", elevation = "high-angle shot", distance = "medium shot", camera_angle = "high_angle" }
 
 [[presets]]
 id = "low-angle"
-version = 1
+version = 2
 name = "Low angle"
 description = "The camera looks up at the subject, which makes it feel larger."
 prompt = { prefix = "Low-angle shot looking up at the subject,", suffix = "" }
-values = { camera_angle = "low_angle" }
+values = { view = "from a low angle, the camera looking up", faces_away = false, azimuth = "front view", elevation = "low-angle shot", distance = "medium shot", camera_angle = "low_angle" }
 
 [[presets]]
 id = "reverse"
-version = 1
+version = 2
 name = "Reverse angle"
 description = "The opposite direction of the previous shot: what the subject is looking at."
 prompt = { prefix = "Reverse angle, the camera faces the opposite direction, toward what the subject is looking at,", suffix = "" }
-values = { camera_angle = "back" }
+values = { view = "from the opposite direction, toward what the subject faces", faces_away = true, azimuth = "back view", elevation = "eye-level shot", distance = "medium shot", camera_angle = "back" }
 
 [[presets]]
 id = "pov"
-version = 1
+version = 2
 name = "Point of view"
 description = "What the character sees, from their eye position."
 prompt = { prefix = "First-person point of view from the character's eyes, their hands may be visible,", suffix = "" }
-values = {}
+values = { view = "from the character's own point of view", faces_away = false, azimuth = "front view", elevation = "eye-level shot", distance = "medium shot" }

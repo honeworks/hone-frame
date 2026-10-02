@@ -258,3 +258,9 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
 - **Reason:** brief §12 ("neutral reference lighting"); the owner's first Rostam turnaround was drawn
   in a colonnaded hall with dramatic light because the Historical epic pack sets `dramatic-side`.
 
+## D-022: camera presets and style packs moved to version 2  (2026-10-02)
+
+- **Choice:** the data added by change 0002 (camera `view`, `faces_away`, `azimuth`, `elevation`,
+  `distance`; style `short` and per-dialect wording) bumps every camera preset and style pack to version
+  2, so runs record that their prompts were written with the new data.
+
