@@ -1,6 +1,6 @@
 # The workspace, projects and versions
 
-Everything lives in one folder, the **workspace** (`HONE_FRAME_HOME`, else `./hone-frame`): projects as
+Everything lives in one folder, the **workspace** (`HONE_FRAME_HOME`, else `~/hone-frame`): projects as
 JSON files, images as files, runs as hone-flow run folders. There is no database, so a project can be
 copied, backed up or read without hone-frame (design §4).
 

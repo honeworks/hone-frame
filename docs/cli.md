@@ -1,7 +1,7 @@
 # The command line
 
 Install the `cli` extra (`pip install "hone-frame[cli]"`). Every command takes `--home DIR` (default
-`$HONE_FRAME_HOME`, else `./hone-frame`). The ones that print take `--json`. Exit codes: 0 success, 1
+`$HONE_FRAME_HOME`, else `~/hone-frame`). The ones that print take `--json`. Exit codes: 0 success, 1
 a hone-frame error, 2 a usage error.
 
 ```bash

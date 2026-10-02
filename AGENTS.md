@@ -50,7 +50,7 @@ examples/              one explained, runnable example per concept
 design/                why and how: README, current.md, changes/, decisions.md, history/
 ```
 
-A workspace folder (`HONE_FRAME_HOME`, default `./hone-frame`) holds everything: projects as JSON files,
+A workspace folder (`HONE_FRAME_HOME`, default `~/hone-frame`) holds everything: projects as JSON files,
 images as files, hone-flow run folders under `flows/`. There is no database.
 
 ## Rules

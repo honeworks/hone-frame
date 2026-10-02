@@ -15,7 +15,7 @@ from hone_frame.workspace import Workspace
 app = typer.Typer(help="Hone Frame: a project-based visual production workspace.", no_args_is_help=True)
 Home = Annotated[
     Path | None,
-    typer.Option("--home", help="The workspace folder (default $HONE_FRAME_HOME or ./hone-frame)."),
+    typer.Option("--home", help="The workspace folder (default $HONE_FRAME_HOME, else ~/hone-frame)."),
 ]
 Json = Annotated[bool, typer.Option("--json", help="Print JSON.")]
 

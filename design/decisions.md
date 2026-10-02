@@ -212,3 +212,12 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
 - **Reason:** the real fix belongs to hone-models (drop an unused slot's whole chain up to an optional
   input); until then this keeps the editor usable with one reference.
 
+## D-018: the default workspace is `~/hone-frame`  (2026-10-02)
+
+- **Question:** the first default was `./hone-frame`, relative to the folder the process starts in, so the
+  dashboard started from another folder showed an empty workspace, and one started inside the repository
+  wrote images into it.
+- **Choice:** `HONE_FRAME_HOME` when set, else `~/hone-frame`, by the owner's choice. `--home` and
+  `hf.Workspace(path)` still pick any folder.
+- **Reason:** one place for a person's work, whatever folder a command runs in.
+
