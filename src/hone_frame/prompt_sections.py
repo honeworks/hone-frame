@@ -149,6 +149,8 @@ def keep(c: Ctx) -> str:
     kept = ["the same build and height, the same hair" if c.faces_away else "the same face, hair and build"]
     if c.inputs.get("outfit"):
         clothes = ""
+    elif c.camera.get("distance") == "close-up" and not c.inputs.get("full_body"):
+        clothes = "the same clothes and colours where they show"  # naming boots would widen a close-up
     elif c.compact:
         clothes = short_outfit(_field(part, "outfits"))
     else:

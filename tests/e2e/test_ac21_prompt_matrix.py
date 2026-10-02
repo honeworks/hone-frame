@@ -77,10 +77,13 @@ def _no_contradictions(out: PlannedOutput, composed: Composed, where: str) -> No
         assert "same face" not in text and "weathered" not in text, f"{where}: a face in a back view"
     if out.pack == "expressions":
         assert "head to feet" not in text and "whole figure" not in text, f"{where}: full body in a close-up"
-        assert "close-up" in text, where
+        assert "close-up" in text and "boots" not in text, f"{where}: a close-up that names the feet"
     if p.get("full_body"):
         assert "head to feet" in text, f"{where}: full figure not asked"
     assert "surroundings" not in text, f"{where}: scenery asked on a white background"
+    rostam = bool(out.subjects) and out.subjects[0].subject_id == "char_001" and out.kind == "character"
+    if rostam and not p.get("outfit") and not p.get("state") and p.get("full_body"):
+        assert "helmet" in text and "boots" in text, f"{where}: a piece of the outfit forgotten"
     if p.get("outfit"):
         assert "tiger-skin coat worn over" not in text, f"{where}: the usual outfit kept in an outfit change"
     if composed.dialect == "qwen-edit":
