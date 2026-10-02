@@ -1,0 +1,196 @@
+"""The pieces a prompt is made of (design §8.8, change 0002): each turns an output's inputs into one
+sentence, or nothing. Dialects choose which pieces, in what order (dialects.py)."""
+
+from __future__ import annotations
+
+from collections.abc import Callable
+from dataclasses import dataclass, field
+from typing import Any
+
+from hone_frame.dialects import Dialect, Mode
+from hone_frame.requests import PlannedOutput, PlannedRef
+
+ROLE_WORDS = {
+    "identity": "keep the face, hair, body and clothing of {name} exactly as in image {n}",
+    "object": "{name} must look exactly like the object in image {n}",
+    "environment": "the place is the one in image {n} ({name})",
+    "outfit": "dress {name} in the outfit shown in image {n}",
+    "pose": "match the body pose shown in image {n}",
+    "expression": "match the facial expression shown in image {n}",
+    "composition": "keep the composition, framing and camera of image {n}",
+    "lighting": "match the lighting of image {n}",
+    "style": "match the art style of image {n}",
+}
+NOUN = {"character": "person", "environment": "place", "asset": "object"}
+
+
+@dataclass
+class Ctx:
+    """What a section can read."""
+
+    out: PlannedOutput
+    refs: list[tuple[PlannedRef, str]]
+    findings: list[str]
+    dialect: Dialect
+    mode: Mode
+    style_form: str
+    inputs: dict[str, Any] = field(default_factory=dict[str, Any])
+
+    @property
+    def parts(self) -> list[dict[str, Any]]:
+        return list(self.inputs.get("subject_parts") or [])
+
+    @property
+    def camera(self) -> dict[str, Any]:
+        return dict(self.inputs.get("camera_values") or {})
+
+    @property
+    def faces_away(self) -> bool:
+        return bool(self.camera.get("faces_away"))
+
+    @property
+    def style(self) -> dict[str, Any]:
+        return dict(self.inputs.get("style") or {})
+
+
+def _mapping(value: Any) -> dict[str, Any]:
+    return dict(value) if isinstance(value, dict) else {}  # pyright: ignore[reportUnknownArgumentType]
+
+
+def _field(part: dict[str, Any], key: str) -> str:
+    value: Any = _mapping(part.get("fields")).get(key)
+    if isinstance(value, list):
+        items: list[Any] = list(value)  # pyright: ignore[reportUnknownArgumentType]
+        return ", ".join(str(v) for v in items)
+    return str(value or "").strip().rstrip(".;, ")
+
+
+def camera_phrase(c: Ctx) -> str:
+    template = c.dialect.camera_phrase
+    if not template:
+        return ""
+    cam = {"azimuth": "front view", "elevation": "eye-level shot", "distance": "medium shot"} | c.camera
+    if c.inputs.get("full_body"):
+        cam["distance"] = "wide shot"
+    return template.format(**cam)
+
+
+def shot(c: Ctx) -> str:
+    words = [str(c.inputs.get("camera") or "").strip().rstrip(",")]
+    if c.inputs.get("framing"):
+        words.append(str(c.inputs["framing"]))
+    elif c.inputs.get("full_body"):
+        words.append("the whole figure from head to feet, nothing cropped")
+    return ", ".join(w for w in words if w)
+
+
+def view(c: Ctx) -> str:
+    if not c.parts:
+        return ""
+    part = c.parts[0]
+    noun = NOUN.get(str(part.get("kind")), "subject")
+    where = str(c.camera.get("view") or "from the same angle")
+    sentence = f"Show the same {noun} as in image 1, {part.get('name')}, {where}"
+    if c.inputs.get("full_body"):
+        sentence += ", the whole figure from head to feet"
+    if c.faces_away:
+        sentence += "; the face is not visible, the figure faces away from the camera"
+    return sentence
+
+
+def subject(c: Ctx) -> str:
+    texts: list[str] = []
+    for part in c.parts:
+        name, about = str(part.get("name") or ""), str(part.get("description") or "").strip().rstrip(".")
+        bits = [about if about.startswith(name) else f"{name}: {about}".rstrip(": ")]
+        if not c.faces_away and _field(part, "appearance"):
+            bits.append(_field(part, "appearance"))
+        if _field(part, "proportions"):
+            bits.append(_field(part, "proportions"))
+        texts.append("; ".join(bits))
+    return ". ".join(texts)
+
+
+def outfit(c: Ctx) -> str:
+    return ". ".join(f"{p.get('name')} wears {_field(p, 'outfits')}" for p in c.parts if _field(p, "outfits"))
+
+
+def features(c: Ctx) -> str:
+    return ". ".join(_field(p, "features") for p in c.parts if _field(p, "features"))
+
+
+def keep(c: Ctx) -> str:
+    if not c.parts:
+        return ""
+    part = c.parts[0]
+    kept = ["the same build and height, the same hair" if c.faces_away else "the same face, hair and build"]
+    kept += [x for x in (_field(part, "outfits"), _field(part, "features")) if x]
+    return "Keep exactly the same as in image 1: " + "; ".join(kept) + ". Change only what is asked above"
+
+
+def scene(c: Ctx) -> str:
+    return str(c.inputs.get("description") or "")
+
+
+def roles(c: Ctx) -> str:
+    sentences = [
+        ROLE_WORDS[r.role].format(name=name or "the subject", n=i) for i, (r, name) in enumerate(c.refs, 1)
+    ]
+    return ("Reference images: " + "; ".join(sentences)) if sentences else ""
+
+
+def _short_style(c: Ctx) -> bool:
+    """A short prompt, or a reference image: the style's few words, without the pack's setting and mood
+    (a reference stands on a plain background, whatever the style pack's scene wording)."""
+    return c.style_form == "short" or bool(c.inputs.get("reference"))
+
+
+def style_lead(c: Ctx) -> str:
+    own = _mapping(_mapping(c.style.get("dialects")).get(c.dialect.name))
+    if own.get("prefix"):
+        return str(own["prefix"])
+    return str(c.style.get("short") or "") if _short_style(c) else str(c.style.get("prefix") or "")
+
+
+def style_close(c: Ctx) -> str:
+    own = _mapping(_mapping(c.style.get("dialects")).get(c.dialect.name))
+    if own.get("suffix"):
+        return str(own["suffix"])
+    return "" if _short_style(c) else str(c.style.get("suffix") or "")
+
+
+def _labelled(label: str, key: str) -> Callable[[Ctx], str]:
+    def section(c: Ctx) -> str:
+        value = c.inputs.get(key)
+        return f"{label}: {value}" if label and value else str(value or "")
+
+    return section
+
+
+SECTION: dict[str, Callable[[Ctx], str]] = {
+    "camera_phrase": camera_phrase,
+    "shot": shot,
+    "view": view,
+    "subject": subject,
+    "outfit": outfit,
+    "features": features,
+    "keep": keep,
+    "scene": scene,
+    "roles": roles,
+    "action": _labelled("Action", "action"),
+    "expression": _labelled("", "expression"),
+    "pose": _labelled("", "pose"),
+    "gaze": _labelled("Gaze", "gaze"),
+    "state": _labelled("State", "state"),
+    "frame": _labelled("", "frame"),
+    "background": _labelled("", "background"),
+    "lighting": _labelled("", "lighting"),
+    "style_lead": style_lead,
+    "style_close": style_close,
+    "text_refs": lambda c: ("Also: " + "; ".join(c.out.text_refs)) if c.out.text_refs else "",
+    "note": lambda c: (
+        str(c.inputs.get("note") or "").strip()
+        + (" " + str(c.inputs.get("notes")) if c.inputs.get("notes") else "")
+    ),
+    "fixes": lambda c: ("Fix from the last attempt: " + "; ".join(c.findings)) if c.findings else "",
+}

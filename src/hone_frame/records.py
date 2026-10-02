@@ -110,6 +110,8 @@ class Generation(Record):
     elapsed_s: float | None = None
     cost_usd: float | None = None
     cost_estimated: bool = False
+    dialect: str | None = None  # how the prompt was written (change 0002)
+    mode: str | None = None
 
 
 class CheckResult(Record):

@@ -16,13 +16,14 @@ from hone_frame.candidates import (
     round_findings,
     seed_for,
 )
+from hone_frame.dialects import Dialect
 from hone_frame.errors import NotFound
 from hone_frame.events import EventLog
 from hone_frame.judging import checks_for, evaluate, findings
 from hone_frame.pick import decide
 from hone_frame.ports import Generated, ModelFailure, ModelInfo
 from hone_frame.produce_refs import resolve_refs
-from hone_frame.prompts import PlannerAnswer, planner_prompt, template_prompt
+from hone_frame.prompts import Composed, PlannerAnswer, compose, planner_problem, planner_prompt
 from hone_frame.records import ImageRecord
 from hone_frame.requests import PlannedOutput, PlannedRef
 from hone_frame.runs import OutputRecord, RunRecord, StopRequested, control, load_output, run_dir, save_output
@@ -50,6 +51,7 @@ class Producer:
         )
         self.refs: list[tuple[PlannedRef, Path, str]] = []
         self.negative: str | None = None
+        self.composed: Composed | None = None
         self._infos: dict[str, ModelInfo | None] = {}
 
     def run_output(self) -> OutputRecord:
@@ -109,34 +111,44 @@ class Producer:
                 found = round_findings(round_images)
 
     def _prompt(self, found: list[str]) -> str:
+        """The prompt in the model's dialect for this mode; the planner only within its rules (§8.8)."""
         self._check()
         self.log.write("stage", stage="planning", output=self.out.id)
-        named = [(ref, name) for ref, _, name in self.refs]
-        template = template_prompt(self.out, named, found)
-        prompt = template
-        if self.profile.planner and not self.out.prompt_inputs.get("prompt_override"):
-            info = self._info(self.out.model)
-            guide = info.prompt_guide if info else ""
-            try:
-                answer = self._retrying(
-                    "planner",
-                    lambda: self.models.ask(
-                        self.profile.planner or "",
-                        planner_prompt(self.out, template, guide, found),
-                        images=[],
-                        schema=PlannerAnswer,
-                        think=self.profile.planner_think,
-                    ),
-                )
-                prompt = answer.prompt.strip() or template
-                self.negative = answer.negative
-            except ModelFailure as exc:
-                self.log.write(
-                    "planner_failed", output=self.out.id, message=f"{exc}; the template prompt is used"
-                )
+        dialect = self.store.workspace.dialects.for_model(self.out.model)
+        draft = compose(self.out, [(ref, name) for ref, _, name in self.refs], found, dialect)
+        self.composed = draft
+        prompt = draft.text
+        if self.profile.planner and draft.mode != "promotion":
+            prompt = self._planned(draft, dialect, found) or prompt
         self._save(prompt=prompt)
-        self.log.write("planned", output=self.out.id, message=prompt)
+        self.log.write("planned", output=self.out.id, message=prompt, dialect=draft.dialect, mode=draft.mode)
         return prompt
+
+    def _planned(self, draft: Composed, dialect: Dialect, found: list[str]) -> str | None:
+        try:
+            answer = self._retrying(
+                "planner",
+                lambda: self.models.ask(
+                    self.profile.planner or "",
+                    planner_prompt(self.out, draft, dialect, found),
+                    images=[],
+                    schema=PlannerAnswer,
+                    think=self.profile.planner_think,
+                ),
+            )
+        except ModelFailure as exc:
+            self.log.write(
+                "planner_failed", output=self.out.id, message=f"{exc}; the composed prompt is used"
+            )
+            return None
+        text = answer.prompt.strip()
+        if problem := planner_problem(text, draft):
+            self.log.write(
+                "planner_rejected", output=self.out.id, message=f"{problem}; the composed prompt is used"
+            )
+            return None
+        self.negative = answer.negative
+        return text
 
     def _info(self, model_id: str) -> ModelInfo | None:
         """What the port says about a model; when it cannot say, an event records what was left out."""
@@ -168,20 +180,42 @@ class Producer:
             return None
         path = result.path or out  # _generate guarantees a file
         refs = [ref for ref, _, _ in self.refs]
-        fields = image_fields(self.run.id, self.out, self.profile, refs, slot=(r, c), prompt=prompt,
-                              negative=self.negative, result=result)  # fmt: skip
+        how = (self.composed.dialect, self.composed.mode) if self.composed else None
+        fields = image_fields(
+            self.run.id,
+            self.out,
+            self.profile,
+            refs,
+            slot=(r, c),
+            prompt=prompt,
+            dialect=how,
+            negative=self.negative,
+            result=result,
+        )
         image = self.store.add_image(path, **fields)
         path.unlink(missing_ok=True)
         info = self._info(self.out.model)
-        self.log.write("generated", **slot, size=self.out.size, image=image.id, seed=seed,
-                       job_id=result.job_id, local=info.local if info else None, cost_usd=result.cost_usd,
-                       cost_estimated=result.cost_estimated or None,
-                       duration_s=round(result.elapsed_s or time.monotonic() - started, 3))  # fmt: skip
+        self.log.write(
+            "generated",
+            **slot,
+            size=self.out.size,
+            image=image.id,
+            seed=seed,
+            job_id=result.job_id,
+            local=info.local if info else None,
+            cost_usd=result.cost_usd,
+            cost_estimated=result.cost_estimated or None,
+            duration_s=round(result.elapsed_s or time.monotonic() - started, 3),
+        )
         self._save(candidates=[*self._all_candidates()])
         return image
 
     def _generate(self, prompt: str, out: Path, seed: int) -> Generated:
-        inputs, refs = model_inputs(self.out, self.profile, self.negative, [p for _, p, _ in self.refs])
+        in_prompt = bool(self.composed and self.composed.camera_phrase)
+        refs_paths = [p for _, p, _ in self.refs]
+        inputs, refs = model_inputs(
+            self.out, self.profile, self.negative, refs_paths, camera_in_prompt=in_prompt
+        )
         result = self.models.generate(
             self.out.model, prompt, out=out, seed=seed, references=refs, inputs=inputs
         )

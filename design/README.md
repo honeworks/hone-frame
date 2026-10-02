@@ -59,6 +59,7 @@ chooses a paid model.
 |---|---|
 | [`current.md`](current.md) | the design as it stands today: concepts, rules and the guarantees the tests check |
 | [`changes/0001-initial-design.md`](changes/0001-initial-design.md) | the first design, from the owner's brief |
+| [`changes/0002-prompt-dialects.md`](changes/0002-prompt-dialects.md) | prompts written per model, task and style |
 | [`history/`](history/) | the owner's product brief, kept in full |
 | [`decisions.md`](decisions.md) | small implementation choices, and the items awaiting owner review |
 

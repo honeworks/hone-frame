@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Prompts are written per model (dialects: z-image, FLUX.2 klein, Qwen-Image-Edit, generic), per task
+  (a new picture, another view of the same subject, a composed scene) and per style; the planner's
+  rewrite is checked against the dialect's rules (change 0002).
 - "Generate again" for one output on the run page (also "None of these" when choosing a candidate):
   a new run for that output with a note added to its prompt and, optionally, another profile and number
   of rounds; the old output becomes "Replaced" and keeps its images.

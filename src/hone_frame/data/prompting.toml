@@ -1,0 +1,71 @@
+# Prompt dialects (design §8.8, change 0002): how a prompt is written for a model, per task (mode).
+# `models` are hone-models ids or patterns with `*`; the first dialect that matches wins, `generic` last.
+# Per mode: `sections` in order (see prompt_sections.py), `max_words`, `style` ("full": the pack's prefix
+# and suffix, "short": the pack's short form), and `rules` for the planner.
+
+[dialects.z-image]
+models = ["z-image-turbo", "z-image*"]
+summary = "Z-Image Turbo: long, structured text-to-image prompts; no negative prompt"
+[dialects.z-image.generate]
+sections = ["style_lead", "shot", "subject", "outfit", "features", "pose", "expression", "gaze", "action", "state", "scene", "frame", "background", "lighting", "text_refs", "note", "fixes", "style_close"]
+max_words = 250
+style = "full"
+rules = "Write 80 to 250 words of plain descriptive English in this order: shot and composition, the subject's appearance, every piece of clothing with colours and materials, background, lighting, style. Z-Image ignores negative prompts: state every constraint as a positive sentence (for example 'the whole figure from head to feet is visible'). Keep the opening and closing style words."
+
+[dialects.flux-klein]
+models = ["flux.2-klein*", "flux.2*"]
+summary = "FLUX.2 klein: 40 to 120 words, subject first; with references, describe the change"
+[dialects.flux-klein.generate]
+sections = ["shot", "subject", "outfit", "features", "pose", "expression", "action", "state", "scene", "background", "lighting", "style_lead", "note", "fixes"]
+max_words = 120
+style = "short"
+rules = "Write 40 to 120 words. Put the subject first, then the environment, then the style; nouns matter more than adjectives. One idea per sentence; no lists of synonyms."
+[dialects.flux-klein.view]
+sections = ["view", "keep", "pose", "expression", "state", "background", "lighting", "style_lead", "note", "fixes"]
+max_words = 110
+style = "short"
+rules = "This is an edit of image 1: say first what changes (the camera view, the expression or the pose), then what must stay exactly the same. Do not describe the whole character again. 40 to 110 words. Refer to the reference as 'image 1'."
+[dialects.flux-klein.compose]
+sections = ["scene", "roles", "action", "expression", "pose", "shot", "state", "lighting", "text_refs", "style_lead", "note", "fixes"]
+max_words = 120
+style = "short"
+rules = "Combine the references into one new picture: say which subject comes from which image ('the man from image 1', 'the cup from image 2'), what happens, then the setting, light and style. 40 to 120 words."
+
+[dialects.qwen-edit]
+models = ["qwen-image-edit*"]
+summary = "Qwen-Image-Edit 2511: keep / change instructions; the Multiple-Angles LoRA camera phrase first"
+camera_phrase = "<sks> {azimuth} {elevation} {distance}"
+[dialects.qwen-edit.generate]
+sections = ["camera_phrase", "shot", "subject", "outfit", "features", "pose", "expression", "action", "state", "scene", "background", "lighting", "style_lead", "note", "fixes"]
+max_words = 200
+style = "short"
+rules = "Keep the camera phrase that starts with <sks> exactly as it is, first. Then plain sentences: the subject, clothing, background, light, style. Up to 200 words."
+[dialects.qwen-edit.view]
+sections = ["camera_phrase", "view", "keep", "pose", "expression", "state", "background", "lighting", "style_lead", "note", "fixes"]
+max_words = 110
+style = "short"
+rules = "Keep the camera phrase that starts with <sks> exactly as it is, first. Then an edit instruction in the pattern 'keep X, change Y': name the reference as 'image 1', say what changes, then list what must not change. Do not describe the whole character again. Up to 110 words."
+[dialects.qwen-edit.compose]
+sections = ["camera_phrase", "scene", "roles", "action", "expression", "pose", "state", "lighting", "text_refs", "style_lead", "note", "fixes"]
+max_words = 150
+style = "short"
+rules = "Keep the camera phrase that starts with <sks> exactly as it is, first. Name each reference by number ('the woman from image 1', 'the kitchen from image 2') and say what each one contributes; then the action, light and style. Up to 150 words."
+
+[dialects.generic]
+models = ["*"]
+summary = "Any other model: a complete descriptive prompt"
+[dialects.generic.generate]
+sections = ["style_lead", "shot", "subject", "outfit", "features", "pose", "expression", "gaze", "action", "state", "scene", "frame", "background", "lighting", "roles", "text_refs", "note", "fixes", "style_close"]
+max_words = 300
+style = "full"
+rules = "Write a complete, concrete description: subject, clothing, setting, light, camera, style."
+[dialects.generic.view]
+sections = ["view", "keep", "pose", "expression", "state", "background", "lighting", "style_lead", "note", "fixes"]
+max_words = 200
+style = "short"
+rules = "This is an edit of image 1: say what changes, then what must stay exactly the same."
+[dialects.generic.compose]
+sections = ["style_lead", "scene", "roles", "action", "expression", "pose", "gaze", "shot", "state", "frame", "lighting", "text_refs", "note", "fixes", "style_close"]
+max_words = 300
+style = "full"
+rules = "Combine the references into one picture; say which subject comes from which image."

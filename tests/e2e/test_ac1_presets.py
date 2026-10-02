@@ -73,7 +73,11 @@ def test_only_profiles_name_models() -> None:
         if category == "profile":
             continue
         for preset in catalog.list(category):
-            text = preset.model_dump_json().lower()
+            data = preset.model_dump()
+            data["values"].pop(
+                "dialects", None
+            )  # per-dialect wording is keyed by dialect, not a model choice
+            text = str(data).lower()
             assert not any(word in text for word in MODEL_WORDS), (category, preset.id)
 
 
@@ -132,13 +136,13 @@ def test_runs_record_preset_versions(tmp_path: Path) -> None:
     p = ws.create_project("P", style_pack="inked-comic")
     woman = p.add_subject("character", "Woman", description="x")
     run = p.submit(hf.SubjectReferences(subject_id=woman.id))
-    assert run.presets["style_pack:inked-comic"] == 1
+    assert run.presets["style_pack:inked-comic"] == 2
     assert run.presets["profile:draft"] == 1 and run.presets["judging:character-identity"] == 2
     (tmp_path / "presets").mkdir()
     (tmp_path / "presets" / "v2.toml").write_text(
-        '[[presets]]\nid = "inked-comic"\ncategory = "style_pack"\nversion = 2\nname = "Inked"\n'
+        '[[presets]]\nid = "inked-comic"\ncategory = "style_pack"\nversion = 3\nname = "Inked"\n'
         'description = "changed"\n'
     )
     again = hf.Workspace(tmp_path, models=FakeModels()).project(p.id)
-    assert again.run_view(run.id).presets["style_pack:inked-comic"] == 1
+    assert again.run_view(run.id).presets["style_pack:inked-comic"] == 2
     assert again.info.style_pack == "inked-comic"

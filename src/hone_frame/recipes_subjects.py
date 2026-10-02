@@ -13,7 +13,6 @@ from hone_frame.recipes import (
     base_inputs,
     reference_lighting,
     scene_conditions,
-    subject_text,
     view_flags,
 )
 from hone_frame.records import SceneRef, Subject, SubjectLink
@@ -33,7 +32,6 @@ def subject_references(store: ProjectStore, request: SubjectReferences, built: B
         else ("object" if subject.kind == "asset" else "identity")
     )
     common = {"subjects": [link], "judging": JUDGING[subject.kind]}
-    text = subject_text(subject)
     lighting = reference_lighting(built, request)
     if request.hero_image:
         store.image(request.hero_image)
@@ -58,7 +56,9 @@ def subject_references(store: ProjectStore, request: SubjectReferences, built: B
             prompt_inputs=base_inputs(
                 built.choices,
                 request,
-                subjects=[text],
+                who=[(subject, None)],
+                full_body=subject.kind == "character",
+                reference=True,
                 camera=HERO_CAMERA[subject.kind],
                 pose="neutral-standing" if subject.kind == "character" else None,
                 framing=_hero_framing(subject.kind),
@@ -77,10 +77,26 @@ def subject_references(store: ProjectStore, request: SubjectReferences, built: B
             **hero_ref,
             conditions=_conditions(subject.kind, spec, state),
             prompt_inputs=base_inputs(
-                built.choices, request, subjects=[subject_text(subject, state)], state=state, **spec
+                built.choices,
+                request,
+                who=[(subject, state)],
+                state=_state_words(subject, state),
+                full_body=_full_body(subject.kind, spec),
+                reference=True,
+                **spec,
             ),
         )
     built.sheet_layout = request.sheet_layout
+
+
+def _state_words(subject: Subject, state: str | None) -> str | None:
+    found = subject.state(state)
+    return (found.description or found.name) if found else state
+
+
+def _full_body(kind: str, spec: dict[str, Any]) -> bool:
+    """A character view that shows the whole figure (the turnaround, poses, outfits)."""
+    return kind == "character" and (spec.get("pose") is not None or spec.get("camera") == "wide")
 
 
 def _hero_framing(kind: str) -> str:
@@ -143,7 +159,7 @@ def interaction(store: ProjectStore, request: Interaction, built: Built) -> None
         prompt_inputs=base_inputs(
             built.choices,
             request,
-            subjects=[subject_text(s) for s in subjects],
+            who=[(s, None) for s in subjects],
             action=action,
             pose=request.pose,
             camera="medium",

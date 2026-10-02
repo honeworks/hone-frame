@@ -24,18 +24,27 @@ def seed_for(*parts: object) -> int:
 
 
 def model_inputs(
-    out: PlannedOutput, profile: ResolvedProfile, negative: str | None, refs: list[Path]
+    out: PlannedOutput,
+    profile: ResolvedProfile,
+    negative: str | None,
+    refs: list[Path],
+    *,
+    camera_in_prompt: bool = False,
 ) -> tuple[dict[str, Any], list[Path]]:
-    """The named inputs and reference files of one image call; an upscale sends its draft as `image`."""
+    """The named inputs and reference files of one image call; an upscale sends its draft as `image`. When
+    the dialect writes the camera phrase into the prompt, `camera_angle` is not sent as well (0002)."""
     inputs: dict[str, Any] = dict(profile.settings) | {"size": out.size}
     if negative := (negative or out.prompt_inputs.get("negative")):
         inputs["negative"] = negative
-    if angle := out.prompt_inputs.get("camera_angle"):
+    if (angle := out.prompt_inputs.get("camera_angle")) and not camera_in_prompt:
         inputs["camera_angle"] = angle
     if out.mode == "upscale":
         if not refs:
-            raise ModelFailure(f"{out.label}: an upscale needs its draft image as a reference; plan it with "
-                               "hf.Promote(image_id=..., operation='upscale')", transient=False)  # fmt: skip
+            raise ModelFailure(
+                f"{out.label}: an upscale needs its draft image as a reference; plan it with "
+                "hf.Promote(image_id=..., operation='upscale')",
+                transient=False,
+            )
         inputs["image"], refs = refs[0], []
     return inputs, refs
 
@@ -60,6 +69,7 @@ def image_fields(
     prompt: str,
     negative: str | None,
     result: Generated,
+    dialect: tuple[str, str] | None = None,
 ) -> dict[str, Any]:
     """The `ImageRecord` fields of a stored candidate (design §4.3)."""
     generation = Generation(
@@ -73,6 +83,8 @@ def image_fields(
         elapsed_s=result.elapsed_s,
         cost_usd=result.cost_usd,
         cost_estimated=result.cost_estimated,
+        dialect=dialect[0] if dialect else None,
+        mode=dialect[1] if dialect else None,
     )
     return {
         "subjects": out.subjects,

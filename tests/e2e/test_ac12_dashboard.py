@@ -72,6 +72,7 @@ def test_read_endpoints(served: tuple[hf.ProjectStore, str]) -> None:
     assert len(call(base, "/api/presets")[1]) == 14
     models = call(base, "/api/models")[1]
     assert {m["id"] for m in models["image"]} >= {"z-image-turbo"} and "latency_s" in models["chat"][0]
+    assert models["image"][0]["prompt_guide"] == "plain sentences"  # shown in the Models view (D-023)
     assert [s["name"] for s in call(base, f"{p}/subjects?kind=asset")[1]] == ["Coffee cup", "Toothbrush"]
     subject = call(base, f"{p}/subjects/char_001")[1]
     assert subject["versions"][0]["version"] == 1 and subject["images"][0]["url"].startswith(

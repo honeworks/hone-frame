@@ -424,17 +424,12 @@ for round in 1..rounds:
 pick (§8.5)                                                                  stage "selecting"
 ```
 
-- The **template prompt** (`prompts.py`) joins, in order:
-  - the style pack's prefix;
-  - the subject descriptions, with their state;
-  - the output's view, expression, pose, camera, lighting and action fragments;
-  - the scene description and the request note;
-  - the reference roles in words ("image 1 is the identity of Woman...");
-  - the style suffix.
-
-  The **planner** gets the same material plus the generator's guide (`mk.guide(model).prompt`) and
-  returns `{"prompt": str, "negative": str | null}`. If the planner fails after its technical retries,
-  the template prompt is used and a `planner_failed` event says so.
+- The **prompt** is composed for the generating model's **dialect**, the output's **mode** and the
+  style (§8.8, change 0002). The **planner** gets the dialect's rules for that mode, the word budget and
+  the composed draft, and returns `{"prompt": str, "negative": str | null}`. Its answer is used only if
+  it passes the dialect's checks (§8.8); otherwise the composed draft is used and a `planner_rejected`
+  event says why. If the planner fails after its technical retries, the composed draft is used and a
+  `planner_failed` event says so.
 - **Sequential strategy:** the next round's prompt gets the latest findings ("fix: the cup handle is
   missing; keep: identity"). The stable identity references are always attached, and a candidate image
   is never used as the identity reference.
@@ -549,6 +544,34 @@ Output statuses:
   `WaitingForReference`, so hone-flow marks that item `failed`. Other outputs continue.
 - `p.retry(run)` resumes the hone-flow run, which reruns the failed items. Outputs that are `done` are
   never produced again.
+
+### 8.8 Prompt dialects (change 0002)
+
+- **Mode**, from what the model receives: `generate` (no reference image), `view` (the same character,
+  place or object again from its reference: other views, expressions, poses, states), `compose`
+  (references combined into a scene, interaction or sequence frame). Promotions keep their own wording.
+- **Dialect** (`data/prompting.toml`, plus `<home>/prompting.toml`, whose dialects win by name): the
+  models it serves (ids or `*` patterns; `generic` last), an optional `camera_phrase` template, and per
+  mode the ordered `sections`, `max_words`, the style form (`full` or `short`) and the planner's
+  `rules`. Shipped: `z-image` (long and structured, up to 250 words), `flux-klein` (subject first, up to
+  120; a view is an edit instruction), `qwen-edit` (the Multiple-Angles camera phrase first, keep and
+  change, up to 110 for a view), `generic`.
+- **Sections** (`prompt_sections.py`): `camera_phrase`, `shot`, `view`, `subject`, `outfit`, `features`,
+  `keep`, `scene`, `roles`, `action`, `expression`, `pose`, `gaze`, `state`, `frame`, `background`,
+  `lighting`, `style_lead`, `style_close`, `text_refs`, `note`, `fixes`. A view whose camera preset has
+  `faces_away` leaves the face out everywhere and says it is not visible; a full-figure output asks for
+  the whole figure and uses `wide shot` in the camera phrase; a reference output (`reference`) uses the
+  style pack's `short` form, never its scene and mood wording.
+- **Budget:** over `max_words`, optional sections are dropped, least important first (`style_close`,
+  `text_refs`, `frame`, `gaze`, `features`, `style_lead`...); `camera_phrase`, `view`, `keep`, `subject`,
+  `scene` and `fixes` are never dropped.
+- **Style packs** carry `short` and optional `dialects.<name>.prefix / suffix` (clean 2D animation opens
+  and closes a z-image prompt with its 2D wording). **Camera presets** carry `view`, `faces_away`,
+  `azimuth`, `elevation` and `distance`.
+- **Planner check:** a rewrite is refused when it is longer than 125% of `max_words`, loses the camera
+  phrase, or no longer names `image 1` when the draft did.
+- When the dialect writes the camera phrase, `camera_angle` is not also sent as an input. The `planned`
+  event and each image's `generation` record the `dialect` and `mode`.
 
 ## 9. Runs
 
@@ -864,7 +887,7 @@ Charts use real character, environment, asset and scene work only.
 | `recipes.py`, `recipes_subjects.py`, `recipes_scenes.py` | request → planned outputs: the shared parts; subject references and interactions; state pairs, sequences, grids and promotion |
 | `references.py` | reference resolution, precedence, reduction, size limits |
 | `planning.py` | `plan()`: models per output, counts, warnings, errors, preset versions, the estimate |
-| `prompts.py` | the template prompt, the planner prompt |
+| `prompts.py`, `prompt_sections.py`, `dialects.py`, `data/prompting.toml` | prompts composed per dialect, mode and style; the planner prompt and its check (§8.8) |
 | `judging.py` | judging profiles' checks, the judge prompt, verdict rules |
 | `pick.py` | hone-select selection per output, and the output's resulting status |
 | `produce.py`, `produce_refs.py`, `candidates.py` | §8.2: rounds, retries, stored candidates, events; an output's references at run time; one candidate's seed, inputs, result check and record |

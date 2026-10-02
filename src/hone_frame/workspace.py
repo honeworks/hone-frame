@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Literal
 from pydantic import Field
 
 from hone_frame._files import now, project_lock, read_json, slug, write_json
+from hone_frame.dialects import Dialects
 from hone_frame.errors import InvalidRequest
 from hone_frame.presets import PresetCatalog
 from hone_frame.records import Project, ProjectDefaults, Record
@@ -51,6 +52,11 @@ class Workspace:
             own = self.root / "hone-models.toml"  # this workspace's model entries, when present
             self._models = HoneModels(extra=[own] if own.is_file() else [])
         return self._models
+
+    @cached_property
+    def dialects(self) -> Dialects:
+        """The prompt dialects (design §8.8): shipped, plus `<home>/prompting.toml` when it exists."""
+        return Dialects(self.root)
 
     @cached_property
     def presets(self) -> PresetCatalog:

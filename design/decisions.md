@@ -258,3 +258,15 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
 - **Reason:** brief §12 ("neutral reference lighting"); the owner's first Rostam turnaround was drawn
   in a colonnaded hall with dramatic light because the Historical epic pack sets `dramatic-side`.
 
+## D-022: camera presets and style packs moved to version 2  (2026-10-02)
+
+- **Choice:** the data added by change 0002 (camera `view`, `faces_away`, `azimuth`, `elevation`,
+  `distance`; style `short` and per-dialect wording) bumps every camera preset and style pack to version
+  2, so runs record that their prompts were written with the new data.
+
+## D-023: the model's prompt guide is shown, not sent to the planner  (2026-10-02)
+
+- **Choice:** since change 0002 the planner gets the dialect's rules instead of the one-line prompt guide
+  from hone-models' registry. `ModelInfo.prompt_guide` stays: the Models view shows it beside each model,
+  and it is where a person reads what a new model wants before writing a dialect for it.
+

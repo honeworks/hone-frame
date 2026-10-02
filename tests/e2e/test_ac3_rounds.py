@@ -23,7 +23,7 @@ def test_turnaround_three_rounds(ws: hf.Workspace, fake: FakeModels) -> None:
     assert [o.label for o in plan.outputs] == ["Hero", "Front", "3/4", "Side", "Back"]
     assert (plan.counts.outputs, plan.counts.images, plan.counts.judge_calls) == (5, 15, 15)
     assert all(d.output == "o01" for o in plan.outputs[1:] for d in o.depends_on)
-    assert plan.presets["profile:draft"] == 1 and plan.presets["style_pack:cinematic-realism"] == 1
+    assert plan.presets["profile:draft"] == 1 and plan.presets["style_pack:cinematic-realism"] == 2
     run = p.submit(req)
     assert run.status == "queued"
     run_all(p)
@@ -226,3 +226,78 @@ def _png(path: Path) -> Path:
 
     Image.new("RGB", (32, 48), "#888888").save(path)
     return path
+
+
+def test_a_planner_answer_over_budget_is_rejected(tmp_path: Path) -> None:
+    from hone_frame.prompts import PlannerAnswer
+
+    class Wordy(FakeModels):
+        def ask(self, model_id: str, prompt: str, *, images: list[Path], schema: Any, think: bool) -> Any:
+            if schema is PlannerAnswer:
+                return PlannerAnswer(prompt="very " * 400)
+            return super().ask(model_id, prompt, images=images, schema=schema, think=think)
+
+    fake = Wordy()
+    ws = hf.Workspace(tmp_path, models=fake)
+    p, woman = _woman(ws)
+    run = p.submit(
+        hf.SubjectReferences(
+            subject_id=woman, presentation="neutral-full-body", selection=hf.Selection(rounds=1)
+        )
+    )
+    run_all(p)
+    from hone_frame.events import read_events
+
+    events = read_events(p.root / "runs" / run.id / "events.jsonl")
+    rejected = [e for e in events if e["event"] == "planner_rejected"]
+    assert rejected and "over the 250-word budget" in str(rejected[0]["message"])
+    planned = next(e for e in events if e["event"] == "planned")
+    assert planned["dialect"] == "z-image" and planned["mode"] == "generate"
+    assert "very very" not in fake.generated[0].prompt
+    image = p.image(p.run_view(run.id).outputs[0].candidates[0])
+    assert image.generation and (image.generation.dialect, image.generation.mode) == ("z-image", "generate")
+
+
+def test_a_workspace_dialect_changes_the_prompt_sent(tmp_path: Path) -> None:
+    fake = FakeModels()
+    ws = hf.Workspace(tmp_path, models=fake)
+    (tmp_path / "prompting.toml").write_text(
+        '[dialects.z-image]\nmodels = ["z-image-turbo"]\n[dialects.z-image.generate]\n'
+        'sections = ["subject"]\nmax_words = 30\n'
+    )
+    p, woman = _woman(ws)
+    p.update(defaults={"profiles": {"draft": {"planner": None}}})
+    p.submit(
+        hf.SubjectReferences(
+            subject_id=woman, presentation="neutral-full-body", selection=hf.Selection(rounds=1)
+        )
+    )
+    run_all(p)
+    assert fake.generated[0].prompt == "Woman: late twenties, black hair in a bun."
+
+
+def test_planner_rewrites_that_drop_the_camera_or_the_images_are_refused(tmp_path: Path) -> None:
+    from hone_frame.events import read_events
+    from hone_frame.prompts import PlannerAnswer
+    from hone_frame.testing import sample_workspace
+
+    class Forgetful(FakeModels):
+        def ask(self, model_id: str, prompt: str, *, images: list[Path], schema: Any, think: bool) -> Any:
+            if schema is PlannerAnswer:
+                return PlannerAnswer(prompt="A man seen from behind.")
+            return super().ask(model_id, prompt, images=images, schema=schema, think=think)
+
+    p = sample_workspace(tmp_path / "ws", models=Forgetful())
+    for profile, reason in (("final", "camera phrase"), ("draft", "no longer named")):
+        run = p.submit(
+            hf.SubjectReferences(
+                subject_id="char_001",
+                presentation="turnaround",
+                profile=profile,
+                hero_image="img_0001",
+                selection=hf.Selection(rounds=1),
+            )
+        )
+        run_all(p)
+        events = read_events(p.root / "runs" / run.id / "events.jsonl")
+        assert any(e["event"] == "planner_rejected" and reason in str(e["message"]) for e in events), profile
