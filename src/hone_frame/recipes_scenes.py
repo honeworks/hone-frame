@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from hone_frame._files import read_json
 from hone_frame.errors import InvalidRequest, NotFound
-from hone_frame.recipes import JUDGING, Built, base_inputs, product, scene_output, subject_text
+from hone_frame.recipes import JUDGING, Built, base_inputs, product, scene_output, subject_text, view_flags
 from hone_frame.records import Scene, SubjectLink
 from hone_frame.references import subject_images
 from hone_frame.requests import (
@@ -155,6 +155,7 @@ def _subject_output(
     refs = [PlannedRef(image_id=i, subject_id=subject.id, version=subject.version, role=role) for i in images]
     flags = ["identity_ref"] + (["character"] if subject.kind == "character" else [])
     flags += [k for k in ("expression", "pose", "state") if extra.get(k)]
+    flags += view_flags(extra.get("camera", "front"))
     return built.add(
         label,
         subject.kind,

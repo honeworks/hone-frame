@@ -26,17 +26,14 @@ def judge_answer(
     prompt: str, *, fail: tuple[str, ...] = (), uncertain: tuple[str, ...] = (), overall: float = 0.8
 ) -> dict[str, Any]:
     """A judge answer for every check the prompt lists: pass, except those named in `fail` / `uncertain`."""
-    checks: list[dict[str, Any]] = []
+    checks: dict[str, dict[str, Any]] = {}
     for name in CHECK_LINE.findall(prompt):
         verdict = "fail" if name in fail else ("uncertain" if name in uncertain else "pass")
-        checks.append(
-            {
-                "name": name,
-                "verdict": verdict,
-                "score": 0.3 if verdict == "fail" else 0.9,
-                "finding": f"{name} looks {'wrong' if verdict == 'fail' else 'right'}",
-            }
-        )
+        checks[name] = {
+            "verdict": verdict,
+            "score": 0.3 if verdict == "fail" else 0.9,
+            "finding": f"{name} looks {'wrong' if verdict == 'fail' else 'right'}",
+        }
     return {"description": "a test picture", "checks": checks, "overall": overall, "summary": "scripted"}
 
 
@@ -122,7 +119,7 @@ class FakeModels:
         if schema is PlannerAnswer:
             draft = prompt.split("Draft prompt:\n", 1)[-1].split("\n", 1)[0]
             return schema.model_validate({"prompt": draft, "negative": None})
-        if schema is JudgeAnswer:
+        if issubclass(schema, JudgeAnswer):
             judged = sum(1 for c in self.asked[: index + 1] if "quality judge" in c.prompt) - 1
             return schema.model_validate(self.judge(judged, prompt, list(images)))
         raise ModelFailure(f"FakeModels cannot answer {schema.__name__}", transient=False)

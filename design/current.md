@@ -463,13 +463,20 @@ class CheckResult(BaseModel):
     score: float | None  # 0..1, a comparative signal, not a probability
     finding: str  # one concrete sentence
 
-class Evaluation(BaseModel):
+class Evaluation(BaseModel):  # what hone-frame stores
     description: str  # what the judge sees, written first
     checks: list[CheckResult]
     overall: float  # 0..1 preference among acceptable candidates
     summary: str
 ```
 
+- **The judge's schema names every check.** The schema sent to the judge (`answer_schema(checks)`)
+  makes `checks` an object with one required key per check name (any name: fields are aliased), each
+  `{verdict, score, finding}`, so a
+  judge cannot mislabel or skip a check (D-020).
+- **Rear views** (camera `rear`, in subject references and scenes) replace `identity` with
+  `identity_from_behind`: build, hair, clothing
+  and distinguishing features against the reference, no face expected (D-020).
 - **Only meaningful checks.** A check whose condition does not hold is left out of the prompt. Examples:
   `identity` without an identity reference, `anatomy` for an isolated object, `state` without a
   requested state.

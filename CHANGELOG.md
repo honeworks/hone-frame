@@ -34,6 +34,11 @@ All notable changes to this project are documented here. The format follows
   default: move the `./hone-frame` folder to `~/hone-frame`, or point `HONE_FRAME_HOME` at it.
 
 ### Fixed
+- Judged candidates ended in "Needs review" with "the judge did not answer this check": the judge named
+  every check "JudgeCheck". The judge's answer now has one named field per check. Back views are judged
+  on build, hair and outfit (`identity_from_behind`) instead of a face they cannot show.
+- Reference images use neutral studio light on a plain background, whatever the style pack's mood
+  lighting, unless a lighting is chosen.
 - The run page of a run that has not started a stage yet no longer drops the connection (the browser
   showed "NetworkError" right after Generate); any unexpected API error is now a JSON 500 with its
   message, and the run page retries a failed poll instead of stopping.

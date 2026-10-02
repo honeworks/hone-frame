@@ -32,6 +32,19 @@ JUDGING = {
     "asset": "object-fidelity",
 }
 HERO_CAMERA = {"character": "front", "environment": "establishing", "asset": "front"}
+REAR_CAMERAS = {"rear"}  # views where a face is not expected: identity is judged from behind (D-020)
+
+
+def view_flags(camera: str | None) -> list[str]:
+    """Judging conditions that come from the camera."""
+    return ["rear"] if camera in REAR_CAMERAS else []
+
+
+def reference_lighting(built: Built, request: RequestBase) -> str:
+    """Reference images use neutral studio light on a plain background, whatever the style pack's mood
+    lighting, unless the request or the project chose a lighting on purpose (brief §12, decisions D-021)."""
+    chosen = request.presets.get("lighting") or built.choices.layers[2].get("lighting")
+    return chosen or "neutral-studio"
 
 
 class Built:
@@ -195,7 +208,7 @@ def scene_output(
         references=refs,
         judging=judging,
         seed_group=seed_group,
-        conditions=scene_conditions(store, refs, has_state),
+        conditions=scene_conditions(store, refs, has_state) + view_flags(camera),
         prompt_inputs=base_inputs(built.choices, request, **values),
     )
 

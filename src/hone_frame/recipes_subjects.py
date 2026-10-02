@@ -6,7 +6,16 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from hone_frame.errors import InvalidRequest
-from hone_frame.recipes import HERO_CAMERA, JUDGING, Built, base_inputs, scene_conditions, subject_text
+from hone_frame.recipes import (
+    HERO_CAMERA,
+    JUDGING,
+    Built,
+    base_inputs,
+    reference_lighting,
+    scene_conditions,
+    subject_text,
+    view_flags,
+)
 from hone_frame.records import SceneRef, Subject, SubjectLink
 from hone_frame.references import ref_images
 from hone_frame.requests import Dependency, Interaction, PlannedRef, SubjectReferences
@@ -25,6 +34,7 @@ def subject_references(store: ProjectStore, request: SubjectReferences, built: B
     )
     common = {"subjects": [link], "judging": JUDGING[subject.kind]}
     text = subject_text(subject)
+    lighting = reference_lighting(built, request)
     if request.hero_image:
         store.image(request.hero_image)
         hero_ref: dict[str, Any] = {
@@ -52,12 +62,14 @@ def subject_references(store: ProjectStore, request: SubjectReferences, built: B
                 camera=HERO_CAMERA[subject.kind],
                 pose="neutral-standing" if subject.kind == "character" else None,
                 framing=_hero_framing(subject.kind),
+                lighting=lighting,
             ),
         )
         hero_ref = {"depends_on": [Dependency(output=hero.id, role=role)]}
     for spec in _presentation(store, request, subject, built):
         state = spec.pop("state", None)
         label = spec.pop("label")
+        spec.setdefault("lighting", lighting)
         built.add(
             label,
             subject.kind,
@@ -101,7 +113,7 @@ def _conditions(kind: str, spec: dict[str, Any], state: str | None) -> list[str]
     flags += [k for k in ("expression", "pose") if spec.get(k)]
     flags += ["state"] if state else []
     flags += ["character"] if kind == "character" else []
-    return flags
+    return flags + view_flags(spec.get("camera"))
 
 
 def interaction(store: ProjectStore, request: Interaction, built: Built) -> None:

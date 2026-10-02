@@ -156,3 +156,73 @@ def test_auto_pick_needs_the_judge(ws: hf.Workspace) -> None:
     assert any("automatic pick needs automatic judging" in e for e in plan.errors)
     with pytest.raises(hf.errors.InvalidRequest, match="automatic pick"):
         p.submit(hf.SubjectReferences(subject_id=woman, selection=hf.Selection(auto_judge=False)))
+
+
+def test_rear_views_are_judged_from_behind(ws: hf.Workspace, fake: FakeModels) -> None:
+    p, woman = _woman(ws)
+    plan = p.plan(hf.SubjectReferences(subject_id=woman, presentation="turnaround"))
+    back = next(o for o in plan.outputs if o.label == "Back")
+    assert "rear" in back.conditions and "rear" not in plan.outputs[1].conditions
+    p.submit(
+        hf.SubjectReferences(subject_id=woman, presentation="turnaround", selection=hf.Selection(rounds=1))
+    )
+    run_all(p)
+    prompts = [c.prompt for c in fake.asked if "quality judge" in c.prompt]
+    back_prompt = next(q for q in prompts if "to show: Back " in q)
+    front_prompt = next(q for q in prompts if "to show: Front " in q)
+    assert "- identity_from_behind:" in back_prompt and "- identity:" not in back_prompt
+    assert "- identity:" in front_prompt and "identity_from_behind" not in front_prompt
+
+
+def test_references_use_neutral_light_whatever_the_style_pack(ws: hf.Workspace) -> None:
+    p = ws.create_project("Epic", style_pack="historical-epic")  # its mood lighting is dramatic side light
+    hero = p.add_subject("character", "Rostam", description="a champion").id
+    lights = {o.prompt_inputs["lighting"] for o in p.plan(hf.SubjectReferences(subject_id=hero)).outputs}
+    assert lights == {"even soft neutral studio lighting, plain light grey background."}
+    p.update(defaults={"presets": {"lighting": "golden-hour"}})  # chosen on purpose: kept
+    lights = {o.prompt_inputs["lighting"] for o in p.plan(hf.SubjectReferences(subject_id=hero)).outputs}
+    assert lights == {"golden hour sunlight, low warm light, long soft shadows, rim light."}
+
+
+def test_rear_scenes_and_subject_variations(tmp_path: Path) -> None:
+    from hone_frame.testing import sample_workspace
+
+    fake = FakeModels()
+    p = sample_workspace(tmp_path / "ws", models=fake)
+    scene = p.save_scene(hf.Scene(name="Leaving", refs=[hf.SceneRef(subject_id="char_001")], camera="rear"))
+    shot = p.plan(hf.SceneShot(scene_id=scene.id)).outputs[0]
+    assert "rear" in shot.conditions
+    grid = p.plan(hf.Variations(subject_id="char_001", axes={"camera": ["rear", "front"]})).outputs
+    assert ["rear" in o.conditions for o in grid] == [True, False]
+    p.submit(hf.SceneShot(scene_id=scene.id, selection=hf.Selection(rounds=1)))
+    run_all(p)
+    judged = next(c.prompt for c in fake.asked if "quality judge" in c.prompt)
+    assert "- identity_from_behind:" in judged and "- identity:" not in judged
+    front = p.save_scene(hf.Scene(name="Arriving", refs=[hf.SceneRef(subject_id="char_001")], camera="front"))
+    p.submit(hf.SceneShot(scene_id=front.id, selection=hf.Selection(rounds=1)))
+    run_all(p)
+    control = [c.prompt for c in fake.asked if "quality judge" in c.prompt][-1]
+    assert "- identity:" in control and "identity_from_behind" not in control
+
+
+def test_reference_lighting_precedence_and_a_given_hero(ws: hf.Workspace) -> None:
+    p = ws.create_project("Epic", style_pack="historical-epic")
+    hero = p.add_subject("character", "Rostam", description="a champion").id
+    p.update(defaults={"presets": {"lighting": "golden-hour"}})
+    asked = hf.SubjectReferences(subject_id=hero, presets={"lighting": "moonlight"})
+    assert {o.prompt_inputs["lighting"] for o in p.plan(asked).outputs} == {
+        "cool blue moonlight at night, deep shadows, subtle highlights."
+    }  # the request's choice beats the project's
+    p.update(defaults={"presets": {}})
+    image = p.import_image(_png(ws.root / "hero.png"), subject_id=hero)
+    given = p.plan(hf.SubjectReferences(subject_id=hero, hero_image=image.id)).outputs
+    assert given and {o.prompt_inputs["lighting"] for o in given} == {
+        "even soft neutral studio lighting, plain light grey background."
+    }
+
+
+def _png(path: Path) -> Path:
+    from PIL import Image
+
+    Image.new("RGB", (32, 48), "#888888").save(path)
+    return path
