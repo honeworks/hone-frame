@@ -79,7 +79,8 @@ def pack_items(
     if pack.from_assets:
         for asset in owned_assets(store, subject.id):
             if name == "actions":
-                about = f"{asset.name}: {asset.description}".rstrip(": ")
+                size = str(asset.fields.get("scale") or "").strip()
+                about = ", ".join(x for x in (f"{asset.name}: {asset.description}".rstrip(": "), size) if x)
                 text = f"{subject.name} holds and uses {about}"
                 items.append({"item": asset.name, "action": text, "asset_id": asset.id, **CUSTOM["action"]})
             else:

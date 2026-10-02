@@ -92,7 +92,8 @@ def view(c: Ctx) -> str:
     part = c.parts[0]
     noun = NOUN.get(str(part.get("kind")), "subject")
     where = str(c.camera.get("view") or "from the same angle")
-    sentence = f"Show the same {noun} as in image 1, {part.get('name')}, {where}"
+    lead = f"now {c.inputs['pose']}, " if _pose_leads(c) else ""  # an edit model keeps the pose it is shown
+    sentence = f"Show the same {noun} as in image 1, {part.get('name')}, {lead}{where}"
     if c.inputs.get("full_body"):
         sentence += ", the whole figure from head to feet"
     if c.inputs.get("framing"):
@@ -100,6 +101,12 @@ def view(c: Ctx) -> str:
     if c.faces_away:
         sentence += "; the face is not visible, the figure faces away from the camera"
     return sentence
+
+
+def _pose_leads(c: Ctx) -> bool:
+    """A pose image (change 0004): the new pose opens the edit instruction, the first words an edit model
+    weighs most, instead of following the long list of what stays the same."""
+    return c.mode == "view" and c.out.pack == "poses" and bool(c.inputs.get("pose"))
 
 
 def subject(c: Ctx) -> str:
@@ -210,7 +217,7 @@ SECTION: dict[str, Callable[[Ctx], str]] = {
     "roles": roles,
     "action": _labelled("Action", "action"),
     "expression": _labelled("", "expression"),
-    "pose": _labelled("", "pose"),
+    "pose": lambda c: "" if _pose_leads(c) else str(c.inputs.get("pose") or ""),
     "gaze": _labelled("Gaze", "gaze"),
     "state": _labelled("State", "state"),
     "frame": _labelled("", "frame"),

@@ -70,7 +70,7 @@ def compose(
     kept = _fit(pieces, rules.max_words)
     text = _join([t for _, t in kept])
     phrase = SECTION["camera_phrase"](ctx) if "camera_phrase" in rules.sections else ""
-    asked = tuple(str(p[name]) for name, _ in kept if name in ASKED and p.get(name))  # the raw words
+    asked = tuple(str(p[k]) for k in ASKED if p.get(k) and str(p[k]).lower() in text.lower())  # raw words
     over = _words(text) > rules.max_words
     return Composed(text, dialect.name, mode, rules.max_words, phrase, asked, over)
 

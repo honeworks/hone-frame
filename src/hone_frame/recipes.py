@@ -34,7 +34,7 @@ JUDGING = {
 }
 HERO_CAMERA = {"character": "front", "environment": "establishing", "asset": "front"}
 CAMERA_DATA = {"view", "faces_away", "azimuth", "elevation", "distance"}
-WHITE = "a plain pure white background, no scenery, no floor, nothing else in the picture"  # change 0003
+WHITE = "a plain pure white background, no scenery and no floor"  # change 0003; a pose may still use a stool
 REAR_CAMERAS = {"rear"}  # views where a face is not expected: identity is judged from behind (D-020)
 
 
