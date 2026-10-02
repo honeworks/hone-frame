@@ -24,7 +24,11 @@ const FIELDS = {
 const STATE_KINDS = [["outfit", "Outfit"], ["expression", "Expression"], ["condition", "Condition"], ["lighting", "Lighting"], ["other", "Other"]];
 
 function text(value) {
-  return Array.isArray(value) ? value.join(", ") : (value ?? "");
+  return Array.isArray(value) ? value.join("\n") : (value ?? "");  // a list: one item per line
+}
+
+function parsed(before, value) {
+  return Array.isArray(before) ? value.split("\n").map((x) => x.trim()).filter(Boolean) : value.trim();
 }
 
 function stateRow(state, remove) {
@@ -54,7 +58,9 @@ export function subjectDialog(kind, subject) {
     event.preventDefault();
     const fields = { ...(subject?.fields || {}) };
     for (const [key, input] of Object.entries(inputs)) {
-      if (input.value.trim()) fields[key] = input.value.trim(); else delete fields[key];
+      const before = subject?.fields?.[key];
+      if (input.value === text(before)) continue;  // untouched: keep the stored value and its type
+      if (input.value.trim()) fields[key] = parsed(before, input.value); else delete fields[key];
     }
     const rows = [...states.children].map((row) => row.read()).filter((s) => s.name);
     const body = { name: name.value.trim(), description: description.value.trim(), fields, states: rows };

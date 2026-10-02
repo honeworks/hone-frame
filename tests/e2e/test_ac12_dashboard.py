@@ -58,6 +58,7 @@ def test_page_and_scripts(served: tuple[hf.ProjectStore, str]) -> None:
         "views/models.js",
         "views/settings.js",
         "views/projects.js",
+        "views/subject_form.js",
     ):
         status, _, headers = call(base, f"/{name}")
         assert status == 200 and headers["X-Content-Type-Options"] == "nosniff", name
