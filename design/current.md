@@ -77,10 +77,11 @@ p.edit_subject(subject_id, **changes) -> hf.Subject                      # a new
 p.subject(subject_id, version=None) -> hf.Subject;  p.subjects(kind=None) -> list[hf.Subject]
 p.import_image(path, *, subject_id=None, label="") -> hf.ImageRecord
 p.image(image_id) -> hf.ImageRecord;  p.image_path(image_id) -> Path
+p.image_uses(image_id) -> list[str];  p.delete_image(image_id)            # refused while used (§4.3)
 p.images(*, kind=None, subject_id=None, status=None, model=None, since=None) -> list[hf.ImageRecord]
 p.save_scene(scene) -> hf.Scene;  p.scene(scene_id, version=None);  p.scenes()
 p.save_sequence(sequence) -> hf.Sequence;  p.sequence(sequence_id, version=None);  p.sequences()
-p.save_sheet(recipe) -> hf.Sheet;  p.sheet(sheet_id, version=None);  p.sheets()
+p.save_sheet(recipe, sheet_id=None) -> hf.Sheet;  p.sheet(sheet_id, version=None);  p.sheets()
 p.compose_sheet(sheet_id, version=None) -> Path            # deterministic PNG, no model call (§11)
 p.outdated() -> list[hf.OutdatedUse]                       # scenes / sheets on an older subject version
 
@@ -99,15 +100,17 @@ hf.Runner(ws).run_next() -> hf.RunView | None  # execute the oldest queued run i
 hf.Runner(ws).run_forever(stop_event)          # what the dashboard's runner thread does
 hf.Runner(ws).recover() -> list[str]           # resume runs left running by a dead process
 
-hf.dashboard.serve(ws, host="127.0.0.1", port=8792, *, runner=True)   # §12
+hone_frame.dashboard.serve(ws, host="127.0.0.1", port=8792, *, runner=True)   # §12; Dashboard(...).start() in tests
 
 Requests (Pydantic, §6): hf.SubjectReferences, hf.SceneShot, hf.Coverage, hf.Interaction, hf.StatePair,
-hf.SequenceFrames, hf.Variations, hf.Promote; settings: hf.Selection, profile names or hf.Profile.
+hf.SequenceFrames, hf.Variations, hf.Promote (a dict with "kind" works too); settings: hf.Selection and
+a profile id.
 Records: hf.Project, hf.Subject, hf.State, hf.ImageRecord, hf.Scene, hf.SceneRef, hf.Sequence, hf.Frame,
 hf.Sheet, hf.SheetRecipe, hf.Plan, hf.PlannedOutput, hf.RunView, hf.OutputRecord, hf.Evaluation,
 hf.CheckResult.
+hf.Models (the port, §7.2), hf.HoneModels, hf.ModelInfo, hf.Generated, hf.ModelFailure
 hf.errors: HoneFrameError, NotFound, InvalidRequest, CapabilityProblem, RunStateError
-hf.testing: FakeModels (scriptable images and verdicts), sample_workspace(path)
+hone_frame.testing: FakeModels (scriptable images and verdicts), judge_answer(prompt, fail=...), sample_workspace(path)
 ```
 
 Command line (extra `cli`): `hone-frame dashboard [--home DIR] [--port 8792] [--no-runner]`,
@@ -164,7 +167,7 @@ assert [r.subject_id for r in shot.outputs[0].references] == [woman.id, kitchen.
   workspace.json                     {"format_version": "1", "created_at": ...}
   settings.json                      dashboard and default settings (§12.6); never secrets
   projects/<project id>/
-    project.json                     the project (current values) + version history
+    project.json                     the project and its defaults
     subjects/<subject id>.json       the subject's versions, newest last
     images/<image id>.<ext>          the original file, never modified
     images/<image id>.json           its record
@@ -808,7 +811,7 @@ heavy shadow, and motion respects `prefers-reduced-motion`.
 
 ### 12.5 Overview metrics
 
-The four metrics are: images generated today, queued and running runs, the median render time today
+The four metrics are: images generated today, queued · running runs, the median render time today
 (over the `generated` events), and GPU time today. A metric with no data shows "—" and a short reason,
 never 0 when nothing was measured. Trend charts appear only with at least 7 days of real events.
 Charts use real character, environment, asset and scene work only.
@@ -824,28 +827,33 @@ Charts use real character, environment, asset and scene work only.
 
 | Module | Responsibility |
 |---|---|
-| `workspace.py` | `Workspace`: paths, settings, project list, queue |
-| `store.py` | `ProjectStore`: records, ids, versions, the project lock, atomic JSON |
-| `records.py` | Pydantic records and `format_version` checks |
+| `workspace.py` | `Workspace`: paths, settings, the project list, the queue |
+| `store.py` | `ProjectStore`: projects, subjects and versions, images, scenes, sequences, sheets |
+| `_operations.py` | the `ProjectStore` methods that forward to the modules below (plans, runs, sheets, exports) |
+| `_versions.py` | versioned records and the outdated-use check |
+| `_files.py` | atomic JSON, `format_version` checks, sequential ids, the project lock |
+| `records.py` | Pydantic records |
 | `presets.py` + `data/presets/*.toml` | the catalogue, user packs, validation, versions |
-| `profiles.py` | profiles, effective models, capability checks |
-| `requests.py` | request models and `Selection` |
-| `recipes.py` | request → planned outputs |
+| `profiles.py` | profiles, selection settings, the effective preset of each category |
+| `requests.py` | request models, planned outputs, plans |
+| `recipes.py`, `_recipes_more.py` | request → planned outputs |
 | `references.py` | reference resolution, precedence, reduction, size limits |
-| `planning.py` | `Plan`: counts, warnings, errors, estimates |
-| `prompts.py` | template prompts, planner prompts and their schema |
-| `judging.py` | judging profiles, the judge prompt, `Evaluation`, verdict rules |
+| `planning.py` | `plan()`: models per output, counts, warnings, errors, preset versions, the estimate |
+| `prompts.py` | the template prompt, the planner prompt |
+| `judging.py` | judging profiles' checks, the judge prompt, verdict rules |
 | `pick.py` | hone-select selection per output |
-| `produce.py` | §8.2: rounds, retries, stored candidates, events |
-| `engine.py` | the hone-flow workflow, `Runner`, statuses, control, recover |
-| `events.py` | writing and reading `events.jsonl`, progress, estimates, usage |
+| `produce.py`, `produce_refs.py` | §8.2: rounds, retries, stored candidates, events; an output's references at run time |
+| `engine.py` | the hone-flow workflow, `Runner`, `recover`, the requested sheet |
+| `control.py` | submit, pause, cancel, resume, retry, rerun, manual pick |
+| `runs.py` | run and output records, statuses, `RunView` |
+| `events.py` | `events.jsonl`, estimates, usage |
 | `sheets.py` | the compositor |
 | `exports.py` | zip exports |
 | `ports.py` | the `Models` Protocol and its result types |
 | `models.py` | `HoneModels` (hone-models) |
-| `dashboard.py`, `_dashboard_api.py`, `dashboard_page/` | server, API routes, static page |
+| `dashboard.py`, `_dashboard_api.py`, `_dashboard_data.py`, `dashboard_page/` | server, API routes, view data, the static page |
 | `cli.py` | the CLI (extra `cli`) |
-| `testing/` | `FakeModels`, `sample_workspace` |
+| `testing/` | `FakeModels`, `judge_answer`, `sample_workspace` |
 
 Dependencies: pydantic, Pillow, hone-flow, hone-models and hone-select. The `cli` extra adds typer.
 

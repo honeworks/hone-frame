@@ -71,7 +71,7 @@ def build(store: ProjectStore, request: RequestBase) -> Built:
                 store,
                 scene,
                 built,
-                label=camera or scene.name,
+                label=(camera or scene.name) if isinstance(request, Coverage) else scene.name,
                 camera=camera,
                 seed_group="coverage" if isinstance(request, Coverage) else None,
             )

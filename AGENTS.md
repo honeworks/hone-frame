@@ -30,14 +30,17 @@ uv run pyright                       # strict for src/
 ```text
 src/hone_frame/
   workspace.py  store.py  records.py     the workspace folder, project store, records (format_version "1")
+  _files.py  _versions.py  _operations.py  atomic JSON and ids, versioned records, forwarded store methods
   presets.py  data/presets/*.toml        the preset catalogue
   profiles.py  requests.py  recipes.py   profiles, requests, request -> planned outputs
   references.py  planning.py  prompts.py reference roles and limits, plans, prompts
-  judging.py  pick.py  produce.py        judging profiles, hone-select picks, the rounds of one output
-  engine.py  events.py                   the hone-flow workflow, Runner, statuses, control; events, progress, estimates
+  judging.py  pick.py                    judging profiles and verdicts, hone-select picks
+  engine.py  control.py  runs.py        the hone-flow workflow and Runner; submit / pause / resume / pick; run records
+  produce.py  produce_refs.py  events.py the rounds of one output, its references; events, estimates, usage
+  _recipes_more.py                       state pairs, sequences, variation grids, promotion
   sheets.py  exports.py                  the Pillow compositor, zip exports
   ports.py  models.py                    the Models port; HoneModels (hone-models)
-  dashboard.py  _dashboard_api.py  dashboard_page/   the local dashboard
+  dashboard.py  _dashboard_api.py  _dashboard_data.py  dashboard_page/   the local dashboard
   cli.py                                 the CLI (extra cli)
   testing/                               FakeModels, sample_workspace
 tests/unit|contract|integration|e2e|gpu

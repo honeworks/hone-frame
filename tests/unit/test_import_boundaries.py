@@ -15,7 +15,7 @@ def test_core_imports_without_optional_packages() -> None:
         "    def find_spec(self, name, path=None, target=None):\n"
         "        if name.split('.')[0] in blocked: raise ImportError('blocked ' + name)\n"
         "sys.meta_path.insert(0, Block())\n"
-        "import hone_frame, hone_frame.testing\n"
+        "import hone_frame, hone_frame.testing, hone_frame.dashboard\n"
         "print('ok')\n"
     )
     out = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, check=False)

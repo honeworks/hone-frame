@@ -71,8 +71,11 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
 - **Choice:**
   - The layout, spacing and components follow the mockups.
   - The sidebar footer shows the current project (as in the second mockup) instead of an account plan.
-  - Scores and thresholds appear only from real evaluations, with the verdict word beside each.
-  - The "Threshold" column shows a check's `min_score` when its judging profile sets one, else "—".
+  - Scores appear only from real evaluations, with the verdict word and the finding beside each. The
+    mockup's "Threshold" column is left out: a verdict is the judge's per check (a profile's `min_score`
+    turns a low-scoring pass into a fail), so a threshold column would suggest a rule that is not there.
+  - In the run page's current task, one card per round (and candidate) shows its picture and verdict,
+    as in the mockup.
 - **Reason:** the brief is the specification. The mockups illustrate it.
 - **Status:** **awaiting owner review**.
 
@@ -147,3 +150,18 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
   `rerun_of`. The old run and its images are unchanged.
 - **Reason:** every run stays a faithful record of what it did, and the new candidates are easy to
   compare with the old ones.
+
+## D-012: style-src allows inline styles in the dashboard  (2026-10-02)
+
+- **Question:** the page sets a few inline `style` attributes (progress widths, layout tweaks); a strict
+  `style-src 'self'` blocks them.
+- **Choice:** `style-src 'self' 'unsafe-inline'` plus Google Fonts; `script-src 'self'` stays strict, and
+  user files are served with `default-src 'none'; sandbox`.
+- **Reason:** inline styles carry no data from the workspace (text goes through text nodes), so the risk
+  that matters, script, stays closed.
+
+## D-013: subject tabs show the subject's own images; scenes are in Images and Scenes  (2026-10-02)
+
+- **Choice:** a subject's section in the Library lists images whose only subject it is; images of several
+  subjects (scenes, interactions) are under Images (kind "scene") and on their scene.
+- **Reason:** a scene shot is not a reference image of each character in it.

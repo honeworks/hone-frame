@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hone Frame</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="/app.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="shell">
+    <nav class="sidebar" aria-label="Main">
+      <a class="brand" href="#/overview"><span class="brand-mark">HONE</span> FRAME</a>
+      <ul class="nav" id="nav"></ul>
+      <div class="sidebar-foot">
+        <label class="overline" for="project-select">Project</label>
+        <select id="project-select" class="project-select"></select>
+      </div>
+    </nav>
+    <div class="workspace">
+      <header class="topbar">
+        <div class="topbar-title" id="topbar-title"></div>
+        <form class="search" id="search" role="search">
+          <svg class="icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="search-input" type="search" placeholder="Search subjects, images, scenes or prompts" aria-label="Search">
+        </form>
+      </header>
+      <main id="main" tabindex="-1"></main>
+    </div>
+    <nav class="bottombar" aria-label="Main (mobile)" id="bottombar"></nav>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
