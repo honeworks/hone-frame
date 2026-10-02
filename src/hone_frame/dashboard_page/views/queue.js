@@ -27,7 +27,7 @@ async function runTable(main) {
     const path = scope === "all" ? "/runs?scope=all" : `/runs?project=${state.project}`;
     const rows = await api(path);
     if (!rows.length) {
-      replace(body, empty("No runs yet", "Start one from Create, a scene or a subject.", h("a", { class: "btn primary", href: "#/create" }, "Create")));
+      replace(body, empty("No runs yet", "Open a character and press Generate assets, or generate a scene.", h("a", { class: "btn primary", href: "#/characters" }, "Characters")));
       return rows;
     }
     replace(body, h("div", { class: "panel" }, h("div", { class: "table-wrap" }, h("table", {},

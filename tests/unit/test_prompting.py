@@ -61,7 +61,7 @@ def test_hero_is_long_and_structured_views_are_short_edits(project: hf.ProjectSt
     hero, side, back = views["Hero"], views["Side"], views["Back"]
     assert (hero.dialect, hero.mode) == ("z-image", "generate") and FACE in hero.text
     assert hero.text.index("full body") < hero.text.index("tiger-hide")  # the shot first
-    assert "plain light grey background" in hero.text and "architecture" not in hero.text  # a reference
+    assert "plain pure white background" in hero.text and "architecture" not in hero.text  # a reference
     assert (side.dialect, side.mode) == ("flux-klein", "view") and side.text.startswith(
         "Show the same person"
     )

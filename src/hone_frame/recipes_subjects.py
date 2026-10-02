@@ -12,6 +12,7 @@ from hone_frame.recipes import (
     Built,
     base_inputs,
     reference_lighting,
+    reference_look,
     scene_conditions,
     view_flags,
 )
@@ -33,6 +34,7 @@ def subject_references(store: ProjectStore, request: SubjectReferences, built: B
     )
     common = {"subjects": [link], "judging": JUDGING[subject.kind]}
     lighting = reference_lighting(built, request)
+    look, look_flags = reference_look(subject.kind)
     if request.hero_image:
         store.image(request.hero_image)
         hero_ref: dict[str, Any] = {
@@ -51,11 +53,12 @@ def subject_references(store: ProjectStore, request: SubjectReferences, built: B
             "Hero",
             subject.kind,
             references=own,
-            conditions=["identity_ref"] if own else [],
+            conditions=(["identity_ref"] if own else []) + look_flags,
             **common,
             prompt_inputs=base_inputs(
                 built.choices,
                 request,
+                **look,
                 who=[(subject, None)],
                 full_body=subject.kind == "character",
                 reference=True,
@@ -75,10 +78,11 @@ def subject_references(store: ProjectStore, request: SubjectReferences, built: B
             subject.kind,
             **common,
             **hero_ref,
-            conditions=_conditions(subject.kind, spec, state),
+            conditions=_conditions(subject.kind, spec, state) + look_flags,
             prompt_inputs=base_inputs(
                 built.choices,
                 request,
+                **look,
                 who=[(subject, state)],
                 state=_state_words(subject, state),
                 full_body=_full_body(subject.kind, spec),

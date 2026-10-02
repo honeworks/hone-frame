@@ -178,7 +178,7 @@ def test_references_use_neutral_light_whatever_the_style_pack(ws: hf.Workspace) 
     p = ws.create_project("Epic", style_pack="historical-epic")  # its mood lighting is dramatic side light
     hero = p.add_subject("character", "Rostam", description="a champion").id
     lights = {o.prompt_inputs["lighting"] for o in p.plan(hf.SubjectReferences(subject_id=hero)).outputs}
-    assert lights == {"even soft neutral studio lighting, plain light grey background."}
+    assert lights == {"even soft neutral studio lighting, no cast shadows."}
     p.update(defaults={"presets": {"lighting": "golden-hour"}})  # chosen on purpose: kept
     lights = {o.prompt_inputs["lighting"] for o in p.plan(hf.SubjectReferences(subject_id=hero)).outputs}
     assert lights == {"golden hour sunlight, low warm light, long soft shadows, rim light."}
@@ -217,7 +217,7 @@ def test_reference_lighting_precedence_and_a_given_hero(ws: hf.Workspace) -> Non
     image = p.import_image(_png(ws.root / "hero.png"), subject_id=hero)
     given = p.plan(hf.SubjectReferences(subject_id=hero, hero_image=image.id)).outputs
     assert given and {o.prompt_inputs["lighting"] for o in given} == {
-        "even soft neutral studio lighting, plain light grey background."
+        "even soft neutral studio lighting, no cast shadows."
     }
 
 

@@ -216,6 +216,9 @@ def delete_image(ws: Workspace, project_id: str, image_id: str, **_: Any) -> dic
     return {"deleted": image_id}
 
 
-from hone_frame import _dashboard_work  # noqa: E402 - registers the scene, sheet, run and export routes
+from hone_frame import (  # noqa: E402 - these register their routes
+    _dashboard_characters,
+    _dashboard_work,
+)
 
-__all__ = ["ROUTES", "ApiError", "_dashboard_work", "route"]
+__all__ = ["ROUTES", "ApiError", "_dashboard_characters", "_dashboard_work", "route"]

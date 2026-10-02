@@ -33,16 +33,18 @@ src/hone_frame/
   _files.py  _versions.py  _operations.py  atomic JSON and ids, versioned records, forwarded store methods
   presets.py  data/presets/*.toml        the preset catalogue
   profiles.py  requests.py               profiles, requests, plans
-  recipes.py  recipes_subjects.py  recipes_scenes.py   request -> planned outputs
+  recipes.py  recipes_subjects.py  recipes_scenes.py  recipes_packs.py   request -> planned outputs
+  data/character_packs.toml  characters.py   character packs; the character page, world, model sheet
   references.py  planning.py             reference roles and limits, plans
   prompts.py  prompt_sections.py  dialects.py  data/prompting.toml   prompts per model dialect, task and style
   judging.py  pick.py                    judging profiles and verdicts, hone-select picks
   engine.py  control.py  runs.py        the hone-flow workflow and Runner; submit / pause / resume / pick; run records
   produce.py  produce_refs.py  candidates.py  the rounds of one output, its references, one candidate
   events.py                              events, estimates, usage
-  sheets.py  exports.py                  the Pillow compositor, zip exports
+  sheets.py  sheets_model.py  exports.py   the Pillow compositor and model sheet, zip exports
   ports.py  models.py                    the Models port; HoneModels (hone-models)
-  dashboard.py  _dashboard_api.py  _dashboard_work.py  _dashboard_data.py  dashboard_page/   the local dashboard
+  dashboard.py  _dashboard_api.py  _dashboard_work.py  _dashboard_characters.py  _dashboard_data.py
+  dashboard_page/                        the local dashboard
   cli.py                                 the CLI (extra cli)
   testing/                               FakeModels, sample_workspace
 tests/unit|contract|integration|e2e|gpu

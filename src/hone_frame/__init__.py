@@ -23,6 +23,7 @@ from hone_frame.records import (
     Subject,
 )
 from hone_frame.requests import (
+    CharacterPacks,
     Coverage,
     Interaction,
     Plan,
@@ -41,6 +42,7 @@ from hone_frame.workspace import Settings, Workspace
 __version__ = "0.0.0"
 
 __all__ = [
+    "CharacterPacks",
     "CheckResult",
     "Coverage",
     "Evaluation",

@@ -83,6 +83,18 @@ class Variations(RequestBase):
     )  # outfit, expression, lighting, camera, state, style, pose
 
 
+class CharacterPacks(RequestBase):
+    """A character's references, pack by pack, from one hero (change 0003). The hero is drawn when the
+    character has no accepted hero, or when `redraw_hero` is set; otherwise the accepted one is reused."""
+
+    kind: Literal["character_packs"] = "character_packs"
+    subject_id: str
+    packs: list[str] = Field(default_factory=list[str])  # empty: every pack
+    custom: dict[str, list[str]] = Field(default_factory=dict[str, list[str]])  # pack -> extra items
+    redraw_hero: bool = False  # draw a new hero even when one is accepted
+    only_custom: bool = False  # make only the `custom` items ("add to a pack"), not the packs' defaults
+
+
 class Promote(RequestBase):
     kind: Literal["promote"] = "promote"
     image_id: str
@@ -98,7 +110,8 @@ Request = Annotated[
     | StatePair
     | SequenceFrames
     | Variations
-    | Promote,
+    | Promote
+    | CharacterPacks,
     Field(discriminator="kind"),
 ]
 OutputMode = Literal["generate", "upscale"]
@@ -132,6 +145,8 @@ class PlannedOutput(Record):
     mode: OutputMode = "generate"
     seed_group: str | None = None
     parent: str | None = None
+    pack: str | None = None  # a character pack and its item (change 0003)
+    item: str | None = None
 
 
 class ResolvedProfile(Record):

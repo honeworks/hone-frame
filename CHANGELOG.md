@@ -8,6 +8,12 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Character first (change 0003): one **Generate assets** makes a whole character from one hero: the
+  turnaround, eight face close-ups, six poses, outfits, states, its belongings and actions with them,
+  each on a plain white background with empty hands (checked by the judge); any pack can be made again
+  or added to, and any candidate chosen. Belongings (assets with an `owner`) and world assets; scenes
+  get the belongings they need from the planner; the character model sheet. The dashboard now follows
+  the work: Project, Characters, World, Scenes, Queue.
 - Prompts are written per model (dialects: z-image, FLUX.2 klein, Qwen-Image-Edit, generic), per task
   (a new picture, another view of the same subject, a composed scene) and per style; the planner's
   rewrite is checked against the dialect's rules (change 0002).

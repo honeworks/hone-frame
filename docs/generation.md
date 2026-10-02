@@ -106,3 +106,41 @@ assert prompt.text.startswith("<sks> back view")
 To change how prompts are written for a model, add `prompting.toml` to the workspace folder with a
 `[dialects.<name>]` table (the same shape as hone-frame's `data/prompting.toml`); a dialect with the same
 name replaces the shipped one.
+
+## Characters: every pack from one hero
+
+A character is made with one `CharacterPacks` request (change 0003): the **hero** first, then the
+turnaround, eight expression close-ups, six poses, one image per outfit and per other state, its
+**belongings** (objects with `owner` set to the character) and an action image of it using each one.
+Every image stands on a plain white background with empty hands (actions excepted), and the judge
+checks both. Leave packs out with `packs`, add your own items with `custom` (each key must be one of the chosen packs), and make only those with
+`only_custom`. Once a hero is accepted it is reused: later requests never draw a new one unless
+`redraw_hero` is set.
+
+```python
+hero_of_the_story = project.add_subject(
+    "character",
+    "Rostam",
+    description="Rostam, the champion of Iran",
+    fields={"outfits": "tiger-hide coat over lamellar armour"},
+    states=[{"name": "Feast", "kind": "outfit", "description": "a red silk robe"}],
+)
+project.add_subject("asset", "Mace", description="a bull-headed mace", owner=hero_of_the_story.id)
+
+everything = project.plan(hf.CharacterPacks(subject_id=hero_of_the_story.id))
+print([(o.pack, o.item) for o in everything.outputs][:3])  # [('hero', 'Hero'), ('turnaround', 'Front'), ...]
+
+party = project.plan(
+    hf.CharacterPacks(
+        subject_id=hero_of_the_story.id,
+        packs=["outfits"],
+        custom={"outfits": ["in party clothing"]},
+        only_custom=True,
+    )
+)
+assert [(o.pack, o.item) for o in party.outputs] == [("hero", "Hero"), ("outfits", "in party clothing")]
+```
+
+The hero is still in the second plan because none is accepted yet; after a run accepts one, the same
+request plans only the party outfit. The dashboard's character page does all of this with **Generate
+assets**, **Regenerate** and **Add** per pack.

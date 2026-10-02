@@ -82,6 +82,7 @@ class Subject(Record):
     states: list[State] = Field(default_factory=list[State])
     tags: list[str] = Field(default_factory=list[str])
     reference_images: list[str] = Field(default_factory=list[str])
+    owner: str | None = None  # an asset that belongs to one character (change 0003); None: a world asset
     created_at: str = ""
     updated_at: str = ""
 
@@ -152,6 +153,8 @@ class ImageRecord(Record):
     status: ImageStatus = "candidate"
     profile: str | None = None
     tags: list[str] = Field(default_factory=list[str])
+    pack: str | None = None  # a character pack and its item (change 0003)
+    item: str | None = None
     created_at: str = ""
 
     @property
@@ -169,6 +172,7 @@ class SceneRef(Record):
     image_ids: list[str] = Field(default_factory=list[str])
     role: Role = "identity"
     state: str | None = None
+    suggested: bool = False  # proposed by the planner from a character's own assets (change 0003)
 
 
 class Scene(Record):

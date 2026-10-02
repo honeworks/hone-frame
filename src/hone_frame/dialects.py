@@ -15,10 +15,19 @@ from hone_frame.errors import HoneFrameError
 Mode = Literal["generate", "view", "compose"]
 SECTIONS = (
     "camera_phrase", "shot", "view", "subject", "outfit", "features", "keep", "scene", "roles", "action",
-    "expression", "pose", "gaze", "state", "frame", "background", "lighting", "style_lead", "style_close",
-    "text_refs", "note", "fixes",
+    "expression", "pose", "gaze", "state", "frame", "background", "props", "lighting", "style_lead",
+    "style_close", "text_refs", "note", "fixes",
 )  # fmt: skip
-REQUIRED = {"camera_phrase", "view", "keep", "subject", "scene", "fixes"}  # never dropped for the budget
+REQUIRED = {
+    "camera_phrase",
+    "view",
+    "keep",
+    "subject",
+    "scene",
+    "background",
+    "props",
+    "fixes",
+}  # always kept
 
 
 class ModeRules(BaseModel):

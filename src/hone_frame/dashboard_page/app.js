@@ -1,6 +1,8 @@
 // The shell: navigation, the project selector, hash routing. Each view renders into <main>.
 import { api, h, icon, replace, state, failure } from "./core.js";
-import * as overview from "./views/overview.js";
+import * as project from "./views/project.js";
+import * as characters from "./views/characters.js";
+import * as world from "./views/world.js";
 import * as create from "./views/create.js";
 import * as library from "./views/library.js";
 import * as scenes from "./views/scenes.js";
@@ -11,19 +13,22 @@ import * as models from "./views/models.js";
 import * as settings from "./views/settings.js";
 import * as projects from "./views/projects.js";
 
+// The main path follows the work (change 0003): the project, its characters, its world, its scenes.
 const NAV = [
-  ["overview", "Overview", overview], ["create", "Create", create], ["library", "Library", library],
-  ["scenes", "Scenes", scenes], ["sheets", "Sheets", sheets], ["queue", "Queue", queue],
+  ["project", "Project", project], ["characters", "Characters", characters], ["world", "World", world],
+  ["scenes", "Scenes", scenes], ["queue", "Queue", queue], null,
   ["presets", "Presets", presets], ["models", "Models", models], ["settings", "Settings", settings],
 ];
-const MOBILE = ["overview", "create", "library", "queue"];
+const ROUTES = NAV.filter(Boolean);
+const HIDDEN = [["library", library], ["sheets", sheets], ["create", create], ["projects", projects]];  // reached from pages
+const MOBILE = ["project", "characters", "scenes", "queue"];
 const MORE = { render(main) {
   replace(main, h("h1", { style: "margin-bottom:16px" }, "More"), h("div", { class: "stack" },
-    [...NAV.filter(([id]) => !MOBILE.includes(id)), ["projects", "Projects"]].map(([id, label]) =>
+    [...ROUTES.filter(([id]) => !MOBILE.includes(id)), ["projects", "Projects"]].map(([id, label]) =>
       h("a", { class: "panel row", href: `#/${id}`, style: "color:inherit" }, icon(id), h("span", {}, label)))));
 } };
-const VIEWS = Object.fromEntries([...NAV.map(([id, , view]) => [id, view]), ["projects", projects], ["more", MORE]]);
-const NEEDS_PROJECT = new Set(["overview", "create", "library", "scenes", "sheets", "settings"]);
+const VIEWS = Object.fromEntries([...ROUTES.map(([id, , view]) => [id, view]), ...HIDDEN, ["overview", project], ["more", MORE]]);
+const NEEDS_PROJECT = new Set(["project", "overview", "characters", "world", "create", "library", "scenes", "sheets", "settings"]);
 let dispose = null;
 
 function navLink([id, label], mobile = false) {
@@ -31,9 +36,9 @@ function navLink([id, label], mobile = false) {
 }
 
 function buildNav() {
-  replace(document.getElementById("nav"), NAV.map((item) => h("li", {}, navLink(item))));
+  replace(document.getElementById("nav"), NAV.map((item) => item ? h("li", {}, navLink(item)) : h("li", { class: "nav-gap", "aria-hidden": "true" })));
   const more = h("a", { href: "#/more", dataset: { nav: "more" } }, icon("more"), h("span", {}, "More"));
-  replace(document.getElementById("bottombar"), NAV.filter(([id]) => MOBILE.includes(id)).map((i) => navLink(i, true)), more);
+  replace(document.getElementById("bottombar"), ROUTES.filter(([id]) => MOBILE.includes(id)).map((i) => navLink(i, true)), more);
 }
 
 async function loadWorkspace() {
@@ -61,13 +66,14 @@ export function setProject(id) {
 
 async function route() {
   if (dispose) { dispose(); dispose = null; }
-  const parts = (location.hash.replace(/^#\/?/, "") || "overview").split("/").map(decodeURIComponent);
+  const parts = (location.hash.replace(/^#\/?/, "") || "project").split("/").map(decodeURIComponent);
   let [name, ...rest] = parts;
-  if (!VIEWS[name]) name = "overview";
+  if (!VIEWS[name]) name = "project";
   if (NEEDS_PROJECT.has(name) && !state.project) name = "projects";
   for (const link of document.querySelectorAll("[data-nav]")) {
-    link.toggleAttribute("aria-current", link.dataset.nav === name);
-    if (link.dataset.nav === name) link.setAttribute("aria-current", "page");
+    const here = link.dataset.nav === (name === "overview" ? "project" : name);
+    link.toggleAttribute("aria-current", here);
+    if (here) link.setAttribute("aria-current", "page");
   }
   const main = document.getElementById("main");
   const title = document.getElementById("topbar-title");

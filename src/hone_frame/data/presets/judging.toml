@@ -3,7 +3,7 @@
 
 [[presets]]
 id = "character-identity"
-version = 2
+version = 3
 name = "Character identity"
 description = "Character reference images: is it the same person, in the requested view, expression, outfit and framing, drawn correctly?"
 
@@ -53,6 +53,18 @@ question = "Are hands, limbs and face anatomically correct (no extra or missing 
 required = true
 
 [[presets.values.checks]]
+name = "clean_background"
+question = "Is the background plain white, with no scenery, floor, furniture, props or other figures?"
+required = true
+when = "clean_background"
+
+[[presets.values.checks]]
+name = "no_props"
+question = "Are the hands empty: no weapon, tool, bag or other object held or carried?"
+required = true
+when = "no_props"
+
+[[presets.values.checks]]
 name = "style"
 question = "Does it match the requested art style?"
 required = false
@@ -97,7 +109,7 @@ required = false
 
 [[presets]]
 id = "object-fidelity"
-version = 1
+version = 2
 name = "Object fidelity"
 description = "Object images: shape, distinctive details, material, the requested view and state."
 
@@ -133,13 +145,19 @@ question = "Do the scale cues make sense?"
 required = false
 
 [[presets.values.checks]]
+name = "clean_background"
+question = "Is the background plain white, with no scenery, floor, furniture, props or other figures?"
+required = true
+when = "clean_background"
+
+[[presets.values.checks]]
 name = "style"
 question = "Does it match the requested art style?"
 required = false
 
 [[presets]]
 id = "interaction-plausibility"
-version = 1
+version = 2
 name = "Interaction plausibility"
 description = "A character using an object: identity of both, believable contact, hands and orientation."
 
@@ -179,6 +197,12 @@ required = true
 name = "anatomy"
 question = "Are hands, limbs and face anatomically correct?"
 required = true
+
+[[presets.values.checks]]
+name = "clean_background"
+question = "Is the background plain white, with no scenery, floor, furniture, props or other figures?"
+required = true
+when = "clean_background"
 
 [[presets.values.checks]]
 name = "style"

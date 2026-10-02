@@ -313,6 +313,32 @@ The request kinds, each with its recipe (`recipes.py`):
 | `SequenceFrames(sequence_id)` | one output per frame, in order. Each depends on the previous frame when `use_previous` is set |
 | `Variations(base, axes)` | the cartesian product of `axes` (`{"outfit": [...], "expression": [...], "lighting": [...], "camera": [...], "state": [...], "style": [...]}`) over a `base` request (a `SceneShot` or `SubjectReferences` hero). Each cell is one output, labelled by its axis values |
 | `Promote(image_id, operation)` | `upscale`, `refine` or `regenerate` (§10.5) |
+| `CharacterPacks(subject_id, packs=[], custom={}, redraw_hero=False, only_custom=False)` | a character's packs (§6.3, change 0003): the hero once, then every chosen pack's items from it |
+
+### 6.3 Character packs (change 0003)
+
+A character's references are made pack by pack (`data/character_packs.toml`, `recipes_packs.py`), in
+this order: `hero` (front, full figure, neutral pose), `turnaround` (Front, 3/4, Side, Back),
+`expressions` (eight face close-ups), `poses` (six full-figure poses), `outfits` (one per outfit state),
+`states` (one per condition, lighting or other state), `assets` (each **belonging**: an asset whose
+`owner` is the character) and `actions` (the character holding and using each belonging).
+
+- `packs` empty means every pack; `custom` adds a person's own items to a pack (its keys must be among
+  the chosen packs, else the request is refused): an expression, a pose,
+  an outfit, a state, an action or a view, as the pack's `custom` says; `only_custom` makes only those.
+- **The hero is drawn once.** When the character has an accepted hero (an accepted image with pack
+  `hero`, or an older one labelled "Hero") it is every item's identity reference; otherwise the hero is
+  the first output and the others depend on it (§8.7). `redraw_hero` draws a new one.
+- An action depends on its belonging's output in the same request, or takes the belonging's accepted
+  image as its `object` reference.
+- **Reference look.** Every item of a character or object reference (packs and `SubjectReferences`) is
+  written on `a plain pure white background` and, for characters except actions, with **empty hands**
+  (the `props` section); the outputs carry the conditions `clean_background` and `no_props`, which the
+  judge checks (§8.3). Places keep their own background.
+- Planned outputs and images record `pack` and `item`. The character page (§12.4) shows per item the
+  latest accepted image and the newest output with its candidates.
+- **World assets** are places and objects without an `owner`; `world_requests` makes one
+  `SubjectReferences` per chosen world asset, by default those without an accepted hero.
 
 ### 6.2 Plans
 
@@ -449,6 +475,11 @@ judging profile chosen for the output kind:
 | scene, coverage, state | scene-fidelity | subject_presence, identity, action, reference_roles, composition, camera, state, style (preference) |
 | sequence frame | sequence-continuity | the scene-fidelity checks plus continuity and state_progression |
 
+Reference outputs of characters and objects (change 0003) also carry `clean_background` (the
+character-identity, object-fidelity and interaction-plausibility profiles ask whether the background is
+plain white) and, for characters with empty hands, `no_props` (character-identity asks whether the hands
+are empty).
+
 The answer schema:
 
 ```python
@@ -558,13 +589,15 @@ Output statuses:
   change, up to 110 for a view), `generic`.
 - **Sections** (`prompt_sections.py`): `camera_phrase`, `shot`, `view`, `subject`, `outfit`, `features`,
   `keep`, `scene`, `roles`, `action`, `expression`, `pose`, `gaze`, `state`, `frame`, `background`,
-  `lighting`, `style_lead`, `style_close`, `text_refs`, `note`, `fixes`. A view whose camera preset has
+  `props`, `lighting`, `style_lead`, `style_close`, `text_refs`, `note`, `fixes`. A view whose camera preset has
   `faces_away` leaves the face out everywhere and says it is not visible; a full-figure output asks for
   the whole figure and uses `wide shot` in the camera phrase; a reference output (`reference`) uses the
   style pack's `short` form, never its scene and mood wording.
 - **Budget:** over `max_words`, optional sections are dropped, least important first (`style_close`,
   `text_refs`, `frame`, `gaze`, `features`, `style_lead`...); `camera_phrase`, `view`, `keep`, `subject`,
-  `scene` and `fixes` are never dropped.
+  `scene`, `background`, `props` and `fixes` are never dropped.
+- An outfit item (`outfit` input) replaces the clothes: `keep` no longer lists the default outfit and
+  `outfit` says what is worn instead; a view's `framing` is appended to its `view` sentence.
 - **Style packs** carry `short` and optional `dialects.<name>.prefix / suffix` (clean 2D animation opens
   and closes a z-image prompt with its 2D wording). **Camera presets** carry `view`, `faces_away`,
   `azimuth`, `elevation` and `distance`.
@@ -677,6 +710,11 @@ with different images and roles (a face for `identity`, an outfit image for `out
 are `image_ids` when given, else the subject's chosen reference images, else its accepted hero, else the
 first accepted image of that subject (§4.4). A scene ref with no usable image is a plan error.
 
+**Belongings in scenes** (change 0003). Saved with `suggest`, a scene's characters' belongings not yet in
+it are listed for the profile's planner with the scene's description and action; those it names are added
+as `object` refs with `suggested: true`. A suggested ref is replaced on the next suggestion; without a
+planner, or when it fails, nothing is added and the reason is returned.
+
 ### 10.2 Precedence, order and reduction
 
 - References are ordered by role precedence: identity, object, environment, outfit, pose, expression,
@@ -765,6 +803,10 @@ of:
 - `page` larger than the images' natural size makes a larger canvas, and the images are not upscaled
   past 1:1 (the brief: a canvas never invents detail). `contain` centres them at their natural size.
 - `compose_sheet` saves `sheets/<id>/v<version>.png`. Recomposing a saved version gives the same file.
+- **`character-model-sheet`** (change 0003): the first `columns` images are full figures in one row (the
+  hero and the turnaround), the rest face close-ups below, four to a row, then the notes (description,
+  appearance, build, distinguishing features, outfit). `characters.model_sheet_recipe` builds it from the
+  character's accepted pack images.
 
 ### 11.3 Exports (`exports.py`)
 
@@ -814,7 +856,7 @@ standard library (`ThreadingHTTPServer`).
 | GET, PATCH | `/api/projects/{p}/subjects/{id}` | the subject with its versions and images, edit |
 | GET, POST | `/api/projects/{p}/images` | list with filters, import (multipart) |
 | GET | `/api/projects/{p}/images/{id}` | the record and its uses |
-| GET, POST | `/api/projects/{p}/scenes` | list, save |
+| GET, POST | `/api/projects/{p}/scenes` | list, save (`"suggest": true`: the planner first adds the belongings the scene uses, §10.1) |
 | GET, POST | `/api/projects/{p}/sequences` | list, save |
 | GET, POST | `/api/projects/{p}/sheets` | list, save |
 | POST | `/api/projects/{p}/sheets/{id}/compose` | compose, return the render URL |
@@ -823,6 +865,13 @@ standard library (`ThreadingHTTPServer`).
 | GET | `/api/runs?project=&scope=all` | runs, newest first |
 | GET | `/api/runs/{project}/{run}` | `RunView` plus the latest events (`?since=<n>` for new lines only) |
 | POST | `/api/runs/{project}/{run}/{action}` | `pause`, `cancel`, `resume`, `retry`, `rerun` (`{"output"}`), `pick` (`{"output", "image", "note"}`) |
+| GET | `/api/projects/{p}/home` | the project page: the overview plus characters, world and scenes (change 0003) |
+| GET | `/api/projects/{p}/characters` | characters with their hero and how many pack items are ready |
+| GET | `/api/projects/{p}/characters/{id}` | the character page: packs, items (accepted image, status, run, output, candidates with evaluations), belongings, model sheet |
+| POST | `/api/projects/{p}/characters/{id}/generate` | a `CharacterPacks` request (`packs`, `custom`, `redraw_hero`, `only_custom`, `profile`, `selection`) |
+| POST | `/api/projects/{p}/characters/{id}/sheet` | compose (again) the character model sheet |
+| GET | `/api/projects/{p}/world` | places and objects without an owner |
+| POST | `/api/projects/{p}/world/generate` | `{"subject_ids"}` (default: those without an accepted hero) → one run each |
 | POST | `/api/projects/{p}/exports` | `{"kind": "sheet" \| "pack" \| "sequence" \| "project", "id"}` → a download URL |
 
 Errors are `{"error": message}` with 400 (an invalid request, with the plan errors), 404 or 409 (a run in
@@ -840,17 +889,20 @@ heavy shadow, and motion respects `prefers-reduced-motion`.
 
 ### 12.4 Views
 
-- **Sidebar.** A project selector, then Overview, Create, Library, Scenes, Sheets, Queue, Presets,
-  Models and Settings.
+- **Sidebar** (change 0003). Project, Characters, World, Scenes, Queue; then Presets, Models and
+  Settings; a project selector. Create, Library ("All images") and Sheets stay reachable from the
+  project page but leave the main path.
 - **Top bar.** The current page's title and search over the project's subjects, images and scenes.
 
 | View | Contents |
 |---|---|
 | Projects | list, search, create |
-| Overview | four metrics (§12.5), current activity, the live queue, recent images |
+| Project | the brief and style (edit), **Generate assets** (the world's places and objects, with a checklist), the next step of the four (characters, generate them, world, scenes), the characters with their hero and progress, the world, the scenes, the activity |
+| Characters | the characters' tiles; the **character page**: the hero beside the details (edit), **Generate assets** (every pack ticked, custom items per pack, quality and attempts), one section per pack with its item tiles ("Not made yet", "Queued", "Generating…", "Waiting for the hero", "Needs your choice", "Ready"), **Regenerate** and **Add** per pack, **Draw a new hero**; an item opens its candidates with their failed checks, **Use this one** and **Generate again** with a note; the belongings (add); the model sheet (compose, export). The page refreshes while items are being made |
+| World | places and shared objects: add, edit, **Generate assets** |
 | Create | a settings column (task, description, subjects and references, presets, profile, auto judge and pick, rounds, candidates, stopping rule; an "Advanced" disclosure for model settings and the raw prompt) and a larger results area: the plan preview with counts and warnings before launch, then the live output grid. Primary action: Generate |
 | Library | tabs Characters, Environments, Assets, Images (Images has filters for kind, subject, status, model and date). Tiles show the image, name, id, size and state. Selecting an item opens a side panel (description, references, states, results, history). Multi-select reveals Export, Tag and Delete, and Delete lists the uses first. This is the second mockup, whose scene builder panel is the Scenes view's side panel |
-| Scenes | list; the scene definition with its references and roles (exactly the inputs, in order), camera, pose, expression and state controls; drafts and finals side by side; actions Generate scene, Coverage, State pair, Sequence, Promote |
+| Scenes | list; the scene definition (references show characters, places, objects and belongings, and which the planner suggested; **Suggest belongings** asks again) with its references and roles (exactly the inputs, in order), camera, pose, expression and state controls; drafts and finals side by side; actions Generate scene, Coverage, State pair, Sequence, Promote |
 | Sheets | saved sheets, and a composer: source picker, layout, columns, labels, palette, page size and a live preview made by the server. Primary action: Compose sheet |
 | Queue | a table (output or job, model and profile, size, round, status, progress, elapsed and estimate, actions) and the **run page**. The run page is the first mockup: the header (status, progress bar, elapsed, estimate range), the stage list (only applicable stages, with times), the current task (round x of y, candidates with their verdicts, job id and seed), the evaluation table of the current candidate (checks with scores, verdicts and findings), live activity (the events), the actions (Pause after current, Cancel, View settings) and completed outputs |
 | Presets | categories with descriptions, usable before any project exists |
@@ -884,7 +936,8 @@ Charts use real character, environment, asset and scene work only.
 | `presets.py` + `data/presets/*.toml` | the catalogue, user packs, validation, versions |
 | `profiles.py` | profiles, selection settings, the effective preset of each category |
 | `requests.py` | request models, planned outputs, plans |
-| `recipes.py`, `recipes_subjects.py`, `recipes_scenes.py` | request → planned outputs: the shared parts; subject references and interactions; state pairs, sequences, grids and promotion |
+| `recipes.py`, `recipes_subjects.py`, `recipes_scenes.py`, `recipes_packs.py` + `data/character_packs.toml` | request → planned outputs: the shared parts; subject references and interactions; state pairs, sequences, grids and promotion; character packs |
+| `characters.py` | the character page and cards, the world, world requests, the model sheet recipe, scene belonging suggestions |
 | `references.py` | reference resolution, precedence, reduction, size limits |
 | `planning.py` | `plan()`: models per output, counts, warnings, errors, preset versions, the estimate |
 | `prompts.py`, `prompt_sections.py`, `dialects.py`, `data/prompting.toml` | prompts composed per dialect, mode and style; the planner prompt and its check (§8.8) |
@@ -895,11 +948,11 @@ Charts use real character, environment, asset and scene work only.
 | `control.py` | submit, pause, cancel, resume, retry, rerun, manual pick |
 | `runs.py` | run and output records, statuses, `RunView` |
 | `events.py` | `events.jsonl`, estimates, usage |
-| `sheets.py` | the compositor |
+| `sheets.py`, `sheets_model.py` | the compositor; the `character-model-sheet` layout |
 | `exports.py` | zip exports |
 | `ports.py` | the `Models` Protocol and its result types |
 | `models.py` | `HoneModels` (hone-models) |
-| `dashboard.py`, `_dashboard_api.py`, `_dashboard_work.py`, `_dashboard_data.py`, `dashboard_page/` | server; API routes (workspace, projects, library; scenes, sheets, runs, exports); view data; the static page |
+| `dashboard.py`, `_dashboard_api.py`, `_dashboard_work.py`, `_dashboard_data.py`, `_dashboard_characters.py`, `dashboard_page/` | server; API routes (workspace, projects, library; scenes, sheets, runs, exports; project home, characters, world); view data; the static page |
 | `cli.py` | the CLI (extra `cli`) |
 | `testing/` | `FakeModels`, `judge_answer`, `sample_workspace` |
 
@@ -925,6 +978,12 @@ models.
 | AC-11 | Technical retries | 2 transient failures, then success: the output succeeds, 2 `retry` events, no extra round; failures beyond the limit fail the output (`failed`, the error kept) while other outputs complete; `refused` is not retried; a judge that fails is recorded and blocks the auto pick for that candidate |
 | AC-12 | Dashboard | the server on a free port: the page and its scripts load; every GET endpoint returns the documented shape for the sample workspace; submit, pause, resume, pick and compose through the API change the workspace; a path outside the workspace and a non-image file → 404; image responses carry `nosniff` and the CSP; the overview shows "—" metrics on an empty workspace, not 0 |
 | AC-13 | Docs and examples | every `examples/*.py` runs and has the What / How / Why docstring and an entry in `examples/README.md`; every Python block in the README and `docs/` runs |
+| AC-15 | Character packs | one `CharacterPacks` request makes the hero first and every other item from it; with the hero accepted, a second request draws none; packs left out stay out; custom items join their pack; every output and image records its pack and item |
+| AC-16 | Reference look | every pack item is written on a white background, with empty hands except actions and objects; expressions are face close-ups; the judge asks `clean_background` and `no_props` |
+| AC-17 | Belongings and world | an asset with an owner is listed with its character and becomes an action item; world assets have no owner; the world request covers those without an accepted image |
+| AC-18 | Scene belongings | saving a scene with `suggest` asks the planner which belongings appear and adds them as suggested `object` references; a failing planner adds none |
+| AC-19 | Model sheet | the character model sheet is composed from the accepted hero, turnaround and expressions with no model call; without them it is refused |
+| AC-20 | Character API | the project home, the character page and its actions: generate, add an item, choose another candidate on an accepted item, compose the model sheet; scene save with suggestions |
 | AC-14 (real model) | One `SubjectReferences` hero with the draft profile on the GPU (`scripts/gpu-lock.sh`) | an image is generated and judged by the real models; the run completes as `done` or `needs_review`; the models are unloaded afterwards |
 
 ## 15. Known limits (0.1.0)

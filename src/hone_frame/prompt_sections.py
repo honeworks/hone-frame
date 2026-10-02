@@ -93,6 +93,8 @@ def view(c: Ctx) -> str:
     sentence = f"Show the same {noun} as in image 1, {part.get('name')}, {where}"
     if c.inputs.get("full_body"):
         sentence += ", the whole figure from head to feet"
+    if c.inputs.get("framing"):
+        sentence += f", {c.inputs['framing']}"
     if c.faces_away:
         sentence += "; the face is not visible, the figure faces away from the camera"
     return sentence
@@ -112,6 +114,11 @@ def subject(c: Ctx) -> str:
 
 
 def outfit(c: Ctx) -> str:
+    """The clothes; an outfit item (change 0003) names its own, and a view mentions only that."""
+    if c.inputs.get("outfit") and c.parts:
+        return f"{c.parts[0].get('name')} now wears {c.inputs['outfit']} instead of the usual clothes"
+    if c.mode == "view":
+        return ""
     return ". ".join(f"{p.get('name')} wears {_field(p, 'outfits')}" for p in c.parts if _field(p, "outfits"))
 
 
@@ -124,7 +131,8 @@ def keep(c: Ctx) -> str:
         return ""
     part = c.parts[0]
     kept = ["the same build and height, the same hair" if c.faces_away else "the same face, hair and build"]
-    kept += [x for x in (_field(part, "outfits"), _field(part, "features")) if x]
+    clothes = "" if c.inputs.get("outfit") else _field(part, "outfits")
+    kept += [x for x in (clothes, _field(part, "features")) if x]
     return "Keep exactly the same as in image 1: " + "; ".join(kept) + ". Change only what is asked above"
 
 
@@ -184,6 +192,9 @@ SECTION: dict[str, Callable[[Ctx], str]] = {
     "state": _labelled("State", "state"),
     "frame": _labelled("", "frame"),
     "background": _labelled("", "background"),
+    "props": lambda c: (
+        "Empty hands: no weapon, tool or object held or carried" if c.inputs.get("empty_hands") else ""
+    ),
     "lighting": _labelled("", "lighting"),
     "style_lead": style_lead,
     "style_close": style_close,
