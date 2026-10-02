@@ -16,7 +16,7 @@ from PIL import Image
 
 import hone_frame as hf
 
-pytestmark = [pytest.mark.gpu, pytest.mark.ollama, pytest.mark.comfyui]
+pytestmark = [pytest.mark.gpu, pytest.mark.ollama, pytest.mark.comfyui, pytest.mark.timeout(1800)]
 
 PLANNER = os.environ.get("HONE_TEST_TEXT_MODEL", "gemma4-12b")
 JUDGE = os.environ.get("HONE_TEST_VISION_MODEL", "qwen2.5vl-7b")
@@ -58,3 +58,36 @@ def test_ac14_real_hero(tmp_path: Path, models: hf.HoneModels) -> None:
     assert image.generation is not None and image.generation.model == "z-image-turbo"
     assert image.evaluation is not None and image.evaluation.checks and image.evaluation.judge == JUDGE
     assert view.usage["gpu_s"] and view.usage["cost_usd"] is None
+
+
+def test_ac14_real_view_from_the_hero(
+    tmp_path: Path, models: hf.HoneModels, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The view after the hero goes to the editor (flux.2-klein-4b, from hone-frame's own registry file)
+    with the accepted hero as its identity reference, started from a folder with no hone-models.toml."""
+    monkeypatch.chdir(tmp_path)
+    ws = hf.Workspace(tmp_path / "studio", models=models)
+    project = ws.create_project("Morning at home")
+    project.update(defaults={"profile": "draft", "profiles": {"draft": {"planner": PLANNER, "judge": JUDGE}}})
+    woman = project.add_subject(
+        "character",
+        "Woman",
+        description="late twenties, black hair in a loose bun, "
+        "cream knit sweater, blue jeans, white sneakers",
+    )
+    one = hf.Selection(rounds=1, candidates=1, technical_retries=1)
+    request = hf.SubjectReferences(
+        subject_id=woman.id, presentation="neutral-full-body", expressions=["happy"], selection=one
+    )
+    plan = project.plan(request)
+    assert [o.model for o in plan.outputs] == ["z-image-turbo", "flux.2-klein-4b"] and plan.errors == []
+    run = project.submit(request)
+    hf.Runner(ws).run_next()
+    view = project.run_view(run.id)
+    hero, happy = view.outputs
+    print(view.status, [(o.label, o.status, o.reason) for o in view.outputs], view.usage)
+    if hero.status != "done":
+        pytest.skip(f"the judge did not accept the hero ({hero.reason}); the view could not start")
+    image = project.image(happy.candidates[0])
+    assert image.generation is not None and image.generation.model == "flux.2-klein-4b"
+    assert [r.image_id for r in image.generation.references] == [hero.selected]

@@ -381,6 +381,17 @@ class Models(Protocol):
 there are some, and `inputs` only when the model takes them (`info.inputs`). Model calls lease the GPU
 themselves (hone-models §7), so hone-frame's steps hold no GPU lease of their own.
 
+### 7.3 hone-frame's model entries
+
+`src/hone_frame/data/hone-models.toml` (with its `data/workflows/`) holds the hone-models entries that
+hone-models' catalog does not ship yet: the proven ComfyUI workflows of `flux.2-klein-4b` (two reference
+slots), `flux.2-klein-4b-text` and `qwen-image-edit-2511` (three slots), each with `vram_gb` near the
+whole card so the GPU scheduler unloads the chat models first. `HoneModels` loads hone-models' registry
+with this file and then `<home>/hone-models.toml` (when it exists), after hone-models' own user and
+working-folder files, so hone-frame works from any folder
+and a workspace can override any entry (decisions D-016). `flux.2-klein-4b` gets every reference slot
+filled, the last reference repeated, because an empty slot breaks its graph (D-017).
+
 ## 8. Producing an output
 
 ### 8.1 The workflow

@@ -48,7 +48,8 @@ class Workspace:
         if self._models is None:
             from hone_frame.models import HoneModels  # noqa: PLC0415 - hone-models loads only when used
 
-            self._models = HoneModels()
+            own = self.root / "hone-models.toml"  # this workspace's model entries, when present
+            self._models = HoneModels(extra=[own] if own.is_file() else [])
         return self._models
 
     @cached_property
