@@ -85,9 +85,9 @@ async function runPage(main, project, runId) {
       draw(data);
       if (LIVE.has(data.run.status)) timer = setTimeout(tick, 2000);
     } catch (error) {
-      misses += 1;  // a dropped poll is retried; only a run of failures is shown
-      if (misses >= 3) failure(error);
-      timer = setTimeout(tick, Math.min(2000 * misses, 10000));
+      misses += 1;  // a dropped poll is retried; a run of failures is shown once
+      if (misses === 3 || error.status === 404) failure(error);
+      if (error.status !== 404) timer = setTimeout(tick, Math.min(2000 * misses, 10000));
     }
   }
 

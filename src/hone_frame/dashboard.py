@@ -13,6 +13,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlsplit
 
+from pydantic import ValidationError
+
 from hone_frame._dashboard_api import ApiError, route
 from hone_frame.engine import Runner
 from hone_frame.errors import HoneFrameError, InvalidRequest, NotFound, RunStateError
@@ -140,6 +142,12 @@ class Handler(BaseHTTPRequestHandler):
             result = route(self.ws, method, path.removeprefix("/api"), query, body)
         except ApiError as exc:
             self._json(exc.status, {"error": str(exc)})
+        except ValidationError as exc:  # a body that does not fit the record: say which field and why
+            problems = [f"{'.'.join(map(str, e['loc']))}: {e['msg']}" for e in exc.errors()]
+            self._json(
+                HTTPStatus.BAD_REQUEST,
+                {"error": "invalid input: " + "; ".join(problems), "problems": problems},
+            )
         except InvalidRequest as exc:
             self._json(HTTPStatus.BAD_REQUEST, {"error": str(exc), "problems": exc.problems})
         except NotFound as exc:

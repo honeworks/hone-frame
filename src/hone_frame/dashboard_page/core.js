@@ -148,8 +148,8 @@ export function toast(message, error = false) {
 }
 
 export function failure(error) {
-  const problems = (error.problems || []).filter((p) => p && p !== error.message);
-  toast(problems.length ? `${error.message}` : error.message, true);
+  const network = error instanceof TypeError;  // fetch itself failed: the server did not answer
+  toast(network ? "The dashboard server did not answer. Is hone-frame dashboard still running?" : error.message, true);
 }
 
 export function img(card, alt) {

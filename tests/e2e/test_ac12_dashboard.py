@@ -191,3 +191,20 @@ def test_an_unexpected_error_is_a_json_500(
     store, base = served
     status, body, _ = call(base, f"/api/runs/{store.id}/nope")
     assert status == 500 and body["error"] == "internal error: ValueError: boom"
+
+
+def test_invalid_subject_edits_are_a_400_naming_the_field(served: tuple[hf.ProjectStore, str]) -> None:
+    store, base = served
+    path = f"/api/projects/{store.id}/subjects/char_001"
+    status, body, _ = call(base, path, "PATCH", {"states": [{"name": "battle-ready", "kind": "armour"}]})
+    assert status == 400 and "states.0.kind" in body["error"]
+    good = {
+        "fields": {"features": "onyx armlet on the right upper arm"},
+        "states": [{"name": "helmeted", "kind": "outfit", "description": "helmet and aventail on"}],
+    }
+    status, body, _ = call(base, path, "PATCH", good)
+    assert (
+        status == 200
+        and body["fields"]["features"].startswith("onyx")
+        and body["states"][0]["name"] == "helmeted"
+    )

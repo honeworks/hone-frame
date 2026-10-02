@@ -34,3 +34,7 @@ All notable changes to this project are documented here. The format follows
 - The run page of a run that has not started a stage yet no longer drops the connection (the browser
   showed "NetworkError" right after Generate); any unexpected API error is now a JSON 500 with its
   message, and the run page retries a failed poll instead of stopping.
+- Editing a subject's states with an unknown kind dropped the connection ("network error"); invalid input
+  is now a 400 that names the field. The subject editor has the kind's fields (appearance, build,
+  distinguishing features, default outfit for a character; anchors, materials... for places and objects)
+  and one row per state with its name, kind and description.

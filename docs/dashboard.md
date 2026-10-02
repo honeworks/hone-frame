@@ -11,7 +11,7 @@ that executes queued runs one at a time and resumes interrupted ones on start (d
 |---|---|
 | Overview | four real metrics (images today, queued and running, median render time, GPU time), the live queue, recent images |
 | Create | a task, its subjects and presets, profile and selection settings; the plan with every output, model and reference before you press Generate |
-| Library | Characters, Environments, Assets and Images, with details, history, import and "use as reference" |
+| Library | Characters, Environments, Assets and Images; an editor with each kind's fields (a character's appearance, build, distinguishing features and default outfit) and its states (name, kind, what changes); details, history, import and "use as reference" |
 | Scenes | the scene builder: references with roles, camera, expression, pose and lighting, then drafts, finals and promotion |
 | Sheets | the composer and saved sheets, exported with their originals |
 | Queue | every run, and the run page: stages, the current task round by round, the judge's checks, live activity, pause / cancel / resume / retry, manual picks |
