@@ -128,7 +128,7 @@ def stages(run: RunRecord, events: list[dict[str, Any]], status: str) -> list[di
     marks = [(str(e["at"]), str(e["stage"])) for e in events if e["event"] == "stage"]
     end = next((str(e["at"]) for e in reversed(events) if e["event"] == "run_finished"), None)
     spent: dict[str, float] = {}
-    for (at, stage), nxt in zip(marks, [*marks[1:], (end, "")], strict=True):
+    for (at, stage), nxt in zip(marks, [*marks[1:], (end, "")], strict=False):  # no marks yet: nothing
         if nxt[0]:
             spent[stage] = spent.get(stage, 0.0) + _seconds(at, nxt[0])
     latest = marks[-1][1] if marks else None

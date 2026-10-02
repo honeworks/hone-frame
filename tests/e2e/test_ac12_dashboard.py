@@ -167,3 +167,27 @@ def test_runner_thread_executes_the_queue(tmp_path: Path) -> None:
     finally:
         dashboard.close()
     assert store.run_view(run.id).status == "done"
+
+
+def test_run_page_of_a_just_submitted_run(served: tuple[hf.ProjectStore, str]) -> None:
+    """Regression: the page the browser opens right after Generate (no stage yet) crashed the handler."""
+    store, base = served
+    scene = store.save_scene(hf.Scene(name="S", refs=[hf.SceneRef(subject_id="char_001")]))
+    run = store.submit(hf.SceneShot(scene_id=scene.id))
+    status, page, _ = call(base, f"/api/runs/{store.id}/{run.id}?since=0")
+    assert status == 200 and page["run"]["status"] == "queued"
+    assert [s["state"] for s in page["stages"]] == ["waiting"] * 4
+
+
+def test_an_unexpected_error_is_a_json_500(
+    served: tuple[hf.ProjectStore, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import hone_frame._dashboard_work as work
+
+    def broken(*_: Any, **__: Any) -> Any:
+        raise ValueError("boom")
+
+    monkeypatch.setattr(work, "run_page", broken)
+    store, base = served
+    status, body, _ = call(base, f"/api/runs/{store.id}/nope")
+    assert status == 500 and body["error"] == "internal error: ValueError: boom"

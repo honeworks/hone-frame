@@ -29,3 +29,8 @@ All notable changes to this project are documented here. The format follows
 - The default workspace is `~/hone-frame` (was `./hone-frame`), so the dashboard and the CLI find the
   same work from any folder; `HONE_FRAME_HOME` or `--home` still choose another. Work made under the old
   default: move the `./hone-frame` folder to `~/hone-frame`, or point `HONE_FRAME_HOME` at it.
+
+### Fixed
+- The run page of a run that has not started a stage yet no longer drops the connection (the browser
+  showed "NetworkError" right after Generate); any unexpected API error is now a JSON 500 with its
+  message, and the run page retries a failed poll instead of stopping.

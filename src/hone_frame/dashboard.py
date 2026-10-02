@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import mimetypes
 import threading
 from http import HTTPStatus
@@ -30,6 +31,7 @@ PAGE_CSP = (  # inline styles carry no data; scripts only from the page itself (
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
     "font-src 'self' https://fonts.gstatic.com; script-src 'self'; connect-src 'self'"
 )
+LOG = logging.getLogger("hone_frame.dashboard")
 MAX_BODY = 64 * 1024 * 1024
 
 
@@ -146,6 +148,11 @@ class Handler(BaseHTTPRequestHandler):
             self._json(HTTPStatus.CONFLICT, {"error": str(exc)})
         except HoneFrameError as exc:
             self._json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+        except Exception as exc:
+            LOG.exception("dashboard API %s %s failed", method, path)
+            self._json(
+                HTTPStatus.INTERNAL_SERVER_ERROR, {"error": f"internal error: {type(exc).__name__}: {exc}"}
+            )
         else:
             self._json(HTTPStatus.OK, result)
 
