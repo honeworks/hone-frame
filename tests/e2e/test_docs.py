@@ -33,6 +33,7 @@ PAGES = {
     "models.md",
     "dashboard.md",
     "cli.md",
+    "project-files.md",
 }
 NO_PYTHON = {"index.md", "dashboard.md", "cli.md"}
 PROJECT_DOCS = [

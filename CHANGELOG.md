@@ -8,6 +8,21 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Project files (change 0004): a whole project (characters with states and belongings, places, objects,
+  scenes) in one TOML or JSON file, imported from the dashboard or `hone-frame import`, again after edits
+  (only what changed gets a new version), and downloaded back with **Download as file** /
+  `hone-frame export-file`. Example: `examples/projects/rostam-and-sohrab.toml`.
+- A magnifier on every image in the dashboard.
+
+### Fixed
+- Pose, expression, outfit, state, action, gaze and "Generate again" notes were cut from prompts to fit a
+  model's word budget (most poses came out standing); they are now never dropped, and neither are the
+  framing and the style. The planner's rewrite must keep them, and the judge is told what was asked.
+- The judge failed good front views with "not from the back"; back views now have their own check, and
+  the anatomy check names hands and feet. Side views ask for the feet to turn with the body.
+- Actions were drawn before (or without) their belongings; belongings are now made first.
+- Opening another page while a character was generating jumped back to the character a few seconds
+  later.
 - Character first (change 0003): one **Generate assets** makes a whole character from one hero: the
   turnaround, eight face close-ups, six poses, outfits, states, its belongings and actions with them,
   each on a plain white background with empty hands (checked by the judge); any pack can be made again

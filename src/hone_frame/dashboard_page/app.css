@@ -182,8 +182,8 @@ dialog.lightbox:not([open]) { display: none; }
 .lightbox-bar { display: flex; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); border-bottom: 1px solid var(--line); }
 .lightbox-title { font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lightbox-body { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; background: var(--surface-sunken); }
-.lightbox-img { max-width: 100%; max-height: 100%; object-fit: contain; cursor: zoom-in; }
-.lightbox-img.actual { max-width: none; max-height: none; cursor: zoom-out; }
+.lightbox-img { width: 100%; height: 100%; object-fit: contain; cursor: zoom-in; }
+.lightbox-img.actual { width: auto; height: auto; max-width: none; max-height: none; object-fit: none; cursor: zoom-out; }
 .thumb-sm { width: 56px; height: 56px; border-radius: var(--r-thumb); object-fit: cover; background: var(--surface-sunken); flex: none; }
 .placeholder-img { color: var(--ink-muted); font-size: 12px; }
 

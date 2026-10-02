@@ -15,4 +15,6 @@ hone-frame dashboard [--port 8792] [--no-runner]   serve the dashboard (and run 
 hone-frame run-queue [--once]                      run queued runs in this process
 hone-frame status PROJECT RUN_ID                   one run: status, progress, outputs
 hone-frame export-pack PROJECT SCENE_ID OUT.zip    a scene's reference pack
+hone-frame import FILE.toml|FILE.json             create or update a project from a project file
+hone-frame export-file PROJECT OUT.json           write a project as a project file
 ```

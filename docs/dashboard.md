@@ -16,7 +16,10 @@ that executes queued runs one at a time and resumes interrupted ones on start (d
 | Queue | every run, and the run page: stages, the current task round by round, the judge's checks, live activity, pause / cancel / resume / retry, manual picks |
 | Presets, Models, Settings | the catalogue, what hone-models offers, project defaults and the theme |
 
-All images, Sheets and the generic Create page are linked from the project page.
+All images, Sheets and the generic Create page are linked from the project page. Every image has a
+magnifier that opens it full size. A project can be imported from a TOML or JSON file (Projects →
+Import a project file, or Import a file on the project page) and downloaded as one
+([project-files.md](project-files.md)).
 
 The page shows only real data: a metric with nothing measured is "—", an estimate without evidence is
 "Estimating". It binds to `127.0.0.1` and has no accounts. Images are served only from a project's

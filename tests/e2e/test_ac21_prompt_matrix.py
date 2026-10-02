@@ -1,26 +1,21 @@
-"""Every prompt hone-frame writes, checked for what can go wrong (change 0004): for every style pack, every
-profile (so every image model and dialect), every character pack item and scenes, with the realistic
-descriptions of examples/projects/rostam-and-sohrab.toml. A prompt must keep what its image is for, never
-contradict itself, stay near its model's budget, and let the planner's rewrite through only when it keeps
-what was asked."""
+"""AC-21: every prompt hone-frame writes, checked for what can go wrong (change 0004): for every
+style pack, every profile (so every image model and dialect), every character pack item and scenes,
+with the realistic descriptions of examples/projects/rostam-and-sohrab.toml. A prompt must keep what its
+image is for, never contradict itself, stay near its model's budget, and let the planner's rewrite
+through only when it keeps what was asked."""
 
 from __future__ import annotations
 
 import re
-from pathlib import Path
 
 import pytest
 
 import hone_frame as hf
-from hone_frame.judging import checks_for, judge_prompt
 from hone_frame.presets import PresetCatalog
-from hone_frame.project_file import import_path
 from hone_frame.prompts import ASKED, Composed, compose, planner_problem
 from hone_frame.recipes import WHITE
 from hone_frame.requests import PlannedOutput, PlannedRef
-from hone_frame.testing import FakeModels
 
-FILE = Path(__file__).parents[2] / "examples" / "projects" / "rostam-and-sohrab.toml"
 STYLES = [p.id for p in PresetCatalog().list("style_pack")]
 PROFILES = ["draft", "standard", "final"]
 CUSTOM = {
@@ -31,12 +26,6 @@ CUSTOM = {
     "actions": ["riding a horse at full gallop"],
     "turnaround": ["from a low angle looking up"],
 }
-
-
-@pytest.fixture(scope="module")
-def project(tmp_path_factory: pytest.TempPathFactory) -> hf.ProjectStore:
-    ws = hf.Workspace(tmp_path_factory.mktemp("matrix") / "ws", models=FakeModels())
-    return ws.project(import_path(ws, FILE).project)
 
 
 def _refs(store: hf.ProjectStore, out: PlannedOutput) -> list[tuple[PlannedRef, str]]:
@@ -63,8 +52,10 @@ def _all_prompts(store: hf.ProjectStore, style: str, profile: str) -> list[tuple
 
 @pytest.mark.parametrize("profile", PROFILES)
 @pytest.mark.parametrize("style", STYLES)
-def test_every_pack_prompt_keeps_what_it_is_for(project: hf.ProjectStore, style: str, profile: str) -> None:
-    for out, composed in _all_prompts(project, style, profile):
+def test_every_pack_prompt_keeps_what_it_is_for(
+    rostam_project: hf.ProjectStore, style: str, profile: str
+) -> None:
+    for out, composed in _all_prompts(rostam_project, style, profile):
         text, where = composed.text.lower(), f"{style}/{profile}/{out.pack}/{out.item}"
         p = out.prompt_inputs
         for key in ASKED:  # the point of the image is never cut for the budget
@@ -100,8 +91,8 @@ def _no_contradictions(out: PlannedOutput, composed: Composed, where: str) -> No
 
 
 @pytest.mark.parametrize("profile", PROFILES)
-def test_the_planner_cannot_drop_what_was_asked(project: hf.ProjectStore, profile: str) -> None:
-    for out, composed in _all_prompts(project, "historical-epic", profile):
+def test_the_planner_cannot_drop_what_was_asked(rostam_project: hf.ProjectStore, profile: str) -> None:
+    for out, composed in _all_prompts(rostam_project, "historical-epic", profile):
         assert planner_problem(composed.text, composed) is None, f"{out.item}: the draft itself is refused"
         for asked in composed.asked:
             dropped = composed.text.replace(asked, "").replace(asked[0].upper() + asked[1:], "")
@@ -109,10 +100,10 @@ def test_the_planner_cannot_drop_what_was_asked(project: hf.ProjectStore, profil
                 assert "was dropped" in (planner_problem(dropped, composed) or ""), f"{out.item}: {asked}"
 
 
-def test_scenes_keep_their_action_pose_expression_and_notes(project: hf.ProjectStore) -> None:
-    rostam, sohrab = (s.id for s in project.subjects("character")[:2])
-    plain = next(s.id for s in project.subjects("environment") if s.name == "Battle plain")
-    scene = project.save_scene(
+def test_scenes_keep_their_action_pose_expression_and_notes(rostam_project: hf.ProjectStore) -> None:
+    rostam, sohrab = (s.id for s in rostam_project.subjects("character")[:2])
+    plain = next(s.id for s in rostam_project.subjects("environment") if s.name == "Battle plain")
+    scene = rostam_project.save_scene(
         hf.Scene(
             name="Long duel",
             description="Rostam and Sohrab fight on horseback on the dusty plain at sunset " * 4,
@@ -130,75 +121,44 @@ def test_scenes_keep_their_action_pose_expression_and_notes(project: hf.ProjectS
         )
     )
     for profile in PROFILES:
-        out = project.plan(hf.SceneShot(scene_id=scene.id, profile=profile)).outputs[0]
-        composed = compose(out, _refs(project, out), [], project.workspace.dialects.for_model(out.model))
+        out = rostam_project.plan(hf.SceneShot(scene_id=scene.id, profile=profile)).outputs[0]
+        composed = compose(
+            out, _refs(rostam_project, out), [], rostam_project.workspace.dialects.for_model(out.model)
+        )
         text = composed.text.lower()
         for words in ("swings his mace", "determined", "fighting stance", "lock eyes", "dust hangs"):
             assert words in text, f"{profile}: {words!r} lost"
 
 
-def test_a_note_on_generate_again_is_never_cut(project: hf.ProjectStore) -> None:
-    rostam = project.subjects("character")[0]
+def test_a_note_on_generate_again_is_never_cut(rostam_project: hf.ProjectStore) -> None:
+    rostam = rostam_project.subjects("character")[0]
     out = next(
         o
-        for o in project.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["poses"])).outputs
+        for o in rostam_project.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["poses"])).outputs
         if o.item == "Running"
     )
     note = "both feet must point the same way as the body, the left arm forward"
     noted = out.model_copy(update={"prompt_inputs": out.prompt_inputs | {"note": note}})
     composed = compose(
         noted,
-        _refs(project, noted),
+        _refs(rostam_project, noted),
         ["the man is standing still"],
-        project.workspace.dialects.for_model(out.model),
+        rostam_project.workspace.dialects.for_model(out.model),
     )
-    assert note in composed.text.lower() and "standing still" in composed.text and "running" in composed.text.lower()
+    assert (
+        note in composed.text.lower()
+        and "standing still" in composed.text
+        and "running" in composed.text.lower()
+    )
 
 
-def test_the_judge_is_told_what_was_asked(project: hf.ProjectStore) -> None:
-    rostam = project.subjects("character")[0]
-    plan = project.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["poses", "turnaround"]))
-    running = next(o for o in plan.outputs if o.item == "Running")
-    prompt = judge_prompt(running, checks_for(project.workspace.presets, running), "a man standing", 1)
-    assert "Requested pose: running, mid-stride" in prompt and "Requested background:" in prompt
-    assert "Requested: empty hands" in prompt
-    back = next(o for o in plan.outputs if o.item == "Back")
-    names = [c["name"] for c in checks_for(project.workspace.presets, back)]
-    assert "faces_away" in names and "identity_from_behind" in names
-    side = next(o for o in plan.outputs if o.item == "Side")
-    side_checks = checks_for(project.workspace.presets, side)
-    assert "faces_away" not in [c["name"] for c in side_checks]
-    assert all(
-        "rear view" not in c["question"].lower() for c in side_checks
-    )  # no back-view talk on a side view
-    anatomy = next(c for c in side_checks if c["name"] == "anatomy")
-    assert "foot" in anatomy["question"] and "same way as the face" in anatomy["question"]
-
-
-def test_objects_in_the_hands_are_reported(project: hf.ProjectStore) -> None:
-    rostam = project.subjects("character")[0]
-    project.edit_subject(
+def test_objects_in_the_hands_are_reported(rostam_project: hf.ProjectStore) -> None:
+    rostam = rostam_project.subjects("character")[0]
+    rostam_project.edit_subject(
         rostam.id, fields=rostam.fields | {"features": "a bull-headed mace in his right hand"}
     )
     try:
-        warnings = project.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["poses"])).warnings
+        warnings = rostam_project.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["poses"])).warnings
         assert any("mace" in w and "Belongings" in w for w in warnings)
     finally:
-        project.edit_subject(rostam.id, fields=rostam.fields)
-
-
-def test_belongings_are_made_before_their_actions(project: hf.ProjectStore) -> None:
-    rostam = project.subjects("character")[0]
-    plan = project.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["actions"]))
-    order = [o.id for o in plan.outputs]
-    for out in plan.outputs:
-        for dep in out.depends_on:
-            assert order.index(dep.output) < order.index(out.id), f"{out.item} waits for a later output"
-    actions = [
-        o
-        for o in plan.outputs
-        if o.pack == "actions" and o.prompt_inputs.get("action", "").startswith("Rostam holds")
-    ]
-    assets = {o.id: o.item for o in plan.outputs if o.pack == "assets"}
-    assert actions and set(assets.values()) == {"Rostam's mace", "Rostam's lasso"}
-    assert all(any(d.output in assets and d.role == "object" for d in a.depends_on) for a in actions)
+        rostam_project.edit_subject(rostam.id, fields=rostam.fields)

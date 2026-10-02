@@ -35,6 +35,7 @@ src/hone_frame/
   profiles.py  requests.py               profiles, requests, plans
   recipes.py  recipes_subjects.py  recipes_scenes.py  recipes_packs.py   request -> planned outputs
   data/character_packs.toml  characters.py   character packs; the character page, world, model sheet
+  project_file.py                        project files (TOML/JSON): import by name, write back
   references.py  planning.py             reference roles and limits, plans
   prompts.py  prompt_sections.py  dialects.py  data/prompting.toml   prompts per model dialect, task and style
   judging.py  pick.py                    judging profiles and verdicts, hone-select picks
