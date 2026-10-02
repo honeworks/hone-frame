@@ -1,6 +1,6 @@
 // Characters (change 0003): the list, and each character's page with all its packs, its belongings and its
 // model sheet. "Generate assets" makes everything at once; each pack can be made again or added to.
-import { api, empty, failure, field, h, icon, img, presetOptions, projectPath, replace, select, toast } from "../core.js";
+import { api, empty, failure, field, h, icon, img, presetOptions, projectPath, replace, select, toast, zoomable } from "../core.js";
 import { subjectDialog } from "./subject_form.js";
 
 const LIVE = new Set(["queued", "running", "waiting", "paused"]);
@@ -39,6 +39,7 @@ async function characterPage(main, id) {
   let timer = null;
   async function draw() {
     const page = await api(projectPath(`/characters/${id}`));
+    if (!main.isConnected) return;  // the person left this page while it loaded
     const live = page.packs.some((p) => p.items.some((i) => LIVE.has(i.status)));
     replace(main, header(page), hero(page), page.packs.map((p) => packSection(page, p)), belongings(page), sheetSection(page));
     clearTimeout(timer);
@@ -71,6 +72,7 @@ function hero(page) {
       rows.filter(([, v]) => v).map(([k, v]) => h("div", {}, h("div", { class: "overline" }, k), h("div", {}, Array.isArray(v) ? v.join(", ") : v))),
       h("div", { class: "row" }, h("span", { class: "chip" }, `${ready} of ${counts.length} images ready`),
         review ? h("span", { class: "pill needs_review" }, `${review} need your choice`) : null),
+      (page.warnings || []).map((w) => h("div", { class: "notice warning" }, w)),
       page.hero ? null : h("div", { class: "notice info" }, "Start here: press Generate assets. The hero is drawn first; every other image is made from it, on a white background."))));
 }
 
@@ -143,7 +145,7 @@ function candidate(c, chosen, use) {
   const ev = c.evaluation;
   const failed = ev ? ev.checks.filter((k) => k.verdict !== "pass") : [];
   return h("div", { class: `cand${chosen ? " current" : ""}` },
-    h("a", { class: "thumb", href: c.url, target: "_blank", rel: "noopener" }, img(c)),
+    h("div", { class: "thumb" }, img(c)),
     h("div", { class: "foot" }, h("span", { class: "mono caption" }, c.id), ev ? h("span", { class: "mono" }, ev.overall.toFixed(2)) : null),
     h("div", { class: "stack", style: "padding:0 12px 12px;gap:6px" },
       ev ? (failed.length ? failed.map((k) => h("div", { class: "caption" }, h("strong", {}, `${k.name}: `), k.finding || k.verdict))
@@ -178,23 +180,26 @@ function sheetSection(page) {
       h("div", { class: "caption" }, "The hero and turnaround in a row, the expressions below and the description: composed from the images in use, no model is called.")),
     h("div", { class: "row" }, sheet ? h("button", { class: "btn small", onclick: exportIt }, icon("download"), "Export") : null,
       h("button", { class: "btn small primary", onclick: compose, disabled: page.hero ? null : true }, sheet ? "Compose again" : "Compose"))),
-    sheet?.url ? h("a", { href: sheet.url, target: "_blank", rel: "noopener" }, h("img", { class: "preview-img", src: `${sheet.url}?v=${sheet.version}`, alt: `${page.subject.name} model sheet` }))
+    sheet?.url ? zoomable(h("img", { class: "preview-img", src: `${sheet.url}?v=${sheet.version}`, alt: `${page.subject.name} model sheet` }), sheet.url, `${page.subject.name} model sheet`)
       : h("p", { class: "muted", style: "margin:0" }, page.hero ? "Not composed yet." : "Generate the character first."));
 }
 
 // --------------------------------------------------------------------------------------------- actions
 
 function generateDialog(page) {
-  const packs = page.packs;
+  const belongings = page.assets.length ? [{ id: "assets", label: "Belongings", custom: null, items: page.assets.map((a) => ({ item: a.name, image: a.hero })) }] : [];
+  const packs = [...page.packs, ...belongings];
   const boxes = {};
   const extras = {};
   const rows = packs.map((p) => {
     const hasHero = Boolean(page.hero);
-    const box = h("input", { type: "checkbox", checked: p.id === "hero" ? !hasHero : true, disabled: p.id === "hero" && !hasHero ? true : null });
+    const fresh = p.id === "assets" ? p.items.some((i) => !i.image) : true;  // belongings: only when one has no image
+    const box = h("input", { type: "checkbox", checked: p.id === "hero" ? !hasHero : fresh, disabled: p.id === "hero" && !hasHero ? true : null });
     boxes[p.id] = box;
     const extra = p.custom ? h("textarea", { class: "input", style: "min-height:40px", placeholder: `Your own, one per line. ${ADD_HINT[p.custom] || ""}`, "aria-label": `Your own ${p.label}` }) : null;
     if (extra) extras[p.id] = extra;
-    const what = p.id === "hero" ? (hasHero ? "Already made. Tick to draw a new one (the others are then made from it)." : "Drawn first; everything else is made from it.")
+    const what = p.id === "assets" ? `${p.items.map((i) => i.item).join(", ")}. Those without an image are always made before the actions that use them.`
+      : p.id === "hero" ? (hasHero ? "Already made. Tick to draw a new one (the others are then made from it)." : "Drawn first; everything else is made from it.")
       : `${p.items.length} image${p.items.length === 1 ? "" : "s"}${p.items.length ? ": " + p.items.slice(0, 6).map((i) => i.item).join(", ") + (p.items.length > 6 ? "…" : "") : ""}`;
     return h("div", { class: "pack-choice" }, h("label", { class: "row", style: "flex-wrap:nowrap;align-items:flex-start" }, box,
       h("div", {}, h("div", { style: "font-weight:600" }, p.label), h("div", { class: "caption" }, what))), extra);

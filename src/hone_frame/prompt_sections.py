@@ -35,6 +35,7 @@ class Ctx:
     mode: Mode
     style_form: str
     inputs: dict[str, Any] = field(default_factory=dict[str, Any])
+    compact: bool = False  # over budget: `keep` names the clothes instead of listing them (change 0004)
 
     @property
     def parts(self) -> list[dict[str, Any]]:
@@ -131,7 +132,12 @@ def keep(c: Ctx) -> str:
         return ""
     part = c.parts[0]
     kept = ["the same build and height, the same hair" if c.faces_away else "the same face, hair and build"]
-    clothes = "" if c.inputs.get("outfit") else _field(part, "outfits")
+    if c.inputs.get("outfit"):
+        clothes = ""
+    elif c.compact:
+        clothes = "the same clothes, armour and colours"
+    else:
+        clothes = _field(part, "outfits")
     kept += [x for x in (clothes, _field(part, "features")) if x]
     return "Keep exactly the same as in image 1: " + "; ".join(kept) + ". Change only what is asked above"
 

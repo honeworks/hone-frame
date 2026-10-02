@@ -16,3 +16,4 @@ uv run python examples/quickstart.py
 | 3 | [`sheets_and_exports.py`](sheets_and_exports.py) | the compositor, versions, exports | Sheets are deterministic layouts of saved images; packs hold only what a scene uses. | §11 |
 | 4 | [`run_control.py`](run_control.py) | pause, resume, needs review, manual pick | Stop and continue without regenerating; unresolved outputs stay visible until a person picks. | §8.5, §9 |
 | 5 | [`coverage_states_sequences.py`](coverage_states_sequences.py) | coverage, interactions, states, sequences, grids | Every advanced request reuses the project's subjects, one output per view, frame or cell. | §6.1 |
+| 6 | [`project_file.py`](project_file.py) | project files: import, edit, import again | A whole project (characters, belongings, world, scenes) comes from one TOML or JSON file; only what changed gets a new version. | change 0004 |

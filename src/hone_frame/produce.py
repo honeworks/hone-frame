@@ -118,6 +118,13 @@ class Producer:
         draft = compose(self.out, [(ref, name) for ref, _, name in self.refs], found, dialect)
         self.composed = draft
         prompt = draft.text
+        if draft.over_budget:
+            self.log.write(
+                "prompt_long",
+                output=self.out.id,
+                message=f"{len(prompt.split())} words, over the {draft.max_words}-word guide for "
+                f"{draft.dialect}; sent whole rather than without what was asked",
+            )
         if self.profile.planner and draft.mode != "promotion":
             prompt = self._planned(draft, dialect, found) or prompt
         self._save(prompt=prompt)

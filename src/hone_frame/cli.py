@@ -93,6 +93,31 @@ def export_pack(project: str, scene_id: str, out: Path, home: Home = None) -> No
     typer.echo(str(Workspace(home).project(project).export_pack(scene_id, out)))
 
 
+@app.command("import")
+def import_file(path: Path, home: Home = None, as_json: Json = False) -> None:
+    """Create or update a project from a TOML or JSON project file (docs/project-files.md)."""
+    from hone_frame.project_file import import_path  # noqa: PLC0415 - loaded only for this command
+
+    report = import_path(Workspace(home), path)
+    lines = [f"project {report.project}"]
+    lines += [
+        f"  {what}: {', '.join(items)}"
+        for what, items in report.model_dump().items()
+        if what != "project" and items
+    ]
+    _print(report.model_dump(), as_json, lines)
+
+
+@app.command("export-file")
+def export_file(project: str, out: Path, home: Home = None) -> None:
+    """Write a project as a project file (JSON) to edit and import again."""
+    from hone_frame.project_file import project_file  # noqa: PLC0415 - loaded only for this command
+
+    data = project_file(Workspace(home).project(project))
+    out.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    typer.echo(str(out))
+
+
 def main() -> None:
     try:
         app()

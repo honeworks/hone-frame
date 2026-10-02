@@ -67,7 +67,7 @@ def test_hero_is_long_and_structured_views_are_short_edits(project: hf.ProjectSt
     )
     assert "same face, hair and build" in side.text and FACE not in side.text  # an edit, not a re-description
     assert "face is not visible" in back.text and "same face" not in back.text and FACE not in back.text
-    assert all(len(v.text.split()) <= 110 for v in (side, back))
+    assert all(len(v.text.split()) <= (132 if v.over_budget else 110) for v in (side, back))  # soft budget
 
 
 def test_qwen_gets_the_camera_phrase_and_no_separate_angle(project: hf.ProjectStore) -> None:

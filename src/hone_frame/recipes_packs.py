@@ -3,6 +3,7 @@ hero. The packs and their default items are data (`data/character_packs.toml`)."
 
 from __future__ import annotations
 
+import re
 import tomllib
 from functools import cache
 from importlib import resources
@@ -106,6 +107,7 @@ def character_packs(store: ProjectStore, request: CharacterPacks, built: Built) 
         raise InvalidRequest(
             f"items of your own for {left_out}, which are not in packs: add them or drop the items"
         )
+    built.warnings += carried_objects(subject)
     maker = _PackMaker(store, request, built, subject)
     hero = None if request.redraw_hero else accepted_hero(store, subject.id)
     maker.identity = maker.hero() if hero is None else {"references": [maker.ref(hero, subject, "identity")]}
@@ -113,6 +115,26 @@ def character_packs(store: ProjectStore, request: CharacterPacks, built: Built) 
         extra = request.custom.get(name, [])
         for item in pack_items(store, subject, name, extra, only_extra=request.only_custom):
             maker.item(name, item)
+
+
+HELD = re.compile(
+    r"\b(sword|mace|spear|lance|bow|arrows?|axe|dagger|knife|shield|staff|club|lasso|whip|torch|cup|"
+    r"holding|holds|carries|carrying|wields|wielding|in (?:his|her|their) (?:right |left )?hands?)\b",
+    re.I,
+)
+
+
+def carried_objects(subject: Subject) -> list[str]:
+    """Warnings for a description that puts an object in the character's hands: reference images are
+    drawn with empty hands, so the prompt would contradict itself (change 0004)."""
+    found: list[str] = []
+    for key, label in (("features", "distinguishing features"), ("outfits", "default outfit")):
+        if match := HELD.search(str(subject.fields.get(key) or "")):
+            found.append(
+                f"{subject.name}'s {label} mention {match.group(0)!r}: reference images show empty hands, "
+                "so carried objects belong in Belongings; move it there"
+            )
+    return found
 
 
 class _PackMaker:
@@ -142,16 +164,18 @@ class _PackMaker:
         fields: dict[str, Any] = {k: list(v) for k, v in self.identity.items()}
         flags = ["identity_ref", "character"] + [k for k in ("expression", "pose") if spec.get(k)]
         flags += ["state"] if spec.get("state") or spec.get("outfit") else []
-        if asset_id := spec.get("asset_id"):
-            asset = self.store.subject(asset_id)
-            if asset_id in self.asset_outputs:
-                fields.setdefault("depends_on", []).append(
-                    Dependency(output=self.asset_outputs[asset_id], role="object")
+        if asset_id := spec.get("asset_id"):  # an action: its belonging is the object reference
+            image = None if asset_id in self.asset_outputs else accepted_hero(self.store, asset_id)
+            if image:
+                fields.setdefault("references", []).append(
+                    self.ref(image, self.store.subject(asset_id), "object")
                 )
-                flags.append("object_ref")
-            elif image := accepted_hero(self.store, asset_id):
-                fields.setdefault("references", []).append(self.ref(image, asset, "object"))
-                flags.append("object_ref")
+            else:  # made first in this request, and the action waits for it (change 0004)
+                if asset_id not in self.asset_outputs:
+                    self._asset({"asset_id": asset_id})
+                dep = Dependency(output=self.asset_outputs[asset_id], role="object")
+                fields.setdefault("depends_on", []).append(dep)
+            flags.append("object_ref")
         self._add(pack, spec, conditions=flags, **fields)
 
     def _asset(self, spec: dict[str, Any]) -> None:

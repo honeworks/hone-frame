@@ -1,11 +1,11 @@
 // Sheets: saved sheets and the composer. Composition is Python on the server; no model is called.
-import { api, empty, failure, field, h, icon, img, presetOptions, projectPath, replace, select, toast } from "../core.js";
+import { api, empty, failure, field, h, icon, img, presetOptions, projectPath, replace, select, toast, zoomable } from "../core.js";
 
 export async function render(main, [id]) {
   const [sheets, images] = await Promise.all([api(projectPath("/sheets")), api(projectPath("/images"))]);
   const current = id === "new" ? null : sheets.find((s) => s.id === id) || null;
   const list = sheets.length ? h("div", { class: "tiles big" }, sheets.map((s) => h("a", { class: "tile", href: `#/sheets/${s.id}` },
-    h("div", { class: "thumb", style: "aspect-ratio:16/10" }, s.url ? h("img", { src: s.url, alt: s.recipe.name }) : h("span", { class: "caption" }, "Not composed")),
+    h("div", { class: "thumb", style: "aspect-ratio:16/10" }, s.url ? zoomable(h("img", { src: s.url, alt: s.recipe.name }), s.url, s.recipe.name) : h("span", { class: "caption" }, "Not composed")),
     h("div", { class: "meta" }, h("span", { class: "name" }, s.recipe.name), h("span", { class: "caption mono" }, `${s.id} · v${s.version} · ${s.recipe.images.length} images`)))))
     : empty("No sheets yet", "Compose one from saved images; layout and labels stay editable.");
   const side = h("aside", { class: "side" });
@@ -13,7 +13,7 @@ export async function render(main, [id]) {
     h("a", { class: "btn", href: "#/sheets/new" }, icon("plus"), "New sheet")),
   h("div", { class: "layout-side" }, h("div", {}, id || !sheets.length ? composer(current, images) : list), side));
   if (current) {
-    replace(side, h("div", { class: "panel stack" }, h("h2", {}, current.recipe.name), current.url ? h("img", { class: "preview-img", src: current.url, alt: current.recipe.name }) : null,
+    replace(side, h("div", { class: "panel stack" }, h("h2", {}, current.recipe.name), current.url ? zoomable(h("img", { class: "preview-img", src: current.url, alt: current.recipe.name }), current.url, current.recipe.name) : null,
       h("div", { class: "row" }, h("button", { class: "btn small", onclick: () => exportSheet(current.id) }, icon("download"), "Export with originals"))));
   } else if (!id) replace(side, h("div", { class: "panel" }, h("p", { class: "caption", style: "margin:0" }, "Open a sheet to edit it, or start a new one.")));
 }

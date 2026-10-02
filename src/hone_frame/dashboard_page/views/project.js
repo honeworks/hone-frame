@@ -1,6 +1,6 @@
 // The project home (change 0003): the brief and style, the characters, the world, the scenes and what is
 // running. "Generate assets" here makes the world's places and objects; characters have their own page.
-import { api, failure, field, h, icon, pill, presetOptions, progressBar, projectPath, range, replace, select, state, toast } from "../core.js";
+import { api, downloadProject, failure, field, h, icon, importButton, pill, presetOptions, progressBar, projectPath, range, replace, select, state, toast } from "../core.js";
 import { characterTile } from "./characters.js";
 import { subjectDialog } from "./subject_form.js";
 import { worldDialog, worldTile } from "./world.js";
@@ -19,7 +19,9 @@ export async function render(main) {
     h("div", { class: "page-head" },
       h("div", { style: "max-width:760px" }, h("div", { class: "row" }, h("h1", {}, p.name), h("span", { class: "chip" }, styleName(p.style_pack))),
         p.brief ? h("p", { class: "muted", style: "margin:4px 0 0" }, p.brief) : null),
-      h("div", { class: "row" }, h("button", { class: "btn", onclick: () => editProject(p) }, "Edit project"),
+      h("div", { class: "row" }, importButton("Import a file"),
+        h("button", { class: "btn", onclick: () => downloadProject(p.id), title: "The whole project as a file you can edit and import again" }, "Download as file"),
+        h("button", { class: "btn", onclick: () => editProject(p) }, "Edit project"),
         h("button", { class: "btn primary", onclick: () => worldDialog(data.world) }, "Generate assets"))),
     next ? h("section", { class: "panel steps", style: "margin-bottom:24px" }, h("h2", {}, "Next step"),
       h("ol", {}, steps.map(([done, title, href, text]) => h("li", { class: done ? "done" : (title === next[1] ? "current" : "") },

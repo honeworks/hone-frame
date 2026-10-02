@@ -66,6 +66,7 @@ class Built:
         self.choices = choices
         self.outputs: list[PlannedOutput] = []
         self.errors: list[str] = []
+        self.warnings: list[str] = []
         self.sheet_layout: str | None = None
 
     def add(self, label: str, kind: str, **fields: Any) -> PlannedOutput:

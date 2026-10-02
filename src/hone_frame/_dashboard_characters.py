@@ -15,6 +15,7 @@ from hone_frame.characters import (
     world_requests,
 )
 from hone_frame.errors import HoneFrameError
+from hone_frame.project_file import import_file, parse, project_file
 from hone_frame.requests import CharacterPacks
 from hone_frame.workspace import Workspace
 
@@ -79,3 +80,15 @@ def generate_world(ws: Workspace, project_id: str, *, body: Any, **_: Any) -> li
     if not requests:
         raise ApiError("every world asset already has an accepted image: nothing to generate")
     return [run_summary(store.submit(r)) for r in requests]
+
+
+@api("POST", "/import")
+def import_project(ws: Workspace, *, body: Any, **_: Any) -> dict[str, Any]:
+    """`{"text": <the file>, "format": "toml" | "json"}`: create or update a project (change 0004)."""
+    data = json_body(body)
+    return import_file(ws, parse(str(data.get("text", "")), str(data.get("format", "")))).model_dump()
+
+
+@api("GET", P + "/file")
+def export_project_file(ws: Workspace, project_id: str, **_: Any) -> dict[str, Any]:
+    return project_file(ws.project(project_id))

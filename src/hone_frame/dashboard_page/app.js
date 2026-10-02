@@ -75,13 +75,18 @@ async function route() {
     link.toggleAttribute("aria-current", here);
     if (here) link.setAttribute("aria-current", "page");
   }
-  const main = document.getElementById("main");
+  // Each page renders into a fresh container: a slow request or a poll from the page before can only
+  // write into its own, now detached, container, never into the page shown now (change 0004).
+  const main = h("div", { class: "page" });
+  replace(document.getElementById("main"), main);
   const title = document.getElementById("topbar-title");
   replace(title, state.projects.find((p) => p.id === state.project)?.name || "Hone Frame");
-  replace(main);
   try {
-    dispose = (await VIEWS[name].render(main, rest)) || null;
+    const cleanup = (await VIEWS[name].render(main, rest)) || null;
+    if (main.isConnected) dispose = cleanup;
+    else if (cleanup) cleanup();  // left while it loaded: stop its polling now
   } catch (error) {
+    if (!main.isConnected) return;  // the person already left this page
     failure(error);
     replace(main, h("div", { class: "empty" }, h("h2", {}, "This page could not load"), h("p", {}, error.message)));
   }

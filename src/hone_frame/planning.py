@@ -51,6 +51,7 @@ def plan(store: ProjectStore, request: RequestBase | dict[str, Any]) -> Plan:
             errors=[str(exc)],
         )
     errors += built.errors
+    warnings += built.warnings
     checker = ModelCheck(store, profile, errors, warnings)
     outputs = [checker.finish(o) for o in built.outputs]
     checker.judge(selection.auto_judge)
