@@ -403,7 +403,8 @@ has two steps:
 - `produce` (item step, `deterministic=False`): runs §8.2 for one output and returns its `OutputRecord`.
 - `compose` (final step): when the request asked for a sheet (`SubjectReferences` with a sheet layout)
   and every output is accepted, it saves and composes that sheet. Otherwise it records why it did
-  nothing.
+  nothing. An output asked again in another run (`replaced`) is not accepted in this run, so its
+  sheet is composed from the Sheets view once the new attempt is accepted.
 
 The run's seed is derived from the run id, so `ctx.seed` differs per output and stays stable across
 resume. A candidate's seed is `int(sha256(f"{ctx.seed}:{round}:{candidate}")[:8], 16)`, except that the

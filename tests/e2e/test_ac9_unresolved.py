@@ -146,3 +146,21 @@ def test_a_replaced_output_is_never_produced_again(tmp_path: Path) -> None:
     run_all(p)
     first = p.run_view(run.id).outputs[0]
     assert first.status == "replaced" and first.replaced_by is not None
+
+
+def test_redo_of_an_accepted_or_unfinished_output(tmp_path: Path) -> None:
+    ws = hf.Workspace(tmp_path, models=FakeModels())
+    p = ws.create_project("P")
+    a = p.add_subject("character", "A", description="a")
+    done = p.submit(
+        hf.SubjectReferences(
+            subject_id=a.id, presentation="neutral-full-body", selection=hf.Selection(rounds=1)
+        )
+    )
+    run_all(p)
+    p.rerun(done.id, "o01")  # a person wants an accepted image again: it is replaced, no longer accepted
+    view = p.run_view(done.id)
+    assert view.outputs[0].status == "replaced" and view.accepted == [] and view.status == "done"
+    queued = p.submit(hf.SubjectReferences(subject_id=a.id, presentation="neutral-full-body"))
+    p.rerun(queued.id, "o01")  # not produced yet: nothing to replace, it will still run
+    assert p.run_view(queued.id).outputs[0].status == "queued"
