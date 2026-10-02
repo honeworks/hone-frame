@@ -200,3 +200,11 @@ def test_flux_reference_slots_are_filled(tmp_path: Path, monkeypatch: pytest.Mon
     )
     sent = fake.calls[-1][1]["references"]
     assert [Path(p).name for p in sent] == ["hero.png", "hero.png"]
+
+
+def test_only_flux_with_free_slots_is_filled(tmp_path: Path) -> None:
+    registry = HoneModels().registry
+    a, b = tmp_path / "a.png", tmp_path / "b.png"
+    assert models_module._filled("flux.2-klein-4b", [a, b], registry) == [a, b]  # full: unchanged
+    assert models_module._filled("flux.2-klein-4b", [], registry) == []  # nothing to repeat
+    assert models_module._filled("qwen-image-edit-2511", [a], registry) == [a]  # its empty slots are fine

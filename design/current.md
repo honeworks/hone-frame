@@ -387,7 +387,8 @@ themselves (hone-models §7), so hone-frame's steps hold no GPU lease of their o
 hone-models' catalog does not ship yet: the proven ComfyUI workflows of `flux.2-klein-4b` (two reference
 slots), `flux.2-klein-4b-text` and `qwen-image-edit-2511` (three slots), each with `vram_gb` near the
 whole card so the GPU scheduler unloads the chat models first. `HoneModels` loads hone-models' registry
-with this file and then `<home>/hone-models.toml` (when it exists), so hone-frame works from any folder
+with this file and then `<home>/hone-models.toml` (when it exists), after hone-models' own user and
+working-folder files, so hone-frame works from any folder
 and a workspace can override any entry (decisions D-016). `flux.2-klein-4b` gets every reference slot
 filled, the last reference repeated, because an empty slot breaks its graph (D-017).
 

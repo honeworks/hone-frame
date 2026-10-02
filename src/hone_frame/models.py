@@ -171,6 +171,6 @@ def _inputs(cfg: Any, registry: Any) -> list[str]:
 def _filled(model_id: str, references: list[Path], registry: Any) -> list[Path]:
     """`references`, with the last one repeated into the free slots of a FILL_SLOTS workflow."""
     slots = registry.get(model_id).capabilities.max_references
-    if model_id not in FILL_SLOTS or not slots or len(references) >= slots:
+    if model_id not in FILL_SLOTS or not slots or not references or len(references) >= slots:
         return references
     return references + [references[-1]] * (slots - len(references))
