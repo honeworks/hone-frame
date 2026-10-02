@@ -90,7 +90,7 @@ const WORDS = {
   needs_review: "Needs review", failed: "Failed", canceled: "Canceled", waiting: "Waiting",
   candidate: "Candidate", picked: "Picked", manual_pick: "Picked by you", best_available: "Best available",
   rejected: "Rejected", uncertain: "Uncertain", imported: "Imported", pass: "Pass", fail: "Fail",
-  not_assessable: "Not assessable",
+  not_assessable: "Not assessable", replaced: "Replaced",
 };
 
 export function pill(status) {

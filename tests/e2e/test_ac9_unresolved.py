@@ -58,3 +58,33 @@ def test_waiting_for_a_hero_while_others_continue(tmp_path: Path) -> None:
     final = p.run_view(run_w.id)
     assert [o.status for o in final.outputs[1:]] == ["done"] * 4
     assert final.status == "done"
+
+
+def test_redo_one_output_with_a_note_and_another_profile(tmp_path: Path) -> None:
+    fake = _fail_label("Back")
+    ws = hf.Workspace(tmp_path, models=fake)
+    p = ws.create_project("P")
+    woman = p.add_subject("character", "Woman", description="black hair")
+    run = p.submit(hf.SubjectReferences(subject_id=woman.id, presentation="turnaround"))
+    run_all(p)
+    back = p.run_view(run.id).outputs[4]
+    assert back.label == "Back" and back.status == "needs_review"
+    redo = p.rerun(
+        run.id,
+        back.id,
+        note="seen from directly behind, no face visible",
+        profile="final",
+        selection=hf.Selection(rounds=2),
+    )
+    old = p.run_view(run.id)
+    assert old.status == "done" and old.outputs[4].status == "replaced" and old.unresolved == []
+    assert old.outputs[4].replaced_by == {"run": redo.id, "output": back.id}
+    assert old.outputs[4].candidates == back.candidates  # the rejected images and their findings stay
+    assert redo.selection["rounds"] == 2 and redo.profile["id"] == "final"
+    fake.judge = lambda _i, prompt, _images: judge_answer(prompt)  # the new attempt passes
+    run_all(p)
+    again = p.run_view(redo.id)
+    assert again.status == "done" and len(again.outputs[0].candidates) == 2
+    sent = fake.generated[-1]
+    assert sent.model == "qwen-image-edit-2511" and "no face visible" in sent.prompt
+    assert [r.name for r in sent.references] == [p.image_path(old.outputs[0].selected or "").name]

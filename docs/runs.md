@@ -34,8 +34,10 @@ print(view.status, view.progress, view.usage)
 ```
 
 - **Pause / cancel** take effect before the next model call. **Resume** and **retry** continue the
-  same run, and every stored candidate is skipped, so nothing is generated twice. **Rerun** of one
-  output is a new run linked to the old one.
+  same run, and every stored candidate is skipped, so nothing is generated twice.
+- **Generate again** (`project.rerun(run, output, note=..., profile=..., selection=...)`): when every
+  candidate of one output is wrong, ask for it again in a new run. The note is added to its prompt, and
+  another profile can be chosen. The old output becomes "Replaced" and keeps its images and findings.
 - **Manual pick:** `project.pick(run, output, image, note=...)` accepts an output by hand. The image
   keeps its evaluation, and outputs waiting for it continue on `retry`.
 - **Restart:** `hf.Runner(ws).recover()` queues runs a dead process left running. The dashboard does

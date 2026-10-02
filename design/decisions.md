@@ -221,3 +221,16 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
   `hf.Workspace(path)` still pick any folder.
 - **Reason:** one place for a person's work, whatever folder a command runs in.
 
+## D-019: "Generate again" replaces one output with a new run  (2026-10-02)
+
+- **Question:** when every candidate of one output is bad (a back view drawn from the front), a person
+  needs to ask for that output again, with a reason, without redoing the rest of the run.
+- **Choice:** the run page's "Generate again" (also offered from "Choose a candidate" as "None of
+  these") calls `rerun(run, output, note=, profile=, selection=)`. The note is added to the output's
+  prompt; a different profile picks that profile's model for the output (Final's Qwen-Image-Edit has the
+  camera-angle LoRA, the better choice for side and back views). The old output gets the new status
+  `replaced` with `replaced_by`, so its run no longer waits for review, while its candidates and their
+  findings stay in the library.
+- **Reason:** the rest of the run is fine and stays accepted; each attempt is still its own faithful
+  record (D-011).
+

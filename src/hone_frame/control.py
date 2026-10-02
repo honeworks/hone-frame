@@ -10,8 +10,10 @@ from typing import TYPE_CHECKING, Any
 from hone_frame._files import now
 from hone_frame.errors import InvalidRequest, NotFound, RunStateError
 from hone_frame.events import EventLog, observed
-from hone_frame.planning import as_request, plan
-from hone_frame.requests import Counts, PlannedRef, RequestBase
+from hone_frame.planning import ModelCheck, as_request, plan
+from hone_frame.profiles import resolve_profile
+from hone_frame.records import Selection
+from hone_frame.requests import Counts, PlannedOutput, PlannedRef, RequestBase
 from hone_frame.runs import (
     OutputRecord,
     RunRecord,
@@ -94,32 +96,43 @@ def resume(store: ProjectStore, run_id: str) -> RunView:
 retry = resume  # a retry is a resume of a finished run with failed or waiting outputs (design §9.2)
 
 
-def rerun(store: ProjectStore, run_id: str, output_id: str) -> RunView:
-    """A new run with one output's planned definition (decisions D-011)."""
+def rerun(
+    store: ProjectStore,
+    run_id: str,
+    output_id: str,
+    *,
+    note: str = "",
+    profile: str | None = None,
+    selection: Selection | None = None,
+) -> RunView:
+    """A new run for one output (decisions D-011, D-019): the same definition, plus the person's note,
+    optionally another profile and selection. The old output becomes `replaced` and keeps its images."""
     run = load_run(store, run_id)
     out = next((o for o in run.plan.outputs if o.id == output_id), None)
     if out is None:
         raise NotFound(f"run {run_id} has no output {output_id}")
-    refs = list(out.references)
-    for dep in out.depends_on:
-        record = load_output(store, run_id, dep.output)
-        if record is None or record.selected is None:
-            raise InvalidRequest(f"{output_id} needs an accepted {dep.output} first; pick one, then rerun")
-        refs.append(PlannedRef(image_id=record.selected, role=dep.role))
-    single = out.model_copy(update={"references": refs, "depends_on": []})
-    sel = run.plan.selection
+    single = _redo_output(store, run, out, note)
+    resolved = resolve_profile(store, RequestBase(profile=profile)) if profile else run.plan.profile
+    if profile:
+        errors: list[str] = []
+        single = ModelCheck(store, resolved, errors, []).finish(single.model_copy(update={"model": ""}))
+        if errors:
+            raise InvalidRequest(f"cannot redo {out.label} with the {profile} profile", errors)
+    sel = selection or run.plan.selection
     per = sel.rounds * sel.candidates
     counts = Counts(
         outputs=1,
         images=per,
         judge_calls=per if sel.auto_judge else 0,
-        planner_calls=run.plan.counts.planner_calls // max(run.plan.counts.outputs, 1),
+        planner_calls=(sel.rounds if sel.strategy == "sequential" else 1) if resolved.planner else 0,
     )
     planned = run.plan.model_copy(
         update={
             "outputs": [single],
             "counts": counts,
             "sheet_layout": None,
+            "profile": resolved,
+            "selection": sel,
             "title": f"{run.title}: {out.label} again",
         }
     )
@@ -134,7 +147,35 @@ def rerun(store: ProjectStore, run_id: str, output_id: str) -> RunView:
     )
     with store.lock():
         save_run(store, new)
+        old = load_output(store, run_id, output_id)
+        if old is not None and old.status not in ("running", "queued"):
+            reason = f"asked again by a person in run {new.id}" + (f": {note}" if note else "")
+            save_output(
+                store,
+                run_id,
+                old.model_copy(
+                    update={
+                        "status": "replaced",
+                        "reason": reason,
+                        "replaced_by": {"run": new.id, "output": out.id},
+                    }
+                ),
+            )
     return view(store, new)
+
+
+def _redo_output(store: ProjectStore, run: RunRecord, out: PlannedOutput, note: str) -> PlannedOutput:
+    """The output with its dependencies' accepted images as fixed references, and the note added."""
+    refs = list(out.references)
+    for dep in out.depends_on:
+        record = load_output(store, run.id, dep.output)
+        if record is None or record.selected is None:
+            raise InvalidRequest(f"{out.label} needs an accepted {dep.output} first; pick one, then redo it")
+        refs.append(PlannedRef(image_id=record.selected, role=dep.role))
+    inputs = dict(out.prompt_inputs)
+    if note.strip():
+        inputs["note"] = " ".join(x for x in (str(inputs.get("note") or ""), note.strip()) if x)
+    return out.model_copy(update={"references": refs, "depends_on": [], "prompt_inputs": inputs})
 
 
 def pick(store: ProjectStore, run_id: str, output_id: str, image_id: str, *, note: str = "") -> OutputRecord:

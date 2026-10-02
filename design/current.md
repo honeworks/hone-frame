@@ -529,6 +529,7 @@ Output statuses:
 | `failed` | a technical failure after its retries |
 | `paused` | stopped by a pause before it finished |
 | `canceled` | stopped by a cancel before it finished |
+| `replaced` | a person asked for it again in a new run (`replaced_by`); its candidates stay |
 
 ### 8.7 Dependencies
 
@@ -578,9 +579,11 @@ The first match wins:
 - `resume(run)` clears `control.json` and queues the run again. The runner calls hone-flow's `resume()`,
   which reruns the failed (stopped, waiting) and interrupted items. Candidates already stored are
   skipped (§8.2), so a resume never regenerates an image.
-- `retry(run)` is a resume of a finished run with `failed` or `waiting` outputs. `rerun(run, output)` is
-  a new run with that one output's planned definition (`rerun_of` set), and the old output keeps its
-  images.
+- `retry(run)` is a resume of a finished run with `failed` or `waiting` outputs. `rerun(run, output, note=, profile=, selection=)`
+  is a new run with that one output's planned definition (`rerun_of` set): the person's note is added to
+  its prompt, and another profile or selection may be chosen (the model is chosen again for that
+  profile). The old output becomes `replaced` (with `replaced_by`), keeps its images and findings, and no
+  longer counts as unresolved (D-019).
 - Calling these in the wrong state raises `RunStateError` with what is allowed (a canceled run cannot be
   resumed; `rerun` it).
 - **Restart.** `Runner.recover()` (run when the dashboard starts) finds runs whose `run.json` says

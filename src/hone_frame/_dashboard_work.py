@@ -8,7 +8,7 @@ from typing import Any
 
 from hone_frame._dashboard_api import ID, ApiError, P, api, json_body, subject_card
 from hone_frame._dashboard_data import image_card, run_page, run_summary
-from hone_frame.records import Scene, Sequence, SheetRecipe
+from hone_frame.records import Scene, Selection, Sequence, SheetRecipe
 from hone_frame.runs import all_runs, view
 from hone_frame.workspace import Workspace
 
@@ -117,7 +117,21 @@ def run_action(
         )
         return record.model_dump(mode="json")
     if action == "rerun":
-        return run_summary(store.rerun(run_id, str(data.get("output"))))
+        rounds = data.get("rounds")
+        selection = (
+            None
+            if not rounds
+            else Selection.model_validate(store.run_view(run_id).selection | {"rounds": int(rounds)})
+        )
+        return run_summary(
+            store.rerun(
+                run_id,
+                str(data.get("output")),
+                note=str(data.get("note") or ""),
+                profile=data.get("profile") or None,
+                selection=selection,
+            )
+        )
     return run_summary(getattr(store, action)(run_id))
 
 
