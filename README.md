@@ -2,13 +2,27 @@
 
 [![CI](https://github.com/honeworks/hone-frame/actions/workflows/ci.yml/badge.svg)](https://github.com/honeworks/hone-frame/actions/workflows/ci.yml)
 
-**Hone Frame.** Purpose: to be defined in [design/changes/0001](design/changes/0001-initial-design.md).
+**Hone Frame: a project-based visual production workspace.** Define a project's characters,
+environments and assets once; generate, judge and pick their images unattended; compose reference sheets
+in Python without another model call; build scenes from exactly the references you chose; and watch it
+all happen in a local dashboard.
 
 Part of **[honeworks](https://github.com/honeworks)**: small, standalone tools for reliable generative-AI
 workflows. Works on its own; works better with its siblings.
 
-This repository is a working skeleton: packaging, tests, CI and the design process are in place; the
-package has no features yet.
+- **Images are the unit, sheets are compositions.** Every candidate is kept with a full record; a sheet
+  is a saved layout over exact image ids, composed deterministically.
+- **References with a purpose.** A scene names its subjects and gives each reference a role (identity,
+  outfit, object, pose...); nothing unselected is attached, and the exact inputs are shown first.
+- **Unattended rounds, honest verdicts.** Rounds of generation, a vision judge with required checks, and a
+  pick by [hone-select](https://github.com/honeworks/hone-select); "nothing passed" stays visible.
+- **Runs you can trust.** Real stages, counts and estimates; pause, resume and restart without losing
+  work; every run is a [hone-flow](https://github.com/honeworks/hone-flow) run folder.
+- **One model layer.** Every model call goes through [hone-models](https://github.com/honeworks/hone-models):
+  local ComfyUI and Ollama models and hosted APIs as equals.
+
+The design is in [design/current.md](design/current.md); the first product is being built in milestones
+(see [0001](design/changes/0001-initial-design.md)).
 
 ## Install
 

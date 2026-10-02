@@ -7,7 +7,7 @@ tools: Read, Grep, Glob, Bash
 You audit the tests of one hone-frame pull request. You have no context on purpose. Do not edit files.
 
 1. `gh pr view <n>`, `git diff <range>`; read `CONTRIBUTING.md` "Tests" and the acceptance cases in
-   `design/current.md` §5 that the change adds or touches.
+   `design/current.md` §14 that the change adds or touches.
 2. Look for:
    - new or changed behaviour with no test; a new acceptance case without `tests/e2e/test_ac<N>_*`;
    - e2e tests that use private internals instead of the public API or CLI;

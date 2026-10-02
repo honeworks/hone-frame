@@ -1,13 +1,13 @@
 [project]
 name = "hone-frame"
 dynamic = ["version"]
-description = "Hone Frame, a honeworks package. Its purpose is being defined (design/changes/0001)."
+description = "Hone Frame: a project-based visual production workspace: characters, environments and assets, judged generation rounds, Python-composed sheets, scenes with role-based references, and a live dashboard."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "Bahman Shadmehr", email = "info@bshadmehr.me" }]
-keywords = ["ai", "generative-ai", "honeworks"]
+keywords = ["ai", "generative-ai", "image-generation", "character-sheets", "honeworks"]
 classifiers = [
     "Development Status :: 1 - Planning",
     "Intended Audience :: Developers",

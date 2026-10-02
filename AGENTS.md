@@ -5,11 +5,13 @@ People follow the same rules; they are in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## What this is
 
-`hone-frame` (import `hone_frame`) is a honeworks package. Purpose: to be defined in
-[design/changes/0001](design/changes/0001-initial-design.md); until that record is accepted, the
-repository is a working skeleton with no features. Read [design/current.md](design/current.md) before
-changing behaviour; it is the design as it stands, and its §5 lists the guarantees the tests check. Why
-the design looks like this: [design/changes/](design/changes/) and [design/decisions.md](design/decisions.md).
+`hone-frame` (import `hone_frame`) is Hone Frame, a project-based visual production workspace. You define
+characters, environments and assets; generate, judge and pick their images unattended; compose sheets in
+Python without model calls; build scenes from exactly the references chosen; and watch it all in a local
+dashboard. Model calls go through hone-models, runs through hone-flow, picks through hone-select. Read
+[design/current.md](design/current.md) before changing behaviour; it is the design as it stands, and its
+§14 lists the guarantees the tests check. Why the design looks like this:
+[design/changes/](design/changes/) and [design/decisions.md](design/decisions.md).
 
 ## Commands
 
@@ -27,20 +29,34 @@ uv run pyright                       # strict for src/
 
 ```text
 src/hone_frame/
-  __init__.py          the version; the public API, once there is one
+  workspace.py  store.py  records.py     the workspace folder, project store, records (format_version "1")
+  presets.py  data/presets/*.toml        the preset catalogue
+  profiles.py  requests.py  recipes.py   profiles, requests, request -> planned outputs
+  references.py  planning.py  prompts.py reference roles and limits, plans, prompts
+  judging.py  pick.py  produce.py        judging profiles, hone-select picks, the rounds of one output
+  engine.py  events.py                   the hone-flow workflow, Runner, statuses, control; events, progress, estimates
+  sheets.py  exports.py                  the Pillow compositor, zip exports
+  ports.py  models.py                    the Models port; HoneModels (hone-models)
+  dashboard.py  _dashboard_api.py  dashboard_page/   the local dashboard
+  cli.py                                 the CLI (extra cli)
+  testing/                               FakeModels, sample_workspace
 tests/unit|contract|integration|e2e|gpu
-docs/                  user docs
+docs/                  user docs; every Python block is run by the tests
+examples/              one explained, runnable example per concept
 design/                why and how: README, current.md, changes/, decisions.md, history/
 ```
+
+A workspace folder (`HONE_FRAME_HOME`, default `./hone-frame`) holds everything: projects as JSON files,
+images as files, hone-flow run folders under `flows/`. There is no database.
 
 ## Rules
 
 1. **Keep it simple**: the simplest code that passes the acceptance cases; no speculative abstractions;
    complexity at most 10 per function, about 40 lines per function and 300 per module.
-2. **The core is useful alone**: it never imports another honeworks package or an optional extra at import
-   time; integrations go through ports (small Protocols owned by hone-frame) and lazily imported adapters.
-   If another honeworks package is ever needed, it is an optional extra from its git source or PyPI,
-   never a local path.
+2. **Built on its siblings, nothing else**: hone-flow, hone-models and hone-select are core dependencies
+   (design/decisions.md D-001), from their git sources until they are on PyPI, never local paths. Every
+   model call goes through the `Models` port (`ports.py`), whose default is hone-models; no other model
+   client, no optional extra imported at import time.
 3. **Explicit failure**: typed errors with messages that say what to do.
 4. **Stored formats** are versioned and documented in `docs/`; old data opens or is refused with a
    message that says how to migrate.

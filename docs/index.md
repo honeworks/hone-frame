@@ -1,5 +1,5 @@
 # hone-frame documentation
 
-There is nothing to document yet: hone-frame has no features. Its purpose is to be defined in
-[design/changes/0001](../design/changes/0001-initial-design.md); user docs are added here with the first
-public API.
+hone-frame is being built from its first design ([0001](../design/changes/0001-initial-design.md)); the
+user docs are added here with each milestone. Until then, [design/current.md](../design/current.md)
+describes what it does and how.

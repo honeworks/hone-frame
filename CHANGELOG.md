@@ -9,5 +9,6 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 - The repository skeleton: packaging, quality gates (`scripts/check.sh`), CI, the design folder and the
-  contributor workflow. No features yet; the purpose is to be defined in
-  [0001](design/changes/0001-initial-design.md).
+  contributor workflow.
+- The first-product design: [0001](design/changes/0001-initial-design.md), `design/current.md`, the
+  owner's brief in `design/history/`.

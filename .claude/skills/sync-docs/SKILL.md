@@ -10,12 +10,12 @@ Look at `git diff main...HEAD --stat` and the diff itself, then apply every row 
 | If the change... | Update |
 |---|---|
 | sets or changes the purpose, goals or non-goals | `design/README.md`, `design/current.md` §1, `README.md`, `AGENTS.md` "What this is", the `pyproject.toml` description |
-| changes behaviour or the public API | `design/current.md` (the section, §2 public API, §5 guarantees), the matching `docs/` page, `README.md` if the quickstart or feature list changes |
+| changes behaviour or the public API | `design/current.md` (the section, §2 public API, §14 guarantees), the matching `docs/` page, `README.md` if the quickstart or feature list changes |
 | adds or changes a CLI command or flag | a CLI page in `docs/`, `design/current.md` |
-| adds or changes a stored format or records | its page in `docs/`, `design/current.md` §3 |
+| adds or changes a stored format or records | its page in `docs/`, `design/current.md` §4 |
 | adds an extra or a dependency | `pyproject.toml`, the install section of `README.md`, the reason in `design/decisions.md` |
 | adds a concept users should know | a new example (`add-example`) |
-| adds, moves or renames a module | the "Layout" of `AGENTS.md`, `design/current.md` §4 |
+| adds, moves or renames a module | the "Layout" of `AGENTS.md`, `design/current.md` §13 |
 | is visible to users | `CHANGELOG.md`, top (unreleased) section: Added / Changed / Deprecated / Removed / Fixed, linking the change record |
 | implements a change record | its status: `implemented in <next version>` |
 | is a judgment call without a record | `design/decisions.md`, next `D-` number |
