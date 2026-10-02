@@ -586,7 +586,10 @@ The first match wins:
 - `output_started`, `output_finished`;
 - `planned` (the prompt);
 - `generated`, `judged` (verdict, overall, findings);
-- `retry`, `planner_failed`, `waiting`, `picked`, `stopped`.
+- `retry`, `planner_failed`, `judge_failed`, `candidate_failed`, `waiting`, `picked`, `stopped`,
+  `stopped_early`;
+- `model_info_unavailable` (the port could not describe a model, so its prompt guide and local flag are
+  left out).
 
 Events are written by the process doing the work. The dashboard tails the file.
 

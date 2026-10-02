@@ -32,7 +32,10 @@ def model_inputs(
         inputs["negative"] = negative
     if angle := out.prompt_inputs.get("camera_angle"):
         inputs["camera_angle"] = angle
-    if out.mode == "upscale" and refs:
+    if out.mode == "upscale":
+        if not refs:
+            raise ModelFailure(f"{out.label}: an upscale needs its draft image as a reference; plan it with "
+                               "hf.Promote(image_id=..., operation='upscale')", transient=False)  # fmt: skip
         inputs["image"], refs = refs[0], []
     return inputs, refs
 

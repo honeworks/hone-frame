@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from pathlib import Path
 
 import pytest
+from hone_models.errors import ProviderError
 from hone_models.testing import FakeMedia, FakeOllama
 from PIL import Image
 
@@ -141,4 +142,28 @@ def test_concurrent_calls_enter_once(tmp_path: Path, monkeypatch: pytest.MonkeyP
     for thread in threads:
         thread.join()
     assert sessions.entered == ["comfyui"]
+    port.close()
+
+
+def test_a_server_that_fails_to_start_is_tried_again(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    sessions = Sessions()
+    calls = {"n": 0}
+
+    @contextmanager
+    def flaky(provider: str) -> Iterator[str]:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise ProviderError(
+                "no ComfyUI server at http://127.0.0.1:8188 and HONE_COMFYUI_START is not set"
+            )
+        with sessions(provider) as url:
+            yield url
+
+    port = _patched(monkeypatch, sessions)
+    monkeypatch.setattr(models_module.mk, "session", flaky)
+    with pytest.raises(ModelFailure, match="HONE_COMFYUI_START") as raised:
+        port.generate("z-image-turbo", "a cup", out=tmp_path / "a.png", seed=1, references=[], inputs={})
+    assert raised.value.transient is True
+    port.generate("z-image-turbo", "a cup", out=tmp_path / "b.png", seed=2, references=[], inputs={})
+    assert sessions.entered == ["comfyui"]  # the failed start was not remembered as open
     port.close()

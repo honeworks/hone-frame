@@ -190,6 +190,7 @@ TITLES = {
     "picked": "Selected",
     "stopped": "Stopping",
     "stopped_early": "Stopped early",
+    "model_info_unavailable": "Model details unavailable",
     "output_finished": "Finished output",
 }
 
