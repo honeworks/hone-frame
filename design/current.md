@@ -323,8 +323,9 @@ this order: `hero` (front, full figure, neutral pose), `turnaround` (Front, 3/4,
 `states` (one per condition, lighting or other state), `assets` (each **belonging**: an asset whose
 `owner` is the character) and `actions` (the character holding and using each belonging).
 
-- `packs` empty means every pack; `custom` adds a person's own items to a pack (an expression, a pose,
-  an outfit, a state, an action or a view, as the pack's `custom` says); `only_custom` makes only those.
+- `packs` empty means every pack; `custom` adds a person's own items to a pack (its keys must be among
+  the chosen packs, else the request is refused): an expression, a pose,
+  an outfit, a state, an action or a view, as the pack's `custom` says; `only_custom` makes only those.
 - **The hero is drawn once.** When the character has an accepted hero (an accepted image with pack
   `hero`, or an older one labelled "Hero") it is every item's identity reference; otherwise the hero is
   the first output and the others depend on it (§8.7). `redraw_hero` draws a new one.

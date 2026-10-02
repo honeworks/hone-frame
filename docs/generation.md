@@ -113,7 +113,7 @@ A character is made with one `CharacterPacks` request (change 0003): the **hero*
 turnaround, eight expression close-ups, six poses, one image per outfit and per other state, its
 **belongings** (objects with `owner` set to the character) and an action image of it using each one.
 Every image stands on a plain white background with empty hands (actions excepted), and the judge
-checks both. Leave packs out with `packs`, add your own items with `custom`, and make only those with
+checks both. Leave packs out with `packs`, add your own items with `custom` (each key must be one of the chosen packs), and make only those with
 `only_custom`. Once a hero is accepted it is reused: later requests never draw a new one unless
 `redraw_hero` is set.
 

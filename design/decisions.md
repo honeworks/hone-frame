@@ -299,3 +299,10 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
 - **Reason:** "give me the hero in party clothing" must not remake the pack's other images, and ticking
   every pack must never replace an accepted hero by accident.
 
+## D-028: own items for a pack that was not chosen are refused  (2026-10-02)
+
+- **Choice:** a `CharacterPacks` request whose `custom` names a pack missing from `packs` is an
+  `InvalidRequest` naming those packs, instead of dropping the items.
+- **Reason:** silently making nothing for text the person typed is worse than asking them to tick the
+  pack (the dashboard adds the pack itself when its box has text).
+
