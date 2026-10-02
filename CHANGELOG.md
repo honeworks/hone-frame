@@ -27,4 +27,5 @@ All notable changes to this project are documented here. The format follows
   qwen-image-edit-2511) with their workflows, and `<home>/hone-models.toml` per workspace: hone-frame no
   longer depends on the folder it starts in.
 - The default workspace is `~/hone-frame` (was `./hone-frame`), so the dashboard and the CLI find the
-  same work from any folder; `HONE_FRAME_HOME` or `--home` still choose another.
+  same work from any folder; `HONE_FRAME_HOME` or `--home` still choose another. Work made under the old
+  default: move the `./hone-frame` folder to `~/hone-frame`, or point `HONE_FRAME_HOME` at it.
