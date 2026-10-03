@@ -30,6 +30,9 @@ PLACE = {
 OBJECT = {"size": "scale", "materials": "materials", "colours": "colours", "details": "details"}
 
 
+SCENE_KEYS = ("description", "action", "camera", "expression", "pose", "lighting")
+
+
 class _In(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -86,7 +89,7 @@ class ProjectIn(_In):
     name: str
     brief: str = ""
     direction: str = ""
-    style: str = "cinematic-realism"  # a style_pack preset id
+    style: str = "cinematic-realism"  # a style_pack preset id; for a new project only when omitted
 
 
 class ProjectFile(_In):
@@ -128,7 +131,14 @@ def parse(text: str, kind: str = "") -> ProjectFile:
 
 def import_path(ws: Workspace, path: str | Path) -> ImportReport:
     path = Path(path)
-    return import_file(ws, parse(path.read_text(encoding="utf-8"), path.suffix.lstrip(".").lower()))
+    kind = path.suffix.lstrip(".").lower()
+    if kind not in ("toml", "json"):
+        raise InvalidRequest(f"{path.name}: a project file ends in .toml or .json")
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise InvalidRequest(f"cannot read the project file {path}: {exc.strerror or exc}") from exc
+    return import_file(ws, parse(text, kind))
 
 
 def import_file(ws: Workspace, data: ProjectFile) -> ImportReport:
@@ -159,18 +169,29 @@ def _check_names(data: ProjectFile) -> None:
 
 
 def _project(ws: Workspace, p: ProjectIn) -> tuple[ProjectStore, bool]:
+    """Create the project, or update only what the file gives (a key left out keeps its value)."""
+    styles = [x.id for x in ws.presets.list("style_pack")]
+    if p.style not in styles:
+        raise InvalidRequest(f"project style {p.style!r} is not a style pack; use one of {styles}")
     existing = next((x for x in ws.projects() if x.name == p.name), None)
     if existing is None:
         return ws.create_project(p.name, brief=p.brief, direction=p.direction, style_pack=p.style), True
+    given = p.model_dump(exclude_unset=True)
+    wanted = {
+        k: given[key]
+        for key, k in (("brief", "brief"), ("direction", "direction"), ("style", "style_pack"))
+        if key in given
+    }
     store = ws.project(existing.id)
-    if (existing.brief, existing.direction, existing.style_pack) != (p.brief, p.direction, p.style):
-        store.update(brief=p.brief, direction=p.direction, style_pack=p.style)
+    if any(getattr(existing, k) != v for k, v in wanted.items()):
+        store.update(**wanted)
     return store, False
 
 
 def _fields(item: BaseModel, mapping: dict[str, str]) -> dict[str, str]:
-    values = item.model_dump()
-    return {field: str(values[key]).strip() for key, field in mapping.items() if str(values[key]).strip()}
+    """The subject fields the file gives (a key left out of the file is not touched)."""
+    values = item.model_dump(exclude_unset=True)
+    return {field: str(values[key]).strip() for key, field in mapping.items() if key in values}
 
 
 def _subject(
@@ -183,20 +204,21 @@ def _subject(
     owner: str | None = None,
     states: list[StateIn] | None = None,
 ) -> Subject:
-    name, description = item.name, item.description
+    given = item.model_dump(exclude_unset=True)
+    found = next((s for s in store.subjects(kind) if s.name == item.name), None)
+    label = f"{kind} {item.name}"
     wanted: dict[str, Any] = {
-        "description": description,
-        "fields": fields,
+        "fields": (dict(found.fields) if found else {}) | fields,
         "owner": owner,
-        "states": [s.model_dump() for s in states or []],
     }
-    found = next((s for s in store.subjects(kind) if s.name == name), None)
-    label = f"{kind} {name}"
+    if "description" in given or found is None:
+        wanted["description"] = item.description
+    if states is not None and ("states" in given or found is None):
+        wanted["states"] = [s.model_dump() for s in states]
     if found is None:
         report.created.append(label)
-        return store.add_subject(kind, name, **wanted)  # pyright: ignore[reportArgumentType]
-    now = {"description": found.description, "fields": found.fields, "owner": found.owner,
-           "states": [s.model_dump() for s in found.states]}  # fmt: skip
+        return store.add_subject(kind, item.name, **wanted)  # pyright: ignore[reportArgumentType]
+    now = found.model_dump(include=set(wanted))
     if now == wanted:
         report.unchanged.append(label)
         return found
@@ -213,26 +235,23 @@ def _scene(store: ProjectStore, report: ImportReport, s: SceneIn) -> None:
                 raise InvalidRequest(f"scene {s.name!r} names {name!r}, which is not in the project")
             refs.append(SceneRef.model_validate({"subject_id": by_name[name].id, "role": role}))
     found = next((x for x in store.scenes() if x.name == s.name), None)
-    scene = Scene(
-        id=found.id if found else "",
-        name=s.name,
-        description=s.description,
-        action=s.action,
-        camera=s.camera,
-        expression=s.expression,
-        pose=s.pose,
-        lighting=s.lighting,
-        refs=refs,
-    )
-    keys = ("description", "action", "camera", "expression", "pose", "lighting")
-    same_refs = found and [(r.subject_id, r.role) for r in found.refs if not r.suggested] == [
-        (r.subject_id, r.role) for r in refs
-    ]
-    if found and same_refs and all(getattr(found, k) == getattr(scene, k) for k in keys):
+    given = s.model_dump(exclude_unset=True)
+    update: dict[str, Any] = {k: given[k] for k in SCENE_KEYS if k in given}
+    if found is None:
+        store.save_scene(Scene(name=s.name, refs=refs, **update))
+        report.created.append(f"scene {s.name}")
+        return
+    if {"characters", "places", "objects"} & set(given):  # the file's references; suggested ones stay
+        kept = [r for r in found.refs if r.suggested and r.subject_id not in {x.subject_id for x in refs}]
+        if [(r.subject_id, r.role) for r in found.refs if not r.suggested] != [
+            (r.subject_id, r.role) for r in refs
+        ]:
+            update["refs"] = refs + kept
+    if all(getattr(found, k) == v for k, v in update.items()):
         report.unchanged.append(f"scene {s.name}")
         return
-    store.save_scene(scene)
-    (report.updated if found else report.created).append(f"scene {s.name}")
+    store.save_scene(found.model_copy(update=update))
+    report.updated.append(f"scene {s.name}")
 
 
 def project_file(store: ProjectStore) -> dict[str, Any]:

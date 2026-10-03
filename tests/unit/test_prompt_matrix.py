@@ -1,4 +1,4 @@
-"""AC-21: every prompt hone-frame writes, checked for what can go wrong (change 0004): for every
+"""Every prompt hone-frame writes, checked for what can go wrong (change 0004): for every
 style pack, every profile (so every image model and dialect), every character pack item and scenes,
 with the realistic descriptions of examples/projects/rostam-and-sohrab.toml. A prompt must keep what its
 image is for, never contradict itself, stay near its model's budget, and let the planner's rewrite
@@ -7,14 +7,17 @@ through only when it keeps what was asked."""
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 import pytest
 
 import hone_frame as hf
 from hone_frame.presets import PresetCatalog
+from hone_frame.project_file import import_path
 from hone_frame.prompts import ASKED, Composed, compose, planner_problem
 from hone_frame.recipes import WHITE
 from hone_frame.requests import PlannedOutput, PlannedRef
+from hone_frame.testing import FakeModels
 
 STYLES = [p.id for p in PresetCatalog().list("style_pack")]
 PROFILES = ["draft", "standard", "final"]
@@ -26,6 +29,15 @@ CUSTOM = {
     "actions": ["riding a horse at full gallop"],
     "turnaround": ["from a low angle looking up"],
 }
+
+FILE = Path(__file__).parents[2] / "examples" / "projects" / "rostam-and-sohrab.toml"
+
+
+@pytest.fixture(scope="module")
+def rostam_project(tmp_path_factory: pytest.TempPathFactory) -> hf.ProjectStore:
+    """The realistic project of examples/projects/rostam-and-sohrab.toml."""
+    ws = hf.Workspace(tmp_path_factory.mktemp("matrix") / "ws", models=FakeModels())
+    return ws.project(import_path(ws, FILE).project)
 
 
 def _refs(store: hf.ProjectStore, out: PlannedOutput) -> list[tuple[PlannedRef, str]]:
@@ -55,18 +67,23 @@ def _all_prompts(store: hf.ProjectStore, style: str, profile: str) -> list[tuple
 def test_every_pack_prompt_keeps_what_it_is_for(
     rostam_project: hf.ProjectStore, style: str, profile: str
 ) -> None:
+    checked: dict[str, int] = {}
     for out, composed in _all_prompts(rostam_project, style, profile):
         text, where = composed.text.lower(), f"{style}/{profile}/{out.pack}/{out.item}"
         p = out.prompt_inputs
         for key in ASKED:  # the point of the image is never cut for the budget
             if p.get(key):
                 assert str(p[key]).lower().rstrip(".") in text, f"{where}: {key} {p[key]!r} lost"
+                checked[key] = checked.get(key, 0) + 1
         assert WHITE in text, f"{where}: no white background"
         assert ("empty hands" in text) is bool(p.get("empty_hands")), f"{where}: hands"
         if out.pack == "actions" or out.kind == "asset":
             assert "empty hands" not in text, where
         assert len(composed.text.split()) <= composed.max_words * (1.5 if composed.over_budget else 1), where
         _no_contradictions(out, composed, where)
+    assert {k: v > 0 for k, v in checked.items()} == dict.fromkeys(
+        ("pose", "expression", "outfit", "state", "action"), True
+    )
 
 
 def _no_contradictions(out: PlannedOutput, composed: Composed, where: str) -> None:
@@ -95,12 +112,15 @@ def _no_contradictions(out: PlannedOutput, composed: Composed, where: str) -> No
 
 @pytest.mark.parametrize("profile", PROFILES)
 def test_the_planner_cannot_drop_what_was_asked(rostam_project: hf.ProjectStore, profile: str) -> None:
+    refused = 0
     for out, composed in _all_prompts(rostam_project, "historical-epic", profile):
         assert planner_problem(composed.text, composed) is None, f"{out.item}: the draft itself is refused"
         for asked in composed.asked:
-            dropped = composed.text.replace(asked, "").replace(asked[0].upper() + asked[1:], "")
-            if dropped != composed.text:
-                assert "was dropped" in (planner_problem(dropped, composed) or ""), f"{out.item}: {asked}"
+            dropped = re.sub(re.escape(asked), "", composed.text, flags=re.I)
+            assert dropped != composed.text, f"{out.item}: {asked!r} is not in the prompt"
+            assert "was dropped" in (planner_problem(dropped, composed) or ""), f"{out.item}: {asked}"
+            refused += 1
+    assert refused > 50  # every pose, expression, outfit, state and action item was tried
 
 
 def test_scenes_keep_their_action_pose_expression_and_notes(rostam_project: hf.ProjectStore) -> None:

@@ -1006,10 +1006,10 @@ models.
 | AC-18 | Scene belongings | saving a scene with `suggest` asks the planner which belongings appear and adds them as suggested `object` references; a failing planner adds none |
 | AC-19 | Model sheet | the character model sheet is composed from the accepted hero, turnaround and expressions with no model call; without them it is refused |
 | AC-20 | Character API | the project home, the character page and its actions: generate, add an item, choose another candidate on an accepted item, compose the model sheet; scene save with suggestions |
-| AC-21 | Prompt matrix | for every style pack and profile, every character pack item, scene and note keeps what was asked, its framing, style and look, and contradicts nothing; a planner rewrite without what was asked is refused |
-| AC-22 | Judge told what was asked | the judge prompt lists the request from the plan; back views get `faces_away`; other views carry no back-view wording; anatomy names hands and feet |
+| AC-21 | Prompts keep what was asked | in runs for several styles and every profile, every image of a whole character keeps its pose, expression, outfit, state or action, its white background and its empty hands (the full matrix over every style is a unit test) |
+| AC-22 | Judge told what was asked | in a run, the judge prompt lists the request from the plan; back views get `faces_away`; other views carry no back-view wording; anatomy names hands and feet |
 | AC-23 | Belongings first | actions wait for their belongings, made first in the same request when they have no image |
-| AC-24 | Project files | a file creates a project with characters, belongings, world and scenes; importing it again versions only what changed; bad files are refused with the place of the error; CLI import and export |
+| AC-24 | Project files | `ws.import_file` creates a project with characters, belongings, world and scenes; importing again versions only what changed and keeps what the file leaves out; bad files are refused with the place of the error; CLI import and export |
 | AC-14 (real model) | One `SubjectReferences` hero with the draft profile on the GPU (`scripts/gpu-lock.sh`) | an image is generated and judged by the real models; the run completes as `done` or `needs_review`; the models are unloaded afterwards |
 
 ## 15. Known limits (0.1.0)

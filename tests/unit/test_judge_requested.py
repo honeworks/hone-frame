@@ -1,8 +1,23 @@
-"""AC-22: the judge is told what was asked, from the plan; back views have their own check and other
-views carry no back-view wording; the anatomy check names hands and feet (change 0004)."""
+"""The judge is told what was asked, from the plan; back views have their own check and other views
+carry no back-view wording; the anatomy check names hands and feet (change 0004; AC-22 checks a run)."""
+
+from pathlib import Path
+
+import pytest
 
 import hone_frame as hf
 from hone_frame.judging import CheckAnswer, answer_schema, checks_for, judge_prompt
+from hone_frame.project_file import import_path
+from hone_frame.testing import FakeModels
+
+FILE = Path(__file__).parents[2] / "examples" / "projects" / "rostam-and-sohrab.toml"
+
+
+@pytest.fixture(scope="module")
+def rostam_project(tmp_path_factory: pytest.TempPathFactory) -> hf.ProjectStore:
+    """The realistic project of examples/projects/rostam-and-sohrab.toml."""
+    ws = hf.Workspace(tmp_path_factory.mktemp("matrix") / "ws", models=FakeModels())
+    return ws.project(import_path(ws, FILE).project)
 
 
 def test_the_judge_is_told_what_was_asked(rostam_project: hf.ProjectStore) -> None:

@@ -5,7 +5,6 @@ from pathlib import Path
 import pytest
 
 import hone_frame as hf
-from hone_frame.project_file import import_path
 from hone_frame.testing import FakeModels, sample_workspace
 
 
@@ -39,4 +38,4 @@ FILE = Path(__file__).parents[2] / "examples" / "projects" / "rostam-and-sohrab.
 def rostam_project(tmp_path_factory: pytest.TempPathFactory) -> hf.ProjectStore:
     """The realistic project of examples/projects/rostam-and-sohrab.toml (AC-21 to AC-23)."""
     ws = hf.Workspace(tmp_path_factory.mktemp("matrix") / "ws", models=FakeModels())
-    return ws.project(import_path(ws, FILE).project)
+    return ws.project(ws.import_file(FILE).project)

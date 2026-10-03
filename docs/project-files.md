@@ -11,7 +11,8 @@ hone-frame export-file rostam-and-sohrab rostam.json
 
 Everything is matched **by name**. Importing a file again after editing it creates what is new, gives
 what changed a new version (earlier images keep the version they were made from) and leaves the rest
-alone; nothing is deleted. **Download as file** on a project's page (or `export-file`) writes the
+alone; nothing is deleted. Only what the file gives is changed: a key left out of the file (a field, a
+character's states, a scene's framing or notes, the project's brief or style) keeps its value. **Download as file** on a project's page (or `export-file`) writes the
 project back in the same shape, as JSON.
 
 [`examples/projects/rostam-and-sohrab.toml`](../examples/projects/rostam-and-sohrab.toml) is a complete
@@ -39,7 +40,6 @@ import tempfile
 from pathlib import Path
 
 import hone_frame as hf
-from hone_frame.project_file import import_file, parse
 from hone_frame.testing import FakeModels
 
 TEXT = """
@@ -70,8 +70,11 @@ places = ["Kitchen"]
 """
 
 ws = hf.Workspace(Path(tempfile.mkdtemp()) / "studio", models=FakeModels())
-report = import_file(ws, parse(TEXT, "toml"))
+path = Path(tempfile.mkdtemp()) / "morning.toml"
+path.write_text(TEXT)
+report = ws.import_file(path)
 print(report.created)  # ['project morning-at-home', 'character Mina', 'asset Mina\'s umbrella', ...]
-again = import_file(ws, parse(TEXT.replace("yellow raincoat", "green raincoat"), "toml"))
+path.write_text(TEXT.replace("yellow raincoat", "green raincoat"))
+again = ws.import_file(path)
 assert again.updated == ["character Mina"] and not again.created
 ```

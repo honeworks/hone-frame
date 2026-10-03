@@ -1,6 +1,6 @@
 """AC-24: a project file creates a project with its characters, belongings, world and scenes; imported
-again after an edit it versions only what changed; bad files are refused with the place of the error
-(change 0004)."""
+again after an edit it versions only what changed and keeps what the file leaves out; bad files are
+refused with the place of the error (change 0004)."""
 
 import json
 from pathlib import Path
@@ -9,17 +9,14 @@ import pytest
 from typer.testing import CliRunner
 
 import hone_frame as hf
-from hone_frame._dashboard_api import route
 from hone_frame.cli import app
 from hone_frame.errors import InvalidRequest
-from hone_frame.project_file import import_file, import_path, parse, project_file
 
 from .conftest import FILE
 
 
 def test_import_creates_everything(ws: hf.Workspace) -> None:
-    report = import_path(ws, FILE)
-    p = ws.project(report.project)
+    p = ws.project(ws.import_file(FILE).project)
     assert [s.name for s in p.subjects("character")] == ["Rostam", "Sohrab", "Tahmineh", "Gordafarid"]
     rostam = p.subjects("character")[0]
     assert rostam.fields["proportions"].startswith("enormous") and rostam.fields["outfits"].startswith(
@@ -36,13 +33,19 @@ def test_import_creates_everything(ws: hf.Workspace) -> None:
     assert p.info.style_pack == "historical-epic"
 
 
-def test_import_again_versions_only_what_changed(ws: hf.Workspace) -> None:
-    store = ws.project(import_path(ws, FILE).project)
-    data = project_file(store)
-    assert import_file(ws, parse(json.dumps(data), "json")).updated == []  # a round trip changes nothing
+def _write(tmp_path: Path, data: dict[str, object]) -> Path:
+    path = tmp_path / "project.json"
+    path.write_text(json.dumps(data))
+    return path
+
+
+def test_import_again_versions_only_what_changed(ws: hf.Workspace, tmp_path: Path) -> None:
+    store = ws.project(ws.import_file(FILE).project)
+    data = store.project_file()
+    assert ws.import_file(_write(tmp_path, data)).updated == []  # a round trip changes nothing
     data["characters"][1]["build"] = "very tall"
     data["scenes"][0]["description"] = "a new description"
-    again = import_file(ws, parse(json.dumps(data), "json"))
+    again = ws.import_file(_write(tmp_path, data))
     assert again.updated == ["character Sohrab", "scene Duel"] and not again.created
     sohrab = store.subjects("character")[1]
     assert sohrab.version == 2 and store.subject(sohrab.id, 1).fields["proportions"].startswith(
@@ -50,39 +53,60 @@ def test_import_again_versions_only_what_changed(ws: hf.Workspace) -> None:
     )
 
 
+def test_what_the_file_leaves_out_is_kept(ws: hf.Workspace, tmp_path: Path) -> None:
+    store = ws.project(ws.import_file(FILE).project)
+    rostam = store.subjects("character")[0]
+    store.edit_subject(rostam.id, fields=rostam.fields | {"voice": "deep"})
+    duel = next(s for s in store.scenes() if s.name == "Duel")
+    store.save_scene(duel.model_copy(update={"gaze": "eyes locked", "notes": "dust"}))
+    store.update(brief="kept brief")
+    small = {"project": {"name": "Rostam and Sohrab"},
+             "characters": [{"name": "Rostam", "build": "colossal"}],
+             "scenes": [{"name": "Duel", "description": "they fight"}]}  # fmt: skip
+    report = ws.import_file(_write(tmp_path, small))
+    assert report.updated == ["character Rostam", "scene Duel"]
+    after = store.subject(rostam.id)
+    assert after.fields["voice"] == "deep" and after.fields["proportions"] == "colossal"
+    assert after.description == rostam.description and len(after.states) == 3
+    duel = next(s for s in store.scenes() if s.name == "Duel")
+    assert (duel.gaze, duel.notes, duel.description, len(duel.refs)) == (
+        "eyes locked",
+        "dust",
+        "they fight",
+        6,
+    )
+    assert store.info.brief == "kept brief" and store.info.style_pack == "historical-epic"
+
+
 @pytest.mark.parametrize(
-    ("text", "message"),
+    ("text", "suffix", "message"),
     [
-        ("[project\n", "not valid TOML"),
-        ('[project]\nname = "x"\n[[characters]]\nname = "A"\nhieght = "tall"\n', "characters.0.hieght"),
-        ('[project]\nname = "x"\n[[characters]]\nname = "A"\n[[places]]\nname = "A"\n', "repeated"),
-        ('[project]\nname = "x"\n[[scenes]]\nname = "S"\ncharacters = ["Nobody"]\n', "'Nobody'"),
-        ('format_version = "2"\n[project]\nname = "x"\n', "format_version"),
+        ("[project\n", "toml", "not valid TOML"),
+        (
+            '[project]\nname = "x"\n[[characters]]\nname = "A"\nhieght = "tall"\n',
+            "toml",
+            "characters.0.hieght",
+        ),
+        ('[project]\nname = "x"\n[[characters]]\nname = "A"\n[[places]]\nname = "A"\n', "toml", "repeated"),
+        ('[project]\nname = "x"\n[[scenes]]\nname = "S"\ncharacters = ["Nobody"]\n', "toml", "'Nobody'"),
+        ('format_version = "2"\n[project]\nname = "x"\n', "toml", "format_version"),
+        ('[project]\nname = "x"\nstyle = "oil-paint"\n', "toml", "not a style pack"),
+        ("{}", "yaml", "ends in .toml or .json"),
     ],
 )
-def test_bad_files_say_where(ws: hf.Workspace, text: str, message: str) -> None:
+def test_bad_files_say_where(ws: hf.Workspace, tmp_path: Path, text: str, suffix: str, message: str) -> None:
+    path = tmp_path / f"bad.{suffix}"
+    path.write_text(text)
     with pytest.raises(InvalidRequest) as error:
-        import_file(ws, parse(text, "toml"))
+        ws.import_file(path)
     assert message in str(error.value) + " ".join(error.value.problems)
+    with pytest.raises(InvalidRequest, match="cannot read"):
+        ws.import_file(tmp_path / "missing.toml")
 
 
-def test_the_cli_and_the_api_import(ws: hf.Workspace, tmp_path: Path) -> None:
-
+def test_the_cli_imports_and_writes_back(ws: hf.Workspace, tmp_path: Path) -> None:
     result = CliRunner().invoke(app, ["import", str(FILE), "--home", str(ws.root)])
     assert result.exit_code == 0 and "rostam-and-sohrab" in result.output
     out = tmp_path / "back.json"
-    assert (
-        CliRunner()
-        .invoke(app, ["export-file", "rostam-and-sohrab", str(out), "--home", str(ws.root)])
-        .exit_code
-        == 0
-    )
-    assert json.loads(out.read_text())["project"]["name"] == "Rostam and Sohrab"
-
-
-def test_the_dashboard_api_imports_and_writes_back(ws: hf.Workspace) -> None:
-    report = route(ws, "POST", "/import", {}, {"text": FILE.read_text(), "format": "toml"})
-    assert report["project"] == "rostam-and-sohrab" and len(report["created"]) == 15
-    data = route(ws, "GET", "/projects/rostam-and-sohrab/file", {}, None)
-    assert [c["name"] for c in data["characters"]][:2] == ["Rostam", "Sohrab"]
-    assert data["characters"][0]["belongings"][0]["name"] == "Rostam's mace"
+    written = CliRunner().invoke(app, ["export-file", "rostam-and-sohrab", str(out), "--home", str(ws.root)])
+    assert written.exit_code == 0 and json.loads(out.read_text())["project"]["name"] == "Rostam and Sohrab"

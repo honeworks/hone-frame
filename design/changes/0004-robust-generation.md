@@ -58,6 +58,9 @@ words alone.
 ## Consequences
 
 - Prompts can be longer than a model's guide when the subject's description is long; the run says so.
+  The tests allow an over-budget prompt up to 150% of `max_words`: the most the realistic Rostam project
+  needs (a FLUX text-to-image hero with a long outfit is about 140%); beyond that a description should be
+  shortened rather than the prompt.
 - The judging presets `character-identity` (4), `interaction-plausibility` (3), `scene-fidelity` and
   `sequence-continuity` change version; the camera presets `profile` and `three-quarter` too.
 - The 7B judge still misses some anatomy (a foot turned backwards in the owner's Rostam side view
@@ -65,7 +68,10 @@ words alone.
   prompt and the person's eye (the magnifier, **Use this one**, **Generate again**) remain the defence;
   a stronger vision judge is the fix when one fits the machine or a hosted one is configured.
 - Tests: `tests/unit/test_prompt_matrix.py` checks every pack item, scene and note across every style
-  pack and profile with realistic descriptions.
+  pack and profile with realistic descriptions; the acceptance cases check the same through real runs
+  with FakeModels and the public API.
+- Project files update only what a file gives: a key, a field or a scene setting left out of the file
+  keeps its value; a project style must be a style pack.
 
 ## Acceptance cases
 
