@@ -81,8 +81,8 @@ def compose(
 # what goes first when a prompt is over its budget; required sections never go (§8.8)
 DROP_FIRST = (
     "style_close", "text_refs", "frame", "gaze", "features", "style_lead", "background", "state", "action",
-    "pose", "expression", "outfit", "shot", "note", "lighting", "roles",
-)  # fmt: skip
+    "pose", "expression", "outfit", "shot", "note", "lighting",
+)  # fmt: skip  # `roles` is required since change 0007 (cause C)
 
 
 def _fit(pieces: list[tuple[str, str]], max_words: int) -> list[tuple[str, str]]:

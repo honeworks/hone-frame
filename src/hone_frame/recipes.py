@@ -57,11 +57,12 @@ def reference_look(kind: str) -> tuple[dict[str, Any], list[str]]:
     return look, flags
 
 
-def reference_lighting(built: Built, request: RequestBase) -> str:
+def reference_lighting(built: Built, request: RequestBase, kind: str = "") -> str:
     """Reference images use neutral studio light on a plain background, whatever the style pack's mood
-    lighting, unless the request or the project chose a lighting on purpose (brief §12, decisions D-021)."""
+    lighting, unless the request or the project chose a lighting on purpose (brief §12, decisions D-021);
+    a place uses daylight (change 0007: studio light failed outdoor places)."""
     chosen = request.presets.get("lighting") or built.choices.layers[2].get("lighting")
-    return chosen or "neutral-studio"
+    return chosen or ("soft-daylight" if kind == "environment" else "neutral-studio")
 
 
 class Built:
@@ -166,6 +167,7 @@ def base_inputs(
     lighting = values.pop("lighting", None) or choices.choice("lighting")
     camera = values.pop("camera", None)
     camera_preset = choices.get("camera", camera) if camera else None
+    own_camera = {k: values.pop(k) for k in ("azimuth", "elevation", "distance", "view") if k in values}
     inputs: dict[str, Any] = {
         "style_prefix": pack.prompt.prefix if pack else "",
         "style_suffix": pack.prompt.suffix if pack else "",
@@ -179,7 +181,8 @@ def base_inputs(
         "camera_angle": camera_preset.values.get("camera_angle") if camera_preset else None,
         "camera_values": {
             k: v for k, v in (camera_preset.values if camera_preset else {}).items() if k in CAMERA_DATA
-        },
+        }
+        | own_camera,  # an item's own Multiple-Angles values (change 0007)
         "style": {
             "prefix": pack.prompt.prefix,
             "suffix": pack.prompt.suffix,
@@ -208,6 +211,8 @@ def subject_part(subject: Subject, state: str | None = None) -> dict[str, Any]:
         "state": (found.description or found.name) if found else state,
         "must": list(subject.must),
         "never": list(subject.never),
+        "id": subject.id,
+        "parameters": dict(subject.parameters),
     }
 
 

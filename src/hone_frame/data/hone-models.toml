@@ -13,7 +13,7 @@ workflow = "workflows/qwen-image-edit-2511.json"
 outputs = ["40"]
 defaults = { size = "1024x1024", steps = 8, cfg = 1.0 }
 max_timeout_s = 3600.0
-capabilities = { vram_gb = 7.6 }
+capabilities = { vram_gb = 7.6, max_references = 3 }   # three image slots in the workflow (change 0007)
 [models."qwen-image-edit-2511".inputs]
 prompt = "20.prompt"
 negative = "21.prompt"
@@ -61,3 +61,19 @@ seed = "23.noise_seed"
 steps = "21.steps"
 width = ["20.width", "21.width"]
 height = ["20.height", "21.height"]
+
+# hone-frame's vision tool (change 0007): ViTPose body keypoints and DINOv2 embeddings for the measured
+# checks, on the CPU, in a Python environment with torch and transformers named by HONE_FRAME_TOOLS_PYTHON
+# (hone-frame sets HONE_FRAME_TOOLS_DIR to its data/tools folder). The numbers come back in the output
+# PNG's text chunk `hone-frame`, since a command's `meta` is not returned.
+[models."frame-vision"]
+provider = "command"
+kind = "image"
+command = ["$HONE_FRAME_TOOLS_PYTHON", "$HONE_FRAME_TOOLS_DIR/frame_vision.py", "{request}"]
+env = { CUDA_VISIBLE_DEVICES = "", HF_HUB_OFFLINE = "1", TRANSFORMERS_VERBOSITY = "error" }
+max_timeout_s = 300.0
+capabilities = { vram_gb = 0.1 }
+[models."frame-vision".guide]
+summary = "Measured checks for hone-frame: body keypoints (ViTPose) and image embeddings (DINOv2), CPU only."
+prompt = "'keypoints', 'embedding', or both comma-separated; the images as references."
+

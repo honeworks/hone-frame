@@ -40,3 +40,16 @@ name = "Material and landmark board"
 description = "Close views of the place's materials and its recurring landmarks."
 subject_kinds = ["environment"]
 values = { outputs = [{ label = "Landmarks", camera = "medium", framing = "the recurring landmark objects of the place" }, { label = "Materials", camera = "detail", framing = "the main surface materials side by side" }] }
+
+[[presets]]
+id = "quality-coverage"
+version = 1
+name = "Quality coverage (experimental)"
+description = "Change 0007: after the establishing view, the place turned (reverse, left, right, from high) by the turn editor, and one image per place state (light and weather) made from the hero; every image tagged with its view and state."
+subject_kinds = ["environment"]
+values = { from_states = ["lighting", "other", "condition"], camera = "establishing", outputs = [
+  { label = "Reverse", camera = "the reverse angle, looking back the other way", azimuth = "back view", elevation = "eye-level shot", distance = "wide shot", editor = "turn", lora_strength = 1.0, distinct = true, same_subject = true, tags = ["view:Reverse", "turn"] },
+  { label = "Left", camera = "from the left side of the place", azimuth = "left side view", elevation = "eye-level shot", distance = "wide shot", editor = "turn", lora_strength = 1.0, distinct = true, same_subject = true, tags = ["view:Left", "turn"] },
+  { label = "Right", camera = "from the right side of the place", azimuth = "right side view", elevation = "eye-level shot", distance = "wide shot", editor = "turn", lora_strength = 1.0, distinct = true, same_subject = true, tags = ["view:Right", "turn"] },
+  { label = "High", camera = "from high above, looking down over the place", azimuth = "front view", elevation = "high-angle shot", distance = "wide shot", editor = "turn", lora_strength = 1.0, distinct = true, same_subject = true, tags = ["view:High", "turn"] },
+] }

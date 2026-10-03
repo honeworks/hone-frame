@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, create_model
 
+from hone_frame.identity import identity_line, image_kind
 from hone_frame.issues import issue_checks
 from hone_frame.ports import Models
 from hone_frame.presets import PresetCatalog
@@ -127,6 +128,10 @@ def verdicts(answer: JudgeAnswer, checks: list[dict[str, Any]], judge: str) -> E
             result = CheckResult(
                 name=check["name"], verdict=found.verdict, score=found.score, finding=found.finding
             )
+            if result.verdict == "not_assessable" and check.get("allow_not_assessable"):
+                result = result.model_copy(
+                    update={"verdict": "pass", "finding": f"not visible here; {result.finding}"}
+                )
             floor = check.get("min_score")
             if result.verdict == "pass" and floor is not None and (result.score or 0.0) < floor:
                 result = result.model_copy(
@@ -194,6 +199,34 @@ def subject_checks(out: PlannedOutput) -> list[dict[str, Any]]:
     if never:
         question = "Is none of these in the picture: " + "; ".join(never) + "? Any one of them is a fail."
         found.append({"name": "never_shown", "required": True, "question": question})
+    return found + person_checks(out, parts)
+
+
+def person_checks(out: PlannedOutput, parts: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Change 0007: each character's parameters and marks as one check, filtered by what this kind of
+    image shows (a parameter the view cannot show passes); worn elements as one presence check."""
+    kind = image_kind(out.prompt_inputs, "rear" in out.conditions)
+    lines: list[str] = []
+    for p in parts:
+        params: dict[str, Any] = dict(p.get("parameters") or {})
+        if p.get("kind") == "character" and params:
+            line = identity_line(params, kind)
+            lines += [f"{p.get('name')}: {line}"] if line else []
+    found: list[dict[str, Any]] = []
+    if lines:
+        question = ("Does each person match these facts (a fact the view cannot show passes as "
+                    "not_assessable): " + " | ".join(lines) + "?")  # fmt: skip
+        found.append(
+            {"name": "parameters", "required": True, "question": question, "allow_not_assessable": True}
+        )
+    worn: list[Any] = list(out.prompt_inputs.get("worn") or [])
+    if worn:
+        question = (
+            "Is each of these worn as described, where the view shows it: " + "; ".join(map(str, worn)) + "?"
+        )
+        found.append(
+            {"name": "worn_shown", "required": True, "question": question, "allow_not_assessable": True}
+        )
     return found
 
 

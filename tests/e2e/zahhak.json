@@ -1,0 +1,237 @@
+{
+  "format_version": "1",
+  "project": {
+    "name": "Zahhak",
+    "brief": "Zahhak, a prince who let the evil spirit Ahriman kiss his shoulders, grows two black serpents from them that must be fed human brains. He seizes the throne of Iran and rules for a thousand years. Fereydun, a young prince of the old royal line raised in hiding, rises with the blacksmith Kaveh's leather-apron banner, strikes Zahhak down with an ox-headed mace and chains him in a cave of Mount Damavand.",
+    "style": "historical-epic",
+    "look": "Ancient Iran as the Shahnameh imagines it, drawn from late Parthian and Sasanian art. Kings wear long silk robes with wide sleeves and embroidered roundels of beasts, wide belts with gold plaques, pearl and gold jewellery, and tall crowns with crenellations or wings. Warriors wear knee-length lamellar armour of small steel plates laced with coloured cord over long kaftans, conical segmented helmets with mail curtains, loose trousers gathered at the ankle and soft heelless boots. Palaces are of stone and mud brick with tall arched iwans, carved stucco and patterned carpets; mountains are bare and rocky. Colours are earth tones, deep red, saffron, lapis blue and gold.",
+    "variations": []
+  },
+  "characters": [
+    {
+      "name": "Zahhak",
+      "description": "Zahhak, the serpent-shouldered tyrant king of Iran, proud, cold and cruel, in the prime of a long unnatural life",
+      "appearance": "a long hard face, a full black beard trimmed square at the chest, heavy dark eyebrows, cold narrow dark eyes, a thin mouth, pale olive skin",
+      "build": "tall and broad-shouldered, heavy-set, upright royal bearing",
+      "outfit": "a long royal robe of deep crimson silk embroidered with golden roundels of lions, a wide golden belt, a short dark-blue over-robe open at the front, soft red leather boots",
+      "never": [
+        "plate armour",
+        "a European crown",
+        "a cape"
+      ],
+      "states": [
+        {
+          "name": "Chained",
+          "kind": "condition",
+          "description": "bound with heavy iron chains around his chest and wrists, his robe torn, the serpents writhing"
+        }
+      ],
+      "belongings": [
+        {
+          "name": "Zahhak's crown",
+          "description": "the tall golden crown of the kings of Iran, worn by the usurper",
+          "shape": "round",
+          "worn": true,
+          "worn_on": "his head",
+          "size": "a tall crown, as high as a hand",
+          "materials": "gold set with rubies and pearls",
+          "colours": "gold, deep red, white pearls",
+          "details": "a crenellated golden band with a crescent and a ball on top, strings of pearls hanging at the sides"
+        }
+      ],
+      "parameters": {
+        "sex": "a man",
+        "age": "in his fifties",
+        "hair_length": "shoulder-length",
+        "hair_colour": "black",
+        "beard": "chest",
+        "skin": "pale olive",
+        "eyes": "dark, narrow",
+        "marks": [
+          {
+            "what": "two large black serpents growing out of his shoulders, one from each, their heads rising beside his own head",
+            "where": "both shoulders",
+            "size": "each as thick as a forearm"
+          }
+        ],
+        "body": "heavy"
+      },
+      "garments": [
+        {
+          "name": "crimson robe",
+          "details": "a long royal robe of deep crimson silk embroidered with golden roundels of lions"
+        },
+        {
+          "name": "golden belt",
+          "details": "a wide golden belt with gold plaques"
+        },
+        {
+          "name": "blue over-robe",
+          "details": "a short dark-blue over-robe open at the front"
+        },
+        {
+          "name": "red boots",
+          "details": "soft red leather boots"
+        }
+      ]
+    },
+    {
+      "name": "Fereydun",
+      "description": "Fereydun, a young prince of the old royal line of Iran, raised in hiding, calm, resolute and righteous, about to overthrow the tyrant",
+      "appearance": "a young oval face, a short dark beard just beginning, large dark eyes, a straight nose, dark wavy hair to the shoulders, warm olive skin",
+      "build": "tall, lean and athletic",
+      "outfit": "a knee-length lamellar coat of small polished steel plates laced with blue cord, over a long saffron kaftan woven with roundels of birds, a conical segmented steel helmet with a mail curtain over the neck, a wide leather belt with bronze plaques, loose dark trousers gathered at the ankle, soft brown leather boots",
+      "garments": [
+        {
+          "name": "lamellar coat",
+          "details": "a knee-length lamellar coat of small polished steel plates laced with blue cord"
+        },
+        {
+          "name": "saffron kaftan",
+          "details": "a long saffron kaftan woven with roundels of birds, showing below the armour and at the sleeves"
+        },
+        {
+          "name": "conical helmet",
+          "details": "a conical segmented steel helmet with a mail curtain over the neck"
+        },
+        {
+          "name": "leather belt",
+          "details": "a wide leather belt with bronze plaques"
+        },
+        {
+          "name": "dark trousers",
+          "details": "loose dark trousers gathered at the ankle"
+        },
+        {
+          "name": "brown boots",
+          "details": "soft brown leather boots without heels"
+        }
+      ],
+      "never": [
+        "plate armour",
+        "a cape",
+        "a Roman crested helmet"
+      ],
+      "states": [
+        {
+          "name": "Royal robe",
+          "kind": "outfit",
+          "description": "a long white silk robe embroidered with gold, a golden belt, no armour, bareheaded"
+        }
+      ],
+      "belongings": [
+        {
+          "name": "Ox-headed mace",
+          "description": "gorz-e gavsar, the heavy war mace Fereydun designed and the blacksmiths forged, its head cast in the shape of an ox's head",
+          "shape": "long",
+          "use_pose": "raising the mace high overhead with both hands, ready to strike",
+          "size": "about one metre long; the head is as big as a man's head",
+          "materials": "a cast iron head, a wooden haft bound with leather, bronze fittings",
+          "colours": "dark iron, worn brown leather, bronze",
+          "details": "the head is shaped like an ox's head with two short curved horns, wide nostrils and a broad brow"
+        }
+      ],
+      "parameters": {
+        "sex": "a man",
+        "age": "about eighteen",
+        "hair_length": "shoulder-length",
+        "hair_colour": "dark brown",
+        "beard": "short",
+        "skin": "warm olive",
+        "eyes": "large, dark",
+        "body": "athletic"
+      }
+    }
+  ],
+  "places": [
+    {
+      "name": "Zahhak's throne hall",
+      "description": "the vast throne hall of Zahhak's palace, rich and oppressive",
+      "anchors": "a tall pointed iwan arch at the far end, a raised golden throne under it, rows of thick stone columns on both sides, a long red carpet down the middle",
+      "materials": "carved stone and stucco, gilded details, patterned carpets",
+      "viewpoints": "from the entrance looking toward the throne",
+      "recurring_objects": "bronze oil lamps on tall stands along the columns",
+      "states": [
+        {
+          "name": "Night, lamps lit",
+          "kind": "lighting",
+          "description": "at night, lit only by the oil lamps, warm pools of light and deep shadows"
+        },
+        {
+          "name": "Night, lamps out",
+          "kind": "lighting",
+          "description": "at night with every lamp out, only cold moonlight through the arch"
+        }
+      ]
+    },
+    {
+      "name": "Kaveh's forge",
+      "description": "the blacksmith Kaveh's forge in the city, smoky and hot",
+      "anchors": "a stone hearth with a glowing charcoal fire, a heavy iron anvil in front of it, leather bellows on the left, tools hanging on the back wall",
+      "materials": "soot-blackened mud brick, iron, leather, wood",
+      "viewpoints": "from the doorway looking at the anvil and the hearth",
+      "recurring_objects": "hammers and tongs on the wall, a water trough",
+      "states": [
+        {
+          "name": "Fire roaring",
+          "kind": "lighting",
+          "description": "the forge fire roaring, bright orange light and sparks filling the room"
+        }
+      ]
+    },
+    {
+      "name": "Cave of Damavand",
+      "description": "a deep cave high on Mount Damavand where Zahhak is chained forever",
+      "anchors": "a rough rock chamber, a narrow opening to the sky on the right, heavy iron rings driven into the back wall",
+      "materials": "dark volcanic rock, iron",
+      "viewpoints": "from inside the cave looking at the back wall",
+      "recurring_objects": "iron rings and chains on the wall",
+      "states": [
+        {
+          "name": "Storm",
+          "kind": "other",
+          "description": "a storm outside, lightning flashing through the opening, rain blowing in"
+        }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "name": "Kaveh's banner",
+      "description": "Derafsh-e Kaviani, the blacksmith Kaveh's leather apron raised on a spear as the banner of the revolt",
+      "shape": "flat",
+      "size": "a leather apron about one metre long on a spear twice a man's height",
+      "materials": "worn brown leather, a wooden spear shaft, an iron spearhead",
+      "colours": "brown leather, dark wood, iron",
+      "details": "a blacksmith's leather apron with burn marks, tied by its strings to the top of a spear below the spearhead"
+    }
+  ],
+  "scenes": [
+    {
+      "name": "The fall of Zahhak",
+      "description": "In the throne hall, Fereydun brings the ox-headed mace down on Zahhak, who staggers back from his throne, the serpents rearing",
+      "camera": "wide",
+      "characters": [
+        "Fereydun",
+        "Zahhak"
+      ],
+      "places": [
+        "Zahhak's throne hall"
+      ],
+      "objects": [
+        "Ox-headed mace"
+      ]
+    },
+    {
+      "name": "Chained in Damavand",
+      "description": "Zahhak hangs chained to the back wall of the cave of Damavand, the serpents writhing",
+      "camera": "medium",
+      "characters": [
+        "Zahhak"
+      ],
+      "places": [
+        "Cave of Damavand"
+      ]
+    }
+  ]
+}
