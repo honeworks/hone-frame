@@ -1,0 +1,20 @@
+# An object's packs (change 0005): belongings and world objects (a mace, a horse, a banner) get their own
+# reference images like a character's: a hero, then views made from it. Every image stands on a plain
+# white background. `camera` is the view in words (an object has no face or feet).
+
+[packs.hero]
+label = "Hero"
+description = "The object's identity reference: the whole object, a three-quarter view from slightly above."
+items = [{ item = "Hero", camera = "a three-quarter view from slightly above" }]
+
+[packs.views]
+label = "Views"
+description = "The same object from the front, the side, the back and above, and a close-up of its most distinctive detail."
+custom = "camera"
+items = [
+  { item = "Front", camera = "straight from the front" },
+  { item = "Side", camera = "from the side, in profile" },
+  { item = "Back", camera = "from directly behind" },
+  { item = "Top", camera = "from directly above, looking straight down" },
+  { item = "Detail", camera = "a close-up of its most distinctive detail", detail = true },
+]

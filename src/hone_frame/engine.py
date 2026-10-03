@@ -27,6 +27,7 @@ from hone_frame.runs import (
     save_run,
     view,
 )
+from hone_frame.world_runs import follow_up
 
 if TYPE_CHECKING:
     from hone_frame.store import ProjectStore
@@ -150,6 +151,13 @@ def execute(store: ProjectStore, run: RunRecord) -> None:
         save_run(store, final)
         result = view(store, final)
         log.write("run_finished", message=result.status, reason=result.reason or None)
+        if final.then and result.status not in ("done", "needs_review"):
+            log.write(
+                "follow_up_skipped", message=f"the run is {result.status}; its follow-ups were not queued"
+            )
+        elif final.then:  # done or needs review: its accepted heroes can be used
+            for message in follow_up(store, run.id):
+                log.write("follow_up", message=message)
         if result.status == "done":
             shutil.rmtree(run_dir(store, run.id) / "work", ignore_errors=True)
 

@@ -196,11 +196,15 @@ class ProjectStore(ProjectOperations):
         status: str | None = None,
         model: str | None = None,
         since: str | None = None,
+        variation: str | None = None,
     ) -> list[ImageRecord]:
-        """Every image, oldest first, filtered as asked (design §2)."""
+        """Every image, oldest first, filtered as asked (design §2); `variation`: only that variation's
+        (an image made before variations belongs to the first one, change 0005)."""
         folder = self.root / "images"
         found = [ImageRecord.model_validate(read_json(p)) for p in sorted(folder.glob("img_*.json"))]
+        first = self.info.first_variation if variation else ""
         checks: list[Callable[[ImageRecord], bool]] = [
+            lambda r: variation is None or (r.variation or first) == variation,
             lambda r: kind is None or r.kind == kind,
             lambda r: subject_id is None or any(s.subject_id == subject_id for s in r.subjects),
             lambda r: status is None or r.status == status,

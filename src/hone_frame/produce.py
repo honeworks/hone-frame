@@ -125,7 +125,7 @@ class Producer:
                 message=f"{len(prompt.split())} words, over the {draft.max_words}-word guide for "
                 f"{draft.dialect}; sent whole rather than without what was asked",
             )
-        if self.profile.planner and draft.mode != "promotion":
+        if self.profile.planner and draft.mode not in ("promotion", "fixed"):
             prompt = self._planned(draft, dialect, found) or prompt
         self._save(prompt=prompt)
         self.log.write("planned", output=self.out.id, message=prompt, dialect=draft.dialect, mode=draft.mode)
@@ -198,6 +198,7 @@ class Producer:
             dialect=how,
             negative=self.negative,
             result=result,
+            variation=self.run.plan.variation,
         )
         image = self.store.add_image(path, **fields)
         path.unlink(missing_ok=True)

@@ -3,6 +3,7 @@ for, its white background and, unless it holds something, its empty hands, for s
 profile's models; the full matrix over every style is in tests/unit/test_prompt_matrix.py (change 0004)."""
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -28,10 +29,16 @@ def test_every_image_keeps_what_it_was_asked(tmp_path: Path, style: str, profile
     plan = p.plan(request)
     p.submit(request)
     run_all(p)
-    prompts = {(i.pack, i.item): i.generation.prompt.lower() for i in p.images() if i.generation}
+
+    def slot(subjects: list[Any], pack: str | None, item: str | None) -> tuple[object, ...]:
+        return (tuple(s.subject_id for s in subjects), pack, item)
+
+    prompts = {
+        slot(i.subjects, i.pack, i.item): i.generation.prompt.lower() for i in p.images() if i.generation
+    }
     checked = 0
     for out in plan.outputs:
-        prompt = prompts[(out.pack, out.item)]
+        prompt = prompts[slot(out.subjects, out.pack, out.item)]
         for key in ASKED:
             if value := out.prompt_inputs.get(key):
                 assert str(value).lower() in prompt, f"{out.item}: {key} {value!r} lost"

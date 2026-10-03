@@ -55,6 +55,9 @@ def compose(
 ) -> Composed:
     """The prompt for this output, written the dialect's way for its mode (change 0002)."""
     p = out.prompt_inputs
+    if p.get("fixed_prompt"):  # a pose-library mannequin: one fixed wording for every model (0005)
+        fixes = ("Fix from the last attempt: " + "; ".join(findings)) if findings else ""
+        return Composed(_join([p["fixed_prompt"], fixes]), dialect.name, "fixed", 0, "")
     if p.get("prompt_override"):  # a promotion keeps its own wording (0001)
         head = OPERATIONS.get(str(p.get("operation")), "")
         fixes = ("Fix from the last attempt: " + "; ".join(findings)) if findings else ""
@@ -126,14 +129,16 @@ def planner_problem(answer: str, draft: Composed) -> str | None:
     if "image 1" in draft.text.lower() and "image 1" not in answer.lower():
         return "the reference images are no longer named"
     for asked in draft.asked:
-        if not kept_words(asked, answer):
+        rest = draft.text.lower().replace(asked.lower(), " ")
+        if not kept_words(asked, answer, common=rest):
             return f"what the image is for was dropped ({asked!r})"
     return None
 
 
-def kept_words(phrase: str, answer: str) -> bool:
-    """Whether `answer` still says `phrase`: most of its content words (four letters or more) appear."""
-    words = set(re.findall(r"[a-z]{4,}", phrase.lower()))
+def kept_words(phrase: str, answer: str, *, common: str = "") -> bool:
+    """Whether `answer` still says `phrase`: most of its content words (four letters or more) appear.
+    Words that the rest of the draft (`common`) also has prove nothing and are not counted."""
+    words = set(re.findall(r"[a-z]{4,}", phrase.lower())) - set(re.findall(r"[a-z]{4,}", common))
     if not words:
         return True
     found = sum(1 for w in words if w in answer.lower())

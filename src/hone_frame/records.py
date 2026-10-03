@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from hone_frame.errors import NotFound
+
 SubjectKind = Literal["character", "environment", "asset"]
 StateKind = Literal["outfit", "expression", "condition", "lighting", "other"]
 Role = Literal[
@@ -54,6 +56,20 @@ class ProjectDefaults(Record):
     profiles: dict[str, dict[str, Any]] = Field(default_factory=dict[str, dict[str, Any]])  # overrides
 
 
+class Variation(Record):
+    """One way the world is drawn (change 0005): a style pack and its own direction. Every generated
+    image belongs to one variation; the world (characters, places, scenes, the look guide) is shared."""
+
+    id: str
+    name: str
+    style_pack: str = "cinematic-realism"
+    direction: str = ""  # how this variation is drawn, in a few words: "warm, painterly, soft light"
+    created_at: str = ""
+
+
+MAIN = "main"  # the variation of a project made before change 0005, and of images without one
+
+
 class Project(Record):
     format_version: str = "1"
     id: str
@@ -61,9 +77,39 @@ class Project(Record):
     brief: str = ""
     direction: str = ""
     style_pack: str = "cinematic-realism"
+    look: str = ""  # the world's look guide: culture, period, costume, materials, in plain sentences (0005)
+    variations: list[Variation] = Field(default_factory=list[Variation])
+    variation: str = ""  # the active variation's id; empty: the first
     defaults: ProjectDefaults = Field(default_factory=ProjectDefaults)
     created_at: str
     updated_at: str
+
+    def all_variations(self) -> list[Variation]:
+        """The variations; a project without any has one, `main`, from its style pack and direction."""
+        if self.variations:
+            return list(self.variations)
+        name = self.style_pack.replace("-", " ").capitalize()
+        return [Variation(id=MAIN, name=name, style_pack=self.style_pack)]
+
+    @property
+    def look_guide(self) -> str:
+        """The look guide; a project made before change 0005 uses its visual direction instead."""
+        return self.look or self.direction
+
+    def variation_of(self, variation_id: str | None = None) -> Variation:
+        """The variation `variation_id`, or the active one."""
+        found = self.all_variations()
+        if not variation_id:
+            return next((v for v in found if v.id == self.variation), found[0])
+        for v in found:
+            if v.id == variation_id:
+                return v
+        raise NotFound(f"no variation {variation_id!r}; the variations are {[v.id for v in found]}")
+
+    @property
+    def first_variation(self) -> str:
+        """Images made before variations existed belong to this one."""
+        return self.all_variations()[0].id
 
 
 class State(Record):
@@ -83,6 +129,8 @@ class Subject(Record):
     tags: list[str] = Field(default_factory=list[str])
     reference_images: list[str] = Field(default_factory=list[str])
     owner: str | None = None  # an asset that belongs to one character (change 0003); None: a world asset
+    must: list[str] = Field(default_factory=list[str])  # always shown, in every image (change 0005)
+    never: list[str] = Field(default_factory=list[str])  # never shown; checked by the judge
     created_at: str = ""
     updated_at: str = ""
 
@@ -155,6 +203,7 @@ class ImageRecord(Record):
     tags: list[str] = Field(default_factory=list[str])
     pack: str | None = None  # a character pack and its item (change 0003)
     item: str | None = None
+    variation: str | None = None  # the variation it was made in (change 0005); None: the first one
     created_at: str = ""
 
     @property

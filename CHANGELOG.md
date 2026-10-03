@@ -8,6 +8,16 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Variations (change 0005): one world, several styles; every image belongs to a variation, each with its
+  own heroes; a switcher on the project page; compare a character's hero across variations.
+- The world's look guide (culture, period, costume, materials in plain sentences) in every prompt that
+  draws something new; per-subject Always shown / Never shown lists checked by the judge.
+- Poses from a pose library: a wooden mannequin in each pose, drawn once per project, as the pose
+  reference (kneeling, running and sitting now come out right).
+- Belongings and world objects get a hero and five views; belongings are made before the actions that
+  use them and appear as sections of the character page.
+- Generate everything: the whole world of a variation in one go, with an estimate; scenes follow.
+- A warning for small marks (beauty marks, moles, tattoos) that drift between images.
 - Project files (change 0004): a whole project (characters with states and belongings, places, objects,
   scenes) in one TOML or JSON file, imported from the dashboard or `hone-frame import`, again after edits
   (only what changed gets a new version), and downloaded back with **Download as file** /

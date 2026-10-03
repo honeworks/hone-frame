@@ -53,6 +53,7 @@ items = [
 label = "Outfits"
 description = "The same character in each of its outfits."
 custom = "outfit"
+context = "full"
 from_states = ["outfit"]
 items = []
 
@@ -60,6 +61,7 @@ items = []
 label = "States"
 description = "The same character in each of its other states (wet, wounded, at night...)."
 custom = "state"
+context = "full"
 from_states = ["condition", "lighting", "other"]
 items = []
 

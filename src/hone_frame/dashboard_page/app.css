@@ -184,6 +184,7 @@ dialog.lightbox:not([open]) { display: none; }
 .lightbox-body { flex: 1; overflow: auto; display: flex; align-items: center; justify-content: center; background: var(--surface-sunken); }
 .lightbox-img { width: 100%; height: 100%; object-fit: contain; cursor: zoom-in; }
 .lightbox-img.actual { width: auto; height: auto; max-width: none; max-height: none; object-fit: none; cursor: zoom-out; }
+.variation-bar { gap: var(--s2); }
 .thumb-sm { width: 56px; height: 56px; border-radius: var(--r-thumb); object-fit: cover; background: var(--surface-sunken); flex: none; }
 .placeholder-img { color: var(--ink-muted); font-size: 12px; }
 

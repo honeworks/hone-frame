@@ -3,6 +3,7 @@ import { api, h, icon, replace, state, failure } from "./core.js";
 import * as project from "./views/project.js";
 import * as characters from "./views/characters.js";
 import * as world from "./views/world.js";
+import { activeVariation } from "./views/variations.js";
 import * as create from "./views/create.js";
 import * as library from "./views/library.js";
 import * as scenes from "./views/scenes.js";
@@ -80,7 +81,8 @@ async function route() {
   const main = h("div", { class: "page" });
   replace(document.getElementById("main"), main);
   const title = document.getElementById("topbar-title");
-  replace(title, state.projects.find((p) => p.id === state.project)?.name || "Hone Frame");
+  const current = state.projects.find((p) => p.id === state.project);
+  replace(title, current?.name || "Hone Frame", current ? h("span", { class: "chip accent", style: "margin-left:8px" }, activeVariation(current)?.name) : null);
   try {
     const cleanup = (await VIEWS[name].render(main, rest)) || null;
     if (main.isConnected) dispose = cleanup;

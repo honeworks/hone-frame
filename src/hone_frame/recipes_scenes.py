@@ -147,7 +147,7 @@ def _subject_output(
         if subject.kind == "environment"
         else ("object" if subject.kind == "asset" else "identity")
     )
-    images = subject_images(store, subject.id)
+    images = subject_images(store, subject.id, variation=built.choices.variation.id)
     if not images:
         built.errors.append(
             f"{subject.name} ({subject.id}) has no accepted image yet: make its references first"

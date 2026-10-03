@@ -9,7 +9,7 @@ that executes queued runs one at a time and resumes interrupted ones on start (d
 
 | View | What it is for |
 |---|---|
-| Project | the brief and style, the next step, the characters with their progress, the world, the scenes, what is running; **Generate assets** makes the world's places and objects |
+| Project | the brief, the variation switcher (each variation is the world in another style), the look guide, **Generate everything** with its estimate, the next step, the characters with their progress, the world, the scenes, what is running; **Generate assets** makes the world's places and objects |
 | Characters | each character's page: the hero and details, **Generate assets** (every pack, with your own items), a section per pack (hero, turnaround, expressions, poses, outfits, states, actions) with **Regenerate** and **Add**, each image's candidates with **Use this one** and **Generate again**, the belongings, and the model sheet |
 | World | places and objects anyone in the story can use; add, edit, **Generate assets** |
 | Scenes | the scene builder: characters, places and objects with roles (the planner adds the belongings the description needs, marked "suggested"), camera, expression, pose and lighting, then drafts, finals and promotion |

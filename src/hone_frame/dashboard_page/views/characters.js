@@ -2,6 +2,7 @@
 // model sheet. "Generate assets" makes everything at once; each pack can be made again or added to.
 import { api, empty, failure, field, h, icon, img, presetOptions, projectPath, replace, select, toast, zoomable } from "../core.js";
 import { subjectDialog } from "./subject_form.js";
+import { compareSection } from "./variations.js";
 
 const LIVE = new Set(["queued", "running", "waiting", "paused"]);
 export const ITEM_WORDS = {
@@ -41,7 +42,9 @@ async function characterPage(main, id) {
     const page = await api(projectPath(`/characters/${id}`));
     if (!main.isConnected) return;  // the person left this page while it loaded
     const live = page.packs.some((p) => p.items.some((i) => LIVE.has(i.status)));
-    replace(main, header(page), hero(page), page.packs.map((p) => packSection(page, p)), belongings(page), sheetSection(page));
+    const compare = await compareSection(id).catch(() => null);
+    if (!main.isConnected) return;
+    replace(main, header(page), hero(page), page.packs.map((p) => packSection(page, p)), belongings(page), compare, sheetSection(page));
     clearTimeout(timer);
     if (live) timer = setTimeout(() => draw().catch(failure), 4000);
   }
@@ -76,11 +79,17 @@ function hero(page) {
       page.hero ? null : h("div", { class: "notice info" }, "Start here: press Generate assets. The hero is drawn first; every other image is made from it, on a white background."))));
 }
 
-function packSection(page, pack) {
+export function packSection(page, pack) {
   const isHero = pack.id === "hero";
   const ready = pack.items.filter((i) => i.image).length;
+  // A belonging's section (change 0005) acts on the belonging: its hero, or its views.
+  const target = pack.subject ? { id: pack.subject, name: pack.label.replace(/^(Belonging|Object): /, ""), views: "views" } : null;
   const actions = isHero
     ? h("button", { class: "btn small", onclick: () => redrawHero(page) }, "Draw a new hero")
+    : target ? h("div", { class: "row" },
+      h("button", { class: "btn small", onclick: () => addItem(page, { ...pack, id: "views" }, target) }, icon("plus"), "Add a view"),
+      h("button", { class: "btn small", onclick: () => redrawHero(page, target) }, "Draw a new object hero"),
+      h("button", { class: "btn small", onclick: () => regenerate(page, { ...pack, id: "views" }, target) }, "Regenerate views"))
     : h("div", { class: "row" },
       pack.custom ? h("button", { class: "btn small", onclick: () => addItem(page, pack) }, icon("plus"), "Add") : null,
       pack.items.length ? h("button", { class: "btn small", onclick: () => regenerate(page, pack) }, "Regenerate") : null);
@@ -188,7 +197,7 @@ function sheetSection(page) {
 
 function generateDialog(page) {
   const belongings = page.assets.length ? [{ id: "assets", label: "Belongings", custom: null, items: page.assets.map((a) => ({ item: a.name, image: a.hero })) }] : [];
-  const packs = [...page.packs, ...belongings];
+  const packs = [...page.packs.filter((p) => !p.subject), ...belongings];  // belonging sections: the Belongings row
   const boxes = {};
   const extras = {};
   const rows = packs.map((p) => {
@@ -231,28 +240,31 @@ function generateDialog(page) {
   dialog.showModal();
 }
 
-async function generate(page, body) {
+async function generate(page, body, target) {
+  const who = target || page.subject;
   try {
-    const run = await api(projectPath(`/characters/${page.subject.id}/generate`), { method: "POST", body });
-    toast(`Queued: ${run.outputs} image${run.outputs === 1 ? "" : "s"} for ${page.subject.name}. This page updates as they arrive.`);
+    const run = await api(projectPath(`/characters/${who.id}/generate`), { method: "POST", body });
+    toast(`Queued: ${run.outputs} image${run.outputs === 1 ? "" : "s"} for ${who.name}. This page updates as they arrive.`);
     refresh();
   } catch (error) { failure(error); }
 }
 
-function regenerate(page, pack) {
-  if (!confirm(`Make every ${pack.label.toLowerCase()} image of ${page.subject.name} again? The current images stay until you choose new ones.`)) return;
-  generate(page, { packs: [pack.id] });
+function regenerate(page, pack, target) {
+  const who = target || page.subject;
+  if (!confirm(`Make every ${pack.id === "views" ? "view" : pack.label.toLowerCase()} image of ${who.name} again? The current images stay until you choose new ones.`)) return;
+  generate(page, { packs: [pack.id] }, target);
 }
 
-function redrawHero(page) {
-  if (!confirm(`Draw a new hero for ${page.subject.name}? Only the hero is drawn; regenerate the other packs afterwards so they match it.`)) return;
-  generate(page, { packs: ["hero"], redraw_hero: true });
+function redrawHero(page, target) {
+  const who = target || page.subject;
+  if (!confirm(`Draw a new hero for ${who.name}? Only the hero is drawn; regenerate the rest afterwards so it matches.`)) return;
+  generate(page, { packs: ["hero"], redraw_hero: true }, target);
 }
 
-function addItem(page, pack) {
+function addItem(page, pack, target) {
   const text = h("input", { class: "input", required: true, placeholder: ADD_HINT[pack.custom] || "Describe it" });
   const dialog = h("dialog", { "aria-label": `Add to ${pack.label}` },
-    h("form", { class: "stack", onsubmit: async (e) => { e.preventDefault(); await generate(page, { packs: [pack.id], custom: { [pack.id]: [text.value.trim()] }, only_custom: true }); dialog.close(); } },
+    h("form", { class: "stack", onsubmit: async (e) => { e.preventDefault(); await generate(page, { packs: [pack.id], custom: { [pack.id]: [text.value.trim()] }, only_custom: true }, target); dialog.close(); } },
       h("h2", {}, `Add to ${pack.label}`), field("What should it show?", text, `${page.subject.name} is drawn from the hero, on a white background.`),
       h("div", { class: "row" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", onclick: () => dialog.close() }, "Cancel"),
         h("button", { class: "btn primary", type: "submit" }, "Generate"))));

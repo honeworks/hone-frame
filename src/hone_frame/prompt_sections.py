@@ -91,8 +91,12 @@ def view(c: Ctx) -> str:
         return ""
     part = c.parts[0]
     noun = NOUN.get(str(part.get("kind")), "subject")
-    where = str(c.camera.get("view") or "from the same angle")
+    words = str(c.inputs.get("camera") or "").strip().rstrip(",")  # a free-text view (objects, 0005)
+    where = str(c.camera.get("view") or words or "from the same angle")
     lead = f"now {c.inputs['pose']}, " if _pose_leads(c) else ""  # an edit model keeps the pose it is shown
+    mannequin = next((n for n, (r, _) in enumerate(c.refs, 1) if r.role == "pose"), None)
+    if lead and mannequin:  # the pose library's mannequin shows it (change 0005)
+        lead = f"in exactly the body pose of the wooden mannequin in image {mannequin} ({c.inputs['pose']}), "
     sentence = f"Show the same {noun} as in image 1, {part.get('name')}, {lead}{where}"
     if c.inputs.get("full_body"):
         sentence += ", the whole figure from head to feet"
@@ -184,10 +188,33 @@ def _short_style(c: Ctx) -> bool:
 
 
 def style_lead(c: Ctx) -> str:
+    """The style's opening words, and the variation's own direction after them (change 0005)."""
     own = _mapping(_mapping(c.style.get("dialects")).get(c.dialect.name))
     if own.get("prefix"):
-        return str(own["prefix"])
-    return str(c.style.get("short") or "") if _short_style(c) else str(c.style.get("prefix") or "")
+        lead = str(own["prefix"])
+    else:
+        lead = str(c.style.get("short") or "") if _short_style(c) else str(c.style.get("prefix") or "")
+    direction = str(c.style.get("direction") or "").strip().rstrip(".")
+    return ", ".join(x.strip().rstrip(".,") for x in (lead, direction) if x.strip())
+
+
+def look(c: Ctx) -> str:
+    """The world's look guide (change 0005): its culture, period, costume and materials in concrete words.
+    An edit of the same subject leaves it out (the reference shows it) unless the item brings something
+    new into the picture, like an outfit (`context` "full")."""
+    if c.mode == "view" and c.inputs.get("context") != "full":
+        return ""
+    return str(c.inputs.get("look") or "").strip()
+
+
+def _items(value: Any) -> list[Any]:
+    return list(value) if isinstance(value, list) else []  # pyright: ignore[reportUnknownArgumentType]
+
+
+def must(c: Ctx) -> str:
+    """What a subject always shows (change 0005)."""
+    items = [str(m) for p in c.parts for m in _items(p.get("must"))]
+    return ("Always visible: " + "; ".join(items)) if items else ""
 
 
 def style_close(c: Ctx) -> str:
@@ -222,6 +249,8 @@ SECTION: dict[str, Callable[[Ctx], str]] = {
     "state": _labelled("State", "state"),
     "frame": _labelled("", "frame"),
     "background": _labelled("", "background"),
+    "look": look,
+    "must": must,
     "props": lambda c: (
         "Empty hands: no weapon, tool or object held or carried" if c.inputs.get("empty_hands") else ""
     ),

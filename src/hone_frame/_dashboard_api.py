@@ -100,6 +100,8 @@ def create_project(ws: Workspace, *, body: Any, **_: Any) -> dict[str, Any]:
         direction=str(data.get("direction", "")),
         style_pack=str(data.get("style_pack") or "cinematic-realism"),
     )
+    if data.get("look"):
+        store.update(look=str(data["look"]))
     return store.info.model_dump(mode="json")
 
 
@@ -219,6 +221,7 @@ def delete_image(ws: Workspace, project_id: str, image_id: str, **_: Any) -> dic
 from hone_frame import (  # noqa: E402 - these register their routes
     _dashboard_characters,
     _dashboard_work,
+    _dashboard_world,
 )
 
-__all__ = ["ROUTES", "ApiError", "_dashboard_characters", "_dashboard_work", "route"]
+__all__ = ["ROUTES", "ApiError", "_dashboard_characters", "_dashboard_work", "_dashboard_world", "route"]

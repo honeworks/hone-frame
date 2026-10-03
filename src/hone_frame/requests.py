@@ -17,6 +17,7 @@ class RequestBase(Record):
     presets: dict[str, str] = Field(default_factory=dict[str, str])  # category -> preset id overrides
     note: str = ""
     title: str = ""
+    variation: str = ""  # a variation id (change 0005); empty: the project's active one
 
     @property
     def task(self) -> str:
@@ -182,3 +183,4 @@ class Plan(Record):
     warnings: list[str] = Field(default_factory=list[str])
     errors: list[str] = Field(default_factory=list[str])
     sheet_layout: str | None = None
+    variation: str = ""  # the variation every image of this plan belongs to (change 0005)

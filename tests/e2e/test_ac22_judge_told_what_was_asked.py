@@ -22,7 +22,7 @@ def test_the_judge_is_told_what_was_asked(tmp_path: Path) -> None:
     )
     run_all(p)
     judged = [c.prompt for c in fake.asked if "quality judge" in c.prompt]
-    running = next(j for j in judged if "Requested pose: running fast" in j)
+    running = next(j for j in judged if "Requested pose: running fast" in j and "Rostam" in j)
     assert "Requested background: a plain pure white background" in running
     assert "Requested: empty hands" in running and "- pose:" in running
     back = next(j for j in judged if "from directly behind" in j.split("The prompt it was made from")[0])

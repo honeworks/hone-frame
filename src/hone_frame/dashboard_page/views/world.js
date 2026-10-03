@@ -1,6 +1,7 @@
 // The world (change 0003): places and objects that belong to the project, not to one character.
 import { api, empty, failure, h, icon, img, projectPath, replace, toast } from "../core.js";
 import { subjectDialog } from "./subject_form.js";
+import { packSection } from "./characters.js";
 
 export async function render(main) {
   const world = await api(projectPath("/world"));
@@ -16,7 +17,11 @@ export async function render(main) {
     h("button", { class: "btn primary", onclick: () => worldDialog(world) }, "Generate assets")),
     world.length ? null : empty("Nothing in the world yet", "Add the places your scenes happen in, and the objects everyone shares."),
     section("Places", "Where scenes happen.", "environment", places),
-    section("Objects", "Shared objects: a horse, a banner, a throne.", "asset", objects));
+    section("Objects", "Shared objects: a horse, a banner, a throne.", "asset", objects),
+    await Promise.all(objects.map(async (o) => {  // each object's hero and views (change 0005)
+      const row = await api(projectPath(`/objects/${o.id}`));
+      return packSection({ subject: { id: o.id, name: o.name } }, { ...row, label: `Object: ${o.name}` });
+    })));
 }
 
 export function worldTile(s) {

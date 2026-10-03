@@ -12,7 +12,15 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from hone_frame.errors import InvalidRequest
-from hone_frame.recipes import OBJECT_FRAMING, WHITE, Built, base_inputs, reference_lighting, view_flags
+from hone_frame.pose_library import pose_reference
+from hone_frame.recipes import (
+    WHITE,
+    Built,
+    base_inputs,
+    fragment,
+    reference_lighting,
+    view_flags,
+)
 from hone_frame.records import Subject, SubjectLink
 from hone_frame.references import ACCEPTED
 from hone_frame.requests import CharacterPacks, Dependency, PlannedOutput, PlannedRef
@@ -39,22 +47,31 @@ class Pack(BaseModel):
     from_states: list[str] = Field(default_factory=list[str])
     from_assets: bool = False
     empty_hands: bool = True
+    context: str = "short"  # "full": the item brings something new, so the world's look guide goes too (0005)
     items: list[dict[str, Any]] = Field(default_factory=list[dict[str, Any]])
 
 
+CATALOGS = {"character": "character_packs.toml", "asset": "object_packs.toml"}  # objects: change 0005
+
+
 @cache
-def packs() -> dict[str, Pack]:
-    """The packs, in the order they are made."""
-    text = (resources.files("hone_frame") / "data" / "character_packs.toml").read_text(encoding="utf-8")
+def packs(kind: str = "character") -> dict[str, Pack]:
+    """A kind's packs, in the order they are made: a character's, or an object's (change 0005)."""
+    name = CATALOGS[kind]
+    text = (resources.files("hone_frame") / "data" / name).read_text(encoding="utf-8")
     return {name: Pack.model_validate(row) for name, row in tomllib.loads(text)["packs"].items()}
 
 
-def accepted_hero(store: ProjectStore, subject_id: str) -> str | None:
-    """The character's latest accepted hero image, or None."""
+def accepted_hero(store: ProjectStore, subject_id: str, variation: str | None = None) -> str | None:
+    """The latest accepted hero image of a character or object in the variation (the active one by
+    default, change 0005), or None."""
+    v = variation or store.info.variation_of().id
     heroes = [
         i
-        for i in store.images(subject_id=subject_id)
-        if len(i.subjects) == 1 and i.status in ACCEPTED and (i.pack == "hero" or i.label.lower() == "hero")
+        for i in store.images(subject_id=subject_id, variation=v)
+        if len(i.subjects) == 1
+        and i.status in ACCEPTED
+        and (i.pack in ("hero", "assets") or i.label.lower() == "hero")  # "assets": a 0003 belonging
     ]
     return heroes[-1].id if heroes else None
 
@@ -67,7 +84,7 @@ def pack_items(
     store: ProjectStore, subject: Subject, name: str, extra: list[str], *, only_extra: bool = False
 ) -> list[dict[str, Any]]:
     """One pack's items: its defaults, one per matching state or owned asset, and the person's own."""
-    pack = packs()[name]
+    pack = packs(subject.kind if subject.kind in CATALOGS else "character")[name]
     if only_extra:
         pack = pack.model_copy(update={"items": [], "from_states": [], "from_assets": False})
     items = [dict(i) for i in pack.items]
@@ -99,8 +116,13 @@ def character_packs(store: ProjectStore, request: CharacterPacks, built: Built) 
     hero is always the first output, whatever `packs` and `only_custom` say: nothing else can be made
     without it (D-027)."""
     subject = store.subject(request.subject_id)
+    if subject.kind == "asset":  # an object: its own packs (change 0005)
+        from hone_frame.recipes_objects import object_packs  # noqa: PLC0415 - that module imports this one
+
+        object_packs(store, request, built)
+        return
     if subject.kind != "character":
-        raise InvalidRequest(f"{subject.name} is a {subject.kind}; packs are made for characters")
+        raise InvalidRequest(f"{subject.name} is a {subject.kind}; packs are made for characters and objects")
     chosen = request.packs or list(packs())
     if unknown := sorted(set(chosen) - set(packs())) + sorted(set(request.custom) - set(packs())):
         raise InvalidRequest(f"unknown packs {unknown}; use {list(packs())}")
@@ -108,9 +130,9 @@ def character_packs(store: ProjectStore, request: CharacterPacks, built: Built) 
         raise InvalidRequest(
             f"items of your own for {left_out}, which are not in packs: add them or drop the items"
         )
-    built.warnings += carried_objects(subject)
+    built.warnings += carried_objects(subject) + unstable_features(subject)
     maker = _PackMaker(store, request, built, subject)
-    hero = None if request.redraw_hero else accepted_hero(store, subject.id)
+    hero = None if request.redraw_hero else accepted_hero(store, subject.id, built.choices.variation.id)
     maker.identity = maker.hero() if hero is None else {"references": [maker.ref(hero, subject, "identity")]}
     for name in [n for n in packs() if n in chosen and n != "hero"]:
         extra = request.custom.get(name, [])
@@ -123,6 +145,29 @@ HELD = re.compile(
     r"holding|holds|carries|carrying|wields|wielding|in (?:his|her|their) (?:right |left )?hands?)\b",
     re.I,
 )
+
+
+SMALL_MARKS = re.compile(
+    r"\b(beauty marks?|moles?|freckles?|birthmarks?|tattoos?|scars?|dimples?|piercings?|warts?|"
+    r"small marks?|spots?|tear marks?)\b",
+    re.I,
+)
+
+
+def unstable_features(subject: Subject) -> list[str]:
+    """Warnings for small marks the image models cannot keep in place from image to image (change 0005:
+    a beauty mark moved from the cheek to the chin to the forehead): keep it with an exact position and
+    size and an Always-shown entry, or remove it."""
+    found: list[str] = []
+    for key, label in (("appearance", "appearance"), ("features", "distinguishing features")):
+        if match := SMALL_MARKS.search(str(subject.fields.get(key) or "")):
+            found.append(
+                f"{subject.name}'s {label} mention {match.group(0)!r}: small marks drift between images "
+                "(another place, another size, or gone). If it matters, give its exact place and size "
+                "(e.g. 'a small dark mole just above the left corner of the upper lip') and add it to "
+                "Always shown; otherwise remove it"
+            )
+    return found
 
 
 def carried_objects(subject: Subject) -> list[str]:
@@ -146,6 +191,7 @@ class _PackMaker:
         self.lighting = reference_lighting(built, request)
         self.identity: dict[str, Any] = {}
         self.asset_outputs: dict[str, str] = {}  # asset id -> its output in this request
+        self.mannequins: dict[str, str] = {}  # pose -> its mannequin's output in this request
 
     def ref(self, image_id: str, subject: Subject, role: str) -> PlannedRef:
         return PlannedRef.model_validate(
@@ -165,8 +211,13 @@ class _PackMaker:
         fields: dict[str, Any] = {k: list(v) for k, v in self.identity.items()}
         flags = ["identity_ref", "character"] + [k for k in ("expression", "pose") if spec.get(k)]
         flags += ["state"] if spec.get("state") or spec.get("outfit") else []
+        if pack == "poses" and spec.get("pose"):  # the mannequin of the pose library (change 0005)
+            words = fragment(self.built.choices, "pose", str(spec["pose"]))
+            for k, v in pose_reference(self.store, self.built, words, self.mannequins).items():
+                fields.setdefault(k, []).extend(v)
         if asset_id := spec.get("asset_id"):  # an action: its belonging is the object reference
-            image = None if asset_id in self.asset_outputs else accepted_hero(self.store, asset_id)
+            v = self.built.choices.variation.id
+            image = None if asset_id in self.asset_outputs else accepted_hero(self.store, asset_id, v)
             if image:
                 fields.setdefault("references", []).append(
                     self.ref(image, self.store.subject(asset_id), "object")
@@ -180,16 +231,14 @@ class _PackMaker:
         self._add(pack, spec, conditions=flags, **fields)
 
     def _asset(self, spec: dict[str, Any]) -> None:
+        """A belonging's whole object pack, before the actions that use it (change 0005): its hero
+        (unless one is accepted) and its views."""
+        from hone_frame.recipes_objects import add_object  # noqa: PLC0415 - that module imports this one
+
         asset = self.store.subject(spec["asset_id"])
-        own = [self.ref(i, asset, "object") for i in asset.reference_images]
-        out = self._add(
-            "assets",
-            {"item": asset.name, "camera": "front", "framing": OBJECT_FRAMING},
-            who=asset,
-            references=own,
-            conditions=["identity_ref"] if own else [],
-        )
-        self.asset_outputs[asset.id] = out.id
+        hero = accepted_hero(self.store, asset.id, self.built.choices.variation.id)
+        if out := add_object(self.store, self.built, self.request, asset, hero=hero):
+            self.asset_outputs[asset.id] = out
 
     def _add(
         self, pack: str, spec: dict[str, Any], *, who: Subject | None = None, **fields: Any
@@ -219,6 +268,7 @@ class _PackMaker:
                 reference=True,
                 background=WHITE,
                 empty_hands=empty_hands,
+                context=packs()[pack].context,
                 outfit=spec.get("outfit"),
                 state=spec.get("state"),
                 lighting=self.lighting,

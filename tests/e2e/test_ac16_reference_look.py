@@ -21,7 +21,7 @@ def _prompt(p: hf.ProjectStore, out: hf.PlannedOutput) -> str:
 def test_white_background_and_empty_hands(ws: hf.Workspace) -> None:
     p = rostam(ws)
     outputs = p.plan(hf.CharacterPacks(subject_id="char_001")).outputs
-    for out in outputs:
+    for out in [o for o in outputs if o.pack != "pose-library"]:  # mannequins: own fixed wording
         text = _prompt(p, out)
         assert WHITE in text, out.label
         assert "clean_background" in out.conditions

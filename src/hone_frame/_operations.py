@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from hone_frame.records import Selection
+    from hone_frame.records import Project, Selection, Variation
     from hone_frame.requests import Plan, RequestBase
     from hone_frame.runs import OutputRecord, RunView
     from hone_frame.store import ProjectStore
@@ -98,6 +98,39 @@ class ProjectOperations:
         from hone_frame.exports import export_project
 
         return export_project(self._store, Path(out))
+
+    def add_variation(
+        self, name: str, *, style_pack: str, direction: str = "", active: bool = True
+    ) -> Variation:
+        from hone_frame.variations import add_variation
+
+        return add_variation(self._store, name, style_pack=style_pack, direction=direction, active=active)
+
+    def edit_variation(self, variation_id: str, **changes: Any) -> Variation:
+        from hone_frame.variations import edit_variation
+
+        return edit_variation(self._store, variation_id, **changes)
+
+    def use_variation(self, variation_id: str) -> Project:
+        """Make `variation_id` the active variation (change 0005)."""
+        self._store.info.variation_of(variation_id)
+        return self._store.update(variation=variation_id)
+
+    def world_plan(
+        self, variation: str | None = None, *, profile: str = "", selection: Selection | None = None
+    ) -> dict[str, Any]:
+        """What generating the whole world of a variation would make, and how long (change 0005)."""
+        from hone_frame.world_runs import world_plan
+
+        return world_plan(self._store, variation, profile=profile, selection=selection)
+
+    def generate_world(
+        self, variation: str | None = None, *, profile: str = "", selection: Selection | None = None
+    ) -> dict[str, Any]:
+        """Queue the whole world of a variation; its scenes follow the last character (change 0005)."""
+        from hone_frame.world_runs import generate_world
+
+        return generate_world(self._store, variation, profile=profile, selection=selection)
 
     def project_file(self) -> dict[str, Any]:
         """The project as a project file (change 0004), ready to edit and import again."""

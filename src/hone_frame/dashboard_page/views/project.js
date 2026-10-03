@@ -4,6 +4,7 @@ import { api, downloadProject, failure, field, h, icon, importButton, pill, pres
 import { characterTile } from "./characters.js";
 import { subjectDialog } from "./subject_form.js";
 import { worldDialog, worldTile } from "./world.js";
+import { generateEverything, lookPanel, variationBar } from "./variations.js";
 
 export async function render(main) {
   const data = await api(projectPath("/home"));
@@ -15,14 +16,17 @@ export async function render(main) {
     [data.scenes.length > 0, "Build scenes", "#/scenes", "Choose characters and places; the planner adds their belongings when the scene needs them."],
   ];
   const next = steps.find(([done]) => !done);
+  const bar = await variationBar();
   replace(main,
     h("div", { class: "page-head" },
-      h("div", { style: "max-width:760px" }, h("div", { class: "row" }, h("h1", {}, p.name), h("span", { class: "chip" }, styleName(p.style_pack))),
-        p.brief ? h("p", { class: "muted", style: "margin:4px 0 0" }, p.brief) : null),
+      h("div", { style: "max-width:760px" }, h("h1", {}, p.name),
+        p.brief ? h("p", { class: "muted", style: "margin:4px 0 8px" }, p.brief) : null, bar),
       h("div", { class: "row" }, importButton("Import a file"),
         h("button", { class: "btn", onclick: () => downloadProject(p.id), title: "The whole project as a file you can edit and import again" }, "Download as file"),
         h("button", { class: "btn", onclick: () => editProject(p) }, "Edit project"),
-        h("button", { class: "btn primary", onclick: () => worldDialog(data.world) }, "Generate assets"))),
+        h("button", { class: "btn", onclick: () => worldDialog(data.world) }, "Generate assets"),
+        h("button", { class: "btn primary", onclick: generateEverything, title: "Every place, object, character and scene of this variation" }, "Generate everything"))),
+    lookPanel(p),
     next ? h("section", { class: "panel steps", style: "margin-bottom:24px" }, h("h2", {}, "Next step"),
       h("ol", {}, steps.map(([done, title, href, text]) => h("li", { class: done ? "done" : (title === next[1] ? "current" : "") },
         h("a", { href }, title), h("span", { class: "caption" }, ` ${text}`))))) : null,
@@ -43,7 +47,6 @@ export async function render(main) {
           : h("p", { class: "muted", style: "margin:0" }, "No scenes yet."))));
 }
 
-function styleName(id) { return (state.presets?.style_pack || []).find((x) => x.id === id)?.name || id; }
 
 function queueRow(r) {
   const live = r.status === "running" || r.status === "pausing";
@@ -55,17 +58,15 @@ function queueRow(r) {
 function editProject(p) {
   const name = h("input", { class: "input", value: p.name });
   const brief = h("textarea", { class: "input", value: p.brief });
-  const direction = h("input", { class: "input", value: p.direction });
-  const pack = select(presetOptions("style_pack"), p.style_pack);
   const dialog = h("dialog", { "aria-label": "Edit project", style: "width:min(560px, calc(100vw - 32px))" },
     h("form", { class: "stack", onsubmit: async (e) => {
       e.preventDefault();
       try {
-        await api(projectPath(""), { method: "PATCH", body: { name: name.value, brief: brief.value, direction: direction.value, style_pack: pack.value } });
+        await api(projectPath(""), { method: "PATCH", body: { name: name.value, brief: brief.value } });
         dialog.close(); toast("Project saved."); window.dispatchEvent(new Event("hf:projects"));
       } catch (error) { failure(error); }
-    } }, h("h2", {}, "Edit project"), field("Name", name), field("Brief", brief, "What the story is about."), field("Visual direction", direction),
-    field("Style", pack, "Applies to new images; existing ones keep the style they were made with."),
+    } }, h("h2", {}, "Edit project"), field("Name", name), field("Brief", brief, "What the story is about."),
+    h("p", { class: "caption", style: "margin:0" }, "The style is set per variation (Edit next to the variation); what things look like goes in the look guide."),
     h("div", { class: "row" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", onclick: () => dialog.close() }, "Cancel"),
       h("button", { class: "btn primary", type: "submit" }, "Save"))));
   document.body.append(dialog);
