@@ -68,5 +68,5 @@ Documented, not built now:
   refused.
 - **AC-33** The stronger judge judges the base images (or everything) when asked; without one set the
   plan says so.
-- **AC-34** Clean-up deletes unchosen candidates or a variation's images, keeps images in use, and
-  refuses the active variation.
+- **AC-34** Clean-up deletes unchosen candidates (keeping and counting those in use), or a variation only
+  when none of its images is in use, and refuses the active variation.

@@ -21,7 +21,7 @@ def test_each_candidate_is_another_reading(tmp_path: Path) -> None:
     assert len(heroes) == 4
     prompts = sorted(h.generation.prompt for h in heroes if h.generation)
     for n, prompt in enumerate(prompts, 1):
-        assert prompt.startswith(f"reading {n}: a distinct face. ")  # each candidate opens with its own
+        assert prompt.startswith(f"reading {n}: a distinct face. ")  # its own reading first
 
 
 def test_the_camera_phrase_stays_first(tmp_path: Path) -> None:
