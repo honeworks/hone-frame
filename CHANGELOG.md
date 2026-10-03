@@ -32,6 +32,8 @@ All notable changes to this project are documented here. The format follows
 - A magnifier on every image in the dashboard.
 
 ### Fixed
+- A view of a place or an object no longer asks to keep a face, hair and clothes, which put a man into
+  a fortress's detail view; "faces away" is said only of characters (D-040).
 - Places came out full of people and objects with a warrior holding them when the look guide described
   costumes; places are now empty, heroes alone, objects alone, and the judge checks each. A queued run
   that is canceled now shows as canceled.

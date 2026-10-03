@@ -48,7 +48,9 @@ class Ctx:
 
     @property
     def faces_away(self) -> bool:
-        return bool(self.camera.get("faces_away"))
+        """Only a figure turns its back; a place or an object seen from behind has no face to hide."""
+        drawn = self.parts[0].get("kind") if self.parts else None
+        return bool(self.camera.get("faces_away")) and drawn not in KEPT
 
     @property
     def style(self) -> dict[str, Any]:
@@ -153,10 +155,19 @@ def short_outfit(text: str) -> str:
     return ("the same clothes: " + ", ".join(short)) if short else "the same clothes and colours"
 
 
+KEPT = {
+    "environment": "the same place, buildings, materials and colours",
+    "asset": "the same object, shape, materials and colours",
+}
+
+
 def keep(c: Ctx) -> str:
     if not c.parts:
         return ""
     part = c.parts[0]
+    if part.get("kind") in KEPT:  # a person's face and clothes would walk into a place's or an object's view
+        kept = [KEPT[str(part["kind"])]] + [x for x in [_field(part, "features")] if x]
+        return "Keep exactly the same as in image 1: " + "; ".join(kept) + ". Change only what is asked above"
     kept = ["the same build and height, the same hair" if c.faces_away else "the same face, hair and build"]
     if c.inputs.get("outfit"):
         clothes = ""
