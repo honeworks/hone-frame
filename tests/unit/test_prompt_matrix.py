@@ -228,6 +228,20 @@ def test_the_look_guide_only_where_people_are_drawn(tmp_path: Path) -> None:
     assert "solo" in names["hero"] and "no_people" in names["place"] and "object_alone" in names["object"]
 
 
+def test_place_and_object_views_keep_no_face(rostam_project: hf.ProjectStore) -> None:
+    """A view of a place or an object keeps the place or the object, never a face and clothes (a detail
+    view of a fortress came out as a man's portrait)."""
+    place = rostam_project.subjects("environment")[0]
+    thing = next(s for s in rostam_project.subjects("asset") if s.owner is None)
+    for subject, words in ((place, "the same place"), (thing, "the same object")):
+        views = rostam_project.plan(hf.SubjectReferences(subject_id=subject.id)).outputs[1:]
+        assert views
+        for out in views:
+            dialect = rostam_project.workspace.dialects.for_model(out.model)
+            text = compose(out, _refs(rostam_project, out), [], dialect).text.lower()
+            assert words in text and "hair" not in text and "face is not visible" not in text, text
+
+
 def test_solo_only_on_heroes(rostam_project: hf.ProjectStore) -> None:
     rostam = rostam_project.subjects("character")[0]
     packs_plan = rostam_project.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["hero", "poses"]))

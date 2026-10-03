@@ -395,3 +395,12 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
   Fortress and the palace hall into crowds of warriors and nobles, which the judge passed. With these
   changes the same places came out empty, and the hero alone on white.
 
+
+## D-040: a view of a place or an object keeps the place or the object  (2026-10-03)
+
+- **Choice:** an edit view of a place says "Keep exactly the same as in image 1: the same place, buildings,
+  materials and colours", and one of an object says "the same object, shape, materials and colours",
+  instead of a person's "the same face, hair and build" and clothes. "The figure faces away" is said only
+  of characters.
+- **Reason:** in the overnight run, the White Fortress's detail view, asked to keep "the same face, hair,
+  build, clothes", came out as a man's portrait in front of the fortress (the judge rejected it).
