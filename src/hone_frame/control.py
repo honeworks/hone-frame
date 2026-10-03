@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 from hone_frame._files import now
 from hone_frame.errors import InvalidRequest, NotFound, RunStateError
 from hone_frame.events import EventLog, observed
+from hone_frame.issues import chosen
 from hone_frame.planning import ModelCheck, as_request, plan
 from hone_frame.profiles import resolve_profile
 from hone_frame.records import Selection
@@ -104,16 +105,19 @@ def rerun(
     note: str = "",
     profile: str | None = None,
     selection: Selection | None = None,
+    issues: list[str] | None = None,
 ) -> RunView:
-    """A new run for one output (decisions D-011, D-019): the same definition, plus the person's note,
-    optionally another profile and selection. The old output becomes `replaced` and keeps its images."""
+    """A new run for one output (decisions D-011, D-019): the same definition, plus the person's note and
+    the fixes of the standard issues ticked (change 0006, also judged), optionally another profile and
+    selection. The old output becomes `replaced` and keeps its images."""
     run = load_run(store, run_id)
     out = next((o for o in run.plan.outputs if o.id == output_id), None)
     if out is None:
         raise NotFound(
             f"run {run_id} has no output {output_id}; its outputs are {[o.id for o in run.plan.outputs]}"
         )
-    single, resolved = _with_profile(store, _redo_output(store, run, out, note), run.plan.profile, profile)
+    redo = _redo_output(store, run, out, note, issues or [])
+    single, resolved = _with_profile(store, redo, run.plan.profile, profile)
     planned = _single_plan(run, single, resolved, selection or run.plan.selection)
     new = RunRecord(
         id=new_run_id(),
@@ -169,17 +173,26 @@ def _mark_replaced(store: ProjectStore, run_id: str, output_id: str, new_run: st
     save_output(store, run_id, old.model_copy(update=update))
 
 
-def _redo_output(store: ProjectStore, run: RunRecord, out: PlannedOutput, note: str) -> PlannedOutput:
-    """The output with its dependencies' accepted images as fixed references, and the note added."""
+def _redo_output(
+    store: ProjectStore, run: RunRecord, out: PlannedOutput, note: str, issues: list[str]
+) -> PlannedOutput:
+    """The output with its dependencies' accepted images as fixed references, the note and the ticked
+    issues' fixes added, and the issues kept for the judge (change 0006)."""
     refs = list(out.references)
     for dep in out.depends_on:
         record = load_output(store, run.id, dep.output)
         if record is None or record.selected is None:
             raise InvalidRequest(f"{out.label} needs an accepted {dep.output} first; pick one, then redo it")
-        refs.append(PlannedRef(image_id=record.selected, role=dep.role))
+        image = store.image(record.selected)
+        subject = image.subjects[0].subject_id if len(image.subjects) == 1 else None
+        refs.append(PlannedRef(image_id=record.selected, subject_id=subject, role=dep.role))
     inputs = dict(out.prompt_inputs)
-    if note.strip():
-        inputs["note"] = " ".join(x for x in (str(inputs.get("note") or ""), note.strip()) if x)
+    fixes = [i.fix for i in chosen(issues)]
+    note = "; ".join(x for x in (*fixes, note.strip()) if x)
+    if issues:
+        inputs["issues"] = sorted({*inputs.get("issues", []), *issues})
+    if note:
+        inputs["note"] = " ".join(x for x in (str(inputs.get("note") or ""), note) if x)
     return out.model_copy(update={"references": refs, "depends_on": [], "prompt_inputs": inputs})
 
 

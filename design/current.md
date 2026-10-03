@@ -368,6 +368,20 @@ this order: `hero` (front, full figure, neutral pose), `turnaround` (Front, 3/4,
   reused by every character (mannequins belong to no variation).
 - **Plan warnings:** objects in a character's hands (0004) and small marks that drift between images
   (beauty marks, moles, freckles, tattoos, scars: give an exact place and size, or remove them; 0005).
+- **When to check** (change 0006): a request's `approval` is `auto`, `base` (the run waits after the
+  outputs others are made from: hero, belongings' heroes, pose mannequins, planned first) or `each` (also
+  after every pack). The plan's `checkpoints` name them; after one the run stops with "Waiting for your
+  approval: …" (control action `approve`) and resuming it is the approval.
+- **Hero casting** (change 0006, `casting.py`): `CharacterPacks.casting` = n draws the hero's n candidates
+  from n distinct readings the planner writes (varying only what the description leaves open); seeds only
+  without a planner or when it fails.
+- **Standard issues** (change 0006, `issues.py`, `data/issues.toml`): `rerun(..., issues=[ids])` adds
+  each issue's fix to the new attempt's prompt and its check to the judging.
+- **Judge options** (change 0006): `judge_mode` `default`, `strong_base` or `strong_all` uses the
+  workspace's `strong_judge` for the base images or for every image; a plan without one set has an error.
+- **Clean-up** (change 0006, `cleanup.py`): delete unchosen candidates of finished outputs, or a
+  variation's images (not the active or only one). `unchosen` keeps and counts images in use; deleting a
+  variation is refused (`InvalidRequest`, naming the uses) while any of its images is in use.
 - **Whole-world runs** (change 0005, `world_runs.py`): `p.world_plan(variation)` lists the runs of every
   place and object without an image and every character, with an estimate (measured median seconds per
   image, or 70 s before any measurement); `p.generate_world(variation)` queues them in that order and
@@ -503,7 +517,7 @@ judging profile chosen for the output kind:
 |---|---|---|
 | hero, view, expression, pose of a character | character-identity | identity (not for the hero), view, expression, outfit_state, framing, anatomy, style (preference) |
 | environment output | environment-continuity | viewpoint, anchors, recurring_objects (when listed), materials, lighting, style (preference) |
-| asset output | object-fidelity | shape, details, material, view_state, scale_cues (preference), style (preference) |
+| asset output | object-fidelity | shape, details, material, view_state, object_alone (object packs, 0006), scale_cues (preference), style (preference) |
 | interaction | interaction-plausibility | identity, contact, hand_placement, object_orientation, scale, anatomy, style (preference) |
 | scene, coverage, state | scene-fidelity | subject_presence, identity, action, reference_roles, composition, camera, state, style (preference) |
 | sequence frame | sequence-continuity | the scene-fidelity checks plus continuity and state_progression |
@@ -511,7 +525,9 @@ judging profile chosen for the output kind:
 Reference outputs of characters and objects (change 0003) also carry `clean_background` (the
 character-identity, object-fidelity and interaction-plausibility profiles ask whether the background is
 plain white) and, for characters with empty hands, `no_props` (character-identity asks whether the hands
-are empty).
+are empty). An object pack's images (change 0006) carry `object_alone`: the prompt has the required
+`alone` section ("The object alone: no person, no hands, nobody holding, wearing or riding it") and
+object-fidelity asks whether anyone is in the picture.
 
 **What was asked** (change 0004): the judge prompt lists the request from the plan, not only the prompt
 that was sent: `Requested view`, framing, pose, facial expression, clothing, state, action, background
@@ -933,6 +949,8 @@ standard library (`ThreadingHTTPServer`).
 | POST | `/api/projects/{p}/world/generate-all` | queue it (`profile`, `rounds`) |
 | GET | `/api/projects/{p}/objects/{id}` | an object's hero and views as a page section |
 | GET | `/api/projects/{p}/subjects/{id}/compare` | its hero in every variation |
+| POST | `/api/projects/{p}/cleanup` | `{"what": "unchosen" \| "variation", "variation", "dry_run"}` (change 0006) |
+| GET | `/api/issues` | the standard issues for Generate again (change 0006) |
 | POST | `/api/projects/{p}/exports` | `{"kind": "sheet" \| "pack" \| "sequence" \| "project", "id"}` → a download URL |
 
 Errors are `{"error": message}` with 400 (an invalid request, with the plan errors), 404 or 409 (a run in
@@ -1003,6 +1021,7 @@ Charts use real character, environment, asset and scene work only.
 | `requests.py` | request models, planned outputs, plans |
 | `recipes.py`, `recipes_subjects.py`, `recipes_scenes.py`, `recipes_packs.py` + `data/character_packs.toml` | request → planned outputs: the shared parts; subject references and interactions; state pairs, sequences, grids and promotion; character packs |
 | `project_file.py` | project files: parse, import by name, write back (change 0004) |
+| `run_options.py`, `casting.py`, `issues.py` + `data/issues.toml`, `cleanup.py`, `produce_prompt.py` | approval checkpoints and the stronger judge; hero casting; standard issues; clean-up; how a producer writes a prompt (change 0006) |
 | `variations.py`, `world_runs.py`, `recipes_objects.py` + `data/object_packs.toml`, `pose_library.py`, `_dashboard_world.py` | variations; whole-world runs and follow-ups; object packs; the pose library; their API routes (change 0005) |
 | `characters.py` | the character page and cards, the world, world requests, the model sheet recipe, scene belonging suggestions |
 | `references.py` | reference resolution, precedence, reduction, size limits |
@@ -1060,6 +1079,11 @@ models.
 | AC-27 | Pose library | pose images depend on a mannequin made first; another character reuses it |
 | AC-28 | Object packs | an object's hero and five views; belongings before actions, shown as character-page sections |
 | AC-29 | Whole-world runs | an estimate; one run per subject; scenes queued after the last character |
+| AC-30 | Approvals | `base` waits after the base group and continues on approval; `each` after each pack; `auto` never |
+| AC-31 | Hero casting | candidates from distinct readings; seeds only when the planner fails |
+| AC-32 | Standard issues | fixes in the prompt, checks in the judging; unknown issues refused |
+| AC-33 | Judge options | the stronger judge where asked; a plan error without one |
+| AC-34 | Clean-up | unchosen candidates deleted, those in use kept and counted; a variation deleted only when none of its images is in use; the active variation refused |
 | AC-14 (real model) | One `SubjectReferences` hero with the draft profile on the GPU (`scripts/gpu-lock.sh`) | an image is generated and judged by the real models; the run completes as `done` or `needs_review`; the models are unloaded afterwards |
 
 ## 15. Known limits (0.1.0)

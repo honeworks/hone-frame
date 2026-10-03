@@ -51,3 +51,36 @@ world.use_variation("main")  # back to the realistic look; its images were never
 without an image and for each character (all its packs), in that order, then the scenes, queued by the
 last run when it finishes, since they need the accepted heroes. The estimate uses the seconds per image
 measured on this machine (70 s before any run has been measured).
+
+## When to check, the judge, and Generate again
+
+When a generation starts (a character's **Generate assets**, or **Generate everything**) you choose:
+
+- **When to check:** *Approve the base images first* (recommended): the hero, the belongings' heroes and
+  the pose mannequins are made first, then the run waits ("Waiting for your approval") until you look,
+  choose another candidate if needed, and press **Approve and continue**. *Run automatically* never
+  waits; *Approve each step* also waits after every pack.
+- **Hero candidates:** 4 candidates drawn from four different readings of the description, so you can
+  choose a face, not four copies of one.
+- **Judge:** the default judge, or the stronger judge set in Settings for the base images or for all.
+
+**Generate again** on any image offers standard issues to tick (wrong pose, malformed feet, wrong
+culture or period, background not white, object in the hands, cropped...). Each ticked issue adds its fix
+to the new attempt and is checked by the judge.
+
+```python
+issues_run = world.submit(
+    hf.CharacterPacks(
+        subject_id=sohrab.id,
+        packs=["hero"],
+        casting=4,
+        approval="base",
+        selection=hf.Selection(rounds=1),
+    )
+)
+print(world.plan(hf.CharacterPacks(subject_id=sohrab.id, packs=["poses"], approval="base")).checkpoints)
+```
+
+**Clean up** (project page) deletes the candidates nobody chose, or a variation you dropped; an image
+still used by a reference, a scene or a sheet is always kept.
+

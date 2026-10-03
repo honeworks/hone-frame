@@ -56,6 +56,7 @@ class OutputRecord(Record):
     manual_note: str = ""
     reason: str = ""
     replaced_by: dict[str, str] | None = None  # {"run", "output"}: a person asked for it again
+    readings: list[str] = Field(default_factory=list[str])  # a casting hero's readings (change 0006)
     retries: int = 0
     error: str | None = None
     prompt: str = ""
@@ -144,12 +145,18 @@ def control(store: ProjectStore, run_id: str) -> str | None:
     return read_json(path).get("action") if path.is_file() else None
 
 
-def set_control(store: ProjectStore, run_id: str, action: str | None) -> None:
+def control_message(store: ProjectStore, run_id: str) -> str:
+    path = run_dir(store, run_id) / "control.json"
+    return str(read_json(path).get("message") or "") if path.is_file() else ""
+
+
+def set_control(store: ProjectStore, run_id: str, action: str | None, message: str = "") -> None:
+    """Ask a run to `pause` or `cancel`, or to wait for the person's `approve` (change 0006)."""
     path = run_dir(store, run_id) / "control.json"
     if action is None:
         path.unlink(missing_ok=True)
     else:
-        write_json(path, {"format_version": "1", "action": action, "at": now()})
+        write_json(path, {"format_version": "1", "action": action, "at": now(), "message": message})
 
 
 def is_live(store: ProjectStore, run: RunRecord) -> bool:
@@ -169,6 +176,9 @@ def status(store: ProjectStore, run: RunRecord, outs: list[OutputRecord]) -> tup
     """The run status, first match wins (design §9.1)."""
     action = control(store, run.id)
     live = run.state == "running" and is_live(store, run)
+    if action == "approve":  # a checkpoint of an approval mode (change 0006)
+        message = control_message(store, run.id) or "Waiting for your approval"
+        return ("pausing", message) if live else ("paused", message)
     if live:
         return ("pausing", f"will stop after the current call ({action})") if action else ("running", "")
     if run.state == "queued":

@@ -1,6 +1,6 @@
 // Characters (change 0003): the list, and each character's page with all its packs, its belongings and its
 // model sheet. "Generate assets" makes everything at once; each pack can be made again or added to.
-import { api, empty, failure, field, h, icon, img, presetOptions, projectPath, replace, select, toast, zoomable } from "../core.js";
+import { api, askToNotify, empty, failure, field, h, icon, img, issuePicker, presetOptions, projectPath, replace, runOptions, select, toast, zoomable } from "../core.js";
 import { subjectDialog } from "./subject_form.js";
 import { compareSection } from "./variations.js";
 
@@ -76,6 +76,7 @@ function hero(page) {
       h("div", { class: "row" }, h("span", { class: "chip" }, `${ready} of ${counts.length} images ready`),
         review ? h("span", { class: "pill needs_review" }, `${review} need your choice`) : null),
       (page.warnings || []).map((w) => h("div", { class: "notice warning" }, w)),
+      (page.approvals || []).map((a) => approvalNotice(a)),
       page.hero ? null : h("div", { class: "notice info" }, "Start here: press Generate assets. The hero is drawn first; every other image is made from it, on a white background."))));
 }
 
@@ -117,7 +118,8 @@ function itemTile(page, pack, item) {
     h("span", { class: `pill ${status === "not_made" ? "" : status}` }, ITEM_WORDS[status] || status)));
 }
 
-function itemDialog(page, pack, item) {
+async function itemDialog(page, pack, item) {
+  const issues = await issuePicker();
   const note = h("textarea", { class: "input", placeholder: "What was wrong and what you want instead, e.g. both hands empty, seen from directly behind" });
   const pick = async (imageId) => {
     try {
@@ -127,7 +129,7 @@ function itemDialog(page, pack, item) {
   };
   const again = async () => {
     try {
-      await api(`/runs/${projectId()}/${item.run}/rerun`, { method: "POST", body: { output: item.output, note: note.value } });
+      await api(`/runs/${projectId()}/${item.run}/rerun`, { method: "POST", body: { output: item.output, note: note.value, issues: issues.values() } });
       dialog.close(); toast(`${item.item}: a new attempt is queued.`); refresh();
     } catch (error) { failure(error); }
   };
@@ -140,7 +142,8 @@ function itemDialog(page, pack, item) {
       item.candidates.length ? h("div", { class: "candidates" }, item.candidates.map((c) => candidate(c, c.id === chosen, () => pick(c.id))))
         : h("p", { class: "muted" }, item.run ? "No candidates yet: it is still being made." : "Not made yet. Use Generate assets or Regenerate on this pack."),
       item.run ? h("div", { class: "stack", style: "gap:8px" },
-        field("None of these? Say what to change and generate it again", note),
+        h("div", { class: "overline" }, "None of these? Tick what is wrong, add a note, and generate it again"), issues.node,
+        field("Anything else", note),
         h("div", { class: "row" }, h("a", { href: `#/queue/${projectId()}/${item.run}`, onclick: () => dialog.close() }, "Open the run"), h("span", { class: "spacer" }),
           h("button", { class: "btn", onclick: () => dialog.close() }, "Close"),
           h("button", { class: "btn primary", onclick: again }, "Generate again")))
@@ -215,6 +218,8 @@ function generateDialog(page) {
   });
   const profile = select(presetOptions("profile"), "draft", { "aria-label": "Quality" });
   const rounds = h("input", { class: "input", type: "number", min: 1, max: 10, value: 2, "aria-label": "Attempts" });
+  const options = runOptions();
+  const casting = select([["4", "4, each a different reading of the description"], ["0", "1 per attempt"]], page.hero ? "0" : "4", { "aria-label": "Hero candidates" });
   const submit = async (event) => {
     event.preventDefault();
     const chosen = packs.filter((p) => boxes[p.id].checked).map((p) => p.id);
@@ -223,7 +228,8 @@ function generateDialog(page) {
     const redraw = boxes.hero.checked && Boolean(page.hero);
     if (!chosen.filter((p) => p !== "hero").length && !boxes.hero.checked) { toast("Tick at least one part.", true); return; }
     await generate(page, { packs: chosen.filter((p) => p !== "hero" || redraw), custom, redraw_hero: redraw, profile: profile.value,
-      selection: { rounds: Number(rounds.value) || 2 } });
+      selection: { rounds: Number(rounds.value) || 2 }, casting: Number(casting.value), ...options.values() });
+    askToNotify();
     dialog.close();
   };
   const dialog = h("dialog", { "aria-label": "Generate assets", style: "width:min(640px, calc(100vw - 32px))" },
@@ -231,6 +237,8 @@ function generateDialog(page) {
       h("h2", {}, `Generate assets for ${page.subject.name}`),
       h("p", { class: "caption", style: "margin:0" }, "Everything is made by default, on a plain white background. Untick what you don't want now; you can make any part again later."),
       h("div", { class: "stack", style: "gap:8px;max-height:52vh;overflow-y:auto" }, rows),
+      options.nodes,
+      field("Hero candidates", casting, "When a hero is drawn: candidates that really differ, so you can choose a face."),
       h("div", { class: "row", style: "flex-wrap:nowrap" }, field("Quality", profile, "Draft is fast; Final is slower and better at side and back views."),
         field("Attempts per image", rounds, "The judge keeps the best one.")),
       h("div", { class: "row" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", onclick: () => dialog.close() }, "Cancel"),
@@ -276,3 +284,14 @@ function addItem(page, pack, target) {
 
 function projectId() { return projectPath("").split("/")[2]; }
 function refresh() { window.dispatchEvent(new HashChangeEvent("hashchange")); }
+
+export function approvalNotice(a) {
+  const approve = async () => {
+    try { await api(`/runs/${projectId()}/${a.run}/resume`, { method: "POST", body: {} }); toast("Approved: the rest is being made."); refresh(); }
+    catch (error) { failure(error); }
+  };
+  return h("div", { class: "notice info row", style: "justify-content:space-between" },
+    h("span", {}, `${a.message}. Check it below (choose another candidate if needed), then approve.`),
+    h("button", { class: "btn small primary", onclick: approve }, "Approve and continue"));
+}
+

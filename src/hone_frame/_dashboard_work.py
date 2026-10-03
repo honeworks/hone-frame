@@ -133,6 +133,7 @@ def run_action(
                 note=str(data.get("note") or ""),
                 profile=data.get("profile") or None,
                 selection=selection,
+                issues=[str(i) for i in data.get("issues") or []],  # pyright: ignore[reportUnknownVariableType, reportUnknownArgumentType]
             )
         )
     return run_summary(getattr(store, action)(run_id))

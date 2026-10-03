@@ -17,6 +17,7 @@ from hone_frame.characters import (
 from hone_frame.errors import HoneFrameError
 from hone_frame.project_file import import_file, parse, project_file
 from hone_frame.requests import CharacterPacks
+from hone_frame.run_options import waiting_for_approval
 from hone_frame.workspace import Workspace
 
 
@@ -28,6 +29,7 @@ def home(ws: Workspace, project_id: str, **_: Any) -> dict[str, Any]:
         "characters": character_cards(store),
         "world": world(store),
         "scenes": [s.model_dump(mode="json") for s in store.scenes()],
+        "approvals": waiting_for_approval(store),
     }
 
 

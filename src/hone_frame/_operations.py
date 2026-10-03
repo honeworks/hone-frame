@@ -64,10 +64,13 @@ class ProjectOperations:
         note: str = "",
         profile: str | None = None,
         selection: Selection | None = None,
+        issues: list[str] | None = None,
     ) -> RunView:
         from hone_frame.control import rerun
 
-        return rerun(self._store, run_id, output_id, note=note, profile=profile, selection=selection)
+        return rerun(
+            self._store, run_id, output_id, note=note, profile=profile, selection=selection, issues=issues
+        )
 
     def pick(self, run_id: str, output_id: str, image_id: str, *, note: str = "") -> OutputRecord:
         from hone_frame.control import pick
@@ -117,20 +120,30 @@ class ProjectOperations:
         return self._store.update(variation=variation_id)
 
     def world_plan(
-        self, variation: str | None = None, *, profile: str = "", selection: Selection | None = None
+        self,
+        variation: str | None = None,
+        *,
+        profile: str = "",
+        selection: Selection | None = None,
+        options: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """What generating the whole world of a variation would make, and how long (change 0005)."""
         from hone_frame.world_runs import world_plan
 
-        return world_plan(self._store, variation, profile=profile, selection=selection)
+        return world_plan(self._store, variation, profile=profile, selection=selection, options=options)
 
     def generate_world(
-        self, variation: str | None = None, *, profile: str = "", selection: Selection | None = None
+        self,
+        variation: str | None = None,
+        *,
+        profile: str = "",
+        selection: Selection | None = None,
+        options: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Queue the whole world of a variation; its scenes follow the last character (change 0005)."""
         from hone_frame.world_runs import generate_world
 
-        return generate_world(self._store, variation, profile=profile, selection=selection)
+        return generate_world(self._store, variation, profile=profile, selection=selection, options=options)
 
     def project_file(self) -> dict[str, Any]:
         """The project as a project file (change 0004), ready to edit and import again."""

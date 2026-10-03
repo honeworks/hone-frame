@@ -242,3 +242,54 @@ export async function downloadProject(projectId) {
   } catch (error) { failure(error); }
 }
 
+// Options chosen when generation starts (change 0006): when to ask the person, and the stronger judge.
+export function runOptions() {
+  const approval = select([["base", "Approve the base images first (recommended)"], ["auto", "Run automatically"], ["each", "Approve each step"]], "base", { "aria-label": "When to check" });
+  const strong = state.settings?.strong_judge;
+  const judge = select([["default", "Default judge"], ["strong_base", strong ? `Stronger judge (${strong}) for base images` : "Stronger judge for base images (set one in Settings)"],
+    ["strong_all", strong ? `Stronger judge (${strong}) for everything` : "Stronger judge for everything (set one in Settings)"]], "default", { "aria-label": "Judge" });
+  if (!strong) for (const o of judge.options) if (o.value !== "default") o.disabled = true;
+  return {
+    nodes: [field("When to check", approval, "Approve the base: the hero (and belongings, poses' mannequins) first; you approve, then the rest is made from it."),
+      field("Judge", judge)],
+    values: () => ({ approval: approval.value, judge_mode: judge.value }),
+  };
+}
+
+// Standard issues for "Generate again" (change 0006): ticked ones fix the prompt and are judged.
+let issueList = null;
+export async function issuePicker() {
+  issueList = issueList || await api("/issues").catch(() => []);
+  const boxes = issueList.map((i) => [i, h("input", { type: "checkbox", value: i.id })]);
+  const groups = [...new Set(issueList.map((i) => i.group))];
+  return {
+    node: h("div", { class: "issue-grid" }, groups.map((g) => h("div", { class: "stack", style: "gap:4px" }, h("div", { class: "overline" }, g),
+      boxes.filter(([i]) => i.group === g).map(([i, box]) => h("label", { class: "row", style: "flex-wrap:nowrap;gap:6px" }, box, h("span", { class: "caption" }, i.label)))))),
+    values: () => boxes.filter(([, b]) => b.checked).map(([i]) => i.id),
+  };
+}
+
+// Desktop notifications (change 0006): when a run waits for approval, needs a choice, or finishes.
+const seen = new Map();
+export function askToNotify() {
+  try { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); } catch { /* not supported */ }
+}
+
+export function watchRuns() {
+  const tick = async () => {
+    try {
+      const ws = await api("/workspace");
+      for (const r of ws.queue.concat(await api(`/runs?scope=all`).catch(() => []))) {
+        const before = seen.get(r.id);
+        seen.set(r.id, r.status);
+        if (!before || before === r.status) continue;
+        const why = r.status === "paused" && /approval/i.test(r.reason || "") ? "waits for your approval"
+          : r.status === "needs_review" ? "needs your choice" : r.status === "done" ? "is done" : null;
+        if (why && "Notification" in window && Notification.permission === "granted") new Notification(`Hone Frame: ${r.title} ${why}`, { body: r.reason || "" });
+      }
+    } catch { /* the server may be restarting */ }
+    setTimeout(tick, 20000);
+  };
+  tick();
+}
+

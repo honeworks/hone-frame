@@ -29,24 +29,29 @@ def world_requests_all(
     *,
     profile: str = "",
     selection: Selection | None = None,
+    options: dict[str, Any] | None = None,
 ) -> list[RequestBase]:
-    """The world's places and objects without an image, then every character's packs."""
+    """The world's places and objects without an image, then every character's packs. `options`: the
+    approval mode and judge mode of every request (change 0006)."""
     v = variation_id(store, variation)
-    common: dict[str, Any] = {"variation": v, "profile": profile, "selection": selection}
+    common: dict[str, Any] = {"variation": v, "profile": profile, "selection": selection, **(options or {})}
     found: list[RequestBase] = [r.model_copy(update=common) for r in world_requests(store, None, v)]
     found += [CharacterPacks(subject_id=c.id, **common) for c in store.subjects("character")]
     return found
 
 
 def scene_requests(
-    store: ProjectStore, variation: str, *, profile: str = "", selection: Selection | None = None
+    store: ProjectStore,
+    variation: str,
+    *,
+    profile: str = "",
+    selection: Selection | None = None,
+    options: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     """A shot of every scene, as requests to submit once the characters are made."""
+    common: dict[str, Any] = {"variation": variation, "profile": profile, "selection": selection}
     return [
-        SceneShot(scene_id=s.id, variation=variation, profile=profile, selection=selection).model_dump(
-            mode="json"
-        )
-        for s in store.scenes()
+        SceneShot(scene_id=s.id, **common, **(options or {})).model_dump(mode="json") for s in store.scenes()
     ]
 
 
@@ -56,11 +61,12 @@ def world_plan(
     *,
     profile: str = "",
     selection: Selection | None = None,
+    options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """What a whole-world run would make, and how long it should take (nothing is written)."""
     v = variation_id(store, variation)
     rows: list[dict[str, Any]] = []
-    for request in world_requests_all(store, v, profile=profile, selection=selection):
+    for request in world_requests_all(store, v, profile=profile, selection=selection, options=options):
         planned = plan(store, request)
         counts = planned.counts
         rows.append(
@@ -96,17 +102,18 @@ def generate_world(
     *,
     profile: str = "",
     selection: Selection | None = None,
+    options: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Submit the whole world of a variation; its scenes follow the last character's run."""
     v = variation_id(store, variation)
     run_ids: list[str] = []
     skipped: list[str] = []
-    for request in world_requests_all(store, v, profile=profile, selection=selection):
+    for request in world_requests_all(store, v, profile=profile, selection=selection, options=options):
         try:
             run_ids.append(store.submit(request).id)
         except HoneFrameError as exc:  # one subject that cannot run does not stop the world
             skipped.append(f"{request.task}: {exc}")
-    scenes = scene_requests(store, v, profile=profile, selection=selection)
+    scenes = scene_requests(store, v, profile=profile, selection=selection, options=options)
     if run_ids and scenes:
         set_follow_up(store, run_ids[-1], scenes)
     return {

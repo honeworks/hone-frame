@@ -251,6 +251,11 @@ SECTION: dict[str, Callable[[Ctx], str]] = {
     "background": _labelled("", "background"),
     "look": look,
     "must": must,
+    "alone": lambda c: (
+        "The object alone: no person, no hands, nobody holding, wearing or riding it"
+        if c.inputs.get("object_alone")
+        else ""
+    ),
     "props": lambda c: (
         "Empty hands: no weapon, tool or object held or carried" if c.inputs.get("empty_hands") else ""
     ),

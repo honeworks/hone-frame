@@ -38,11 +38,12 @@ src/hone_frame/
   project_file.py                        project files (TOML/JSON): import by name, write back
   variations.py  world_runs.py           variations of a world; whole-world runs and follow-ups
   recipes_objects.py  data/object_packs.toml  pose_library.py   object packs; mannequin pose references
+  run_options.py  casting.py  issues.py  data/issues.toml  cleanup.py  approvals, casting, issues, clean-up
   references.py  planning.py             reference roles and limits, plans
   prompts.py  prompt_sections.py  dialects.py  data/prompting.toml   prompts per model dialect, task and style
   judging.py  pick.py                    judging profiles and verdicts, hone-select picks
   engine.py  control.py  runs.py        the hone-flow workflow and Runner; submit / pause / resume / pick; run records
-  produce.py  produce_refs.py  candidates.py  the rounds of one output, its references, one candidate
+  produce.py  produce_prompt.py  produce_refs.py  candidates.py  rounds of one output, its prompt, references, a candidate
   events.py                              events, estimates, usage
   sheets.py  sheets_model.py  exports.py   the Pillow compositor and model sheet, zip exports
   ports.py  models.py                    the Models port; HoneModels (hone-models)

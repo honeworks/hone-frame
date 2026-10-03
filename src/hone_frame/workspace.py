@@ -29,6 +29,7 @@ class Settings(Record):
     theme: Literal["light", "dark", "system"] = "system"
     max_reference_px: int = Field(default=1536, ge=256, le=8192)
     port: int = 8792
+    strong_judge: str | None = None  # a stronger vision model for the judge options of change 0006
 
 
 class Workspace:

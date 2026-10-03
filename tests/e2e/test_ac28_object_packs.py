@@ -17,6 +17,7 @@ def test_objects_have_their_own_pack(tmp_path: Path) -> None:
     assert [o.item for o in plan.outputs] == ["Hero", "Front", "Side", "Back", "Top", "Detail"]
     assert all(o.depends_on[0].output == plan.outputs[0].id for o in plan.outputs[1:])
     assert "distinctive detail fills the frame" in plan.outputs[-1].prompt_inputs["framing"]
+    assert all(o.prompt_inputs["object_alone"] and "object_alone" in o.conditions for o in plan.outputs)
     p.submit(hf.CharacterPacks(subject_id=rakhsh.id, selection=hf.Selection(rounds=1)))
     run_all(p)
     assert p.world_plan()["runs"][0]["title"] != "Rakhsh character packs"  # Rakhsh has its hero now

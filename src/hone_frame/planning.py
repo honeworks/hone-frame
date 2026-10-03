@@ -55,6 +55,12 @@ def plan(store: ProjectStore, request: RequestBase | dict[str, Any]) -> Plan:
     checker = ModelCheck(store, profile, errors, warnings)
     outputs = [checker.finish(o) for o in built.outputs]
     checker.judge(selection.auto_judge)
+    if request.judge_mode != "default":
+        strong = store.workspace.settings.strong_judge
+        if strong is None:
+            errors.append("no stronger judge is set: choose one in Settings, or use the default judge")
+        else:
+            checker.info(strong, "stronger judge")
     if selection.auto_pick and not selection.auto_judge:
         errors.append("automatic pick needs automatic judging: turn the judge on, or pick by hand")
     if not outputs and not errors:
@@ -72,6 +78,9 @@ def plan(store: ProjectStore, request: RequestBase | dict[str, Any]) -> Plan:
         errors=list(dict.fromkeys(errors)),
         sheet_layout=built.sheet_layout,
         variation=built.choices.variation.id,
+        approval=request.approval,
+        judge_mode=request.judge_mode,
+        checkpoints=checkpoints(outputs, request.approval),
     )
     result.estimate = estimate_plan(store.workspace, result)
     return result
@@ -189,3 +198,22 @@ def _title(store: ProjectStore, request: RequestBase, outputs: list[PlannedOutpu
     if sequence_id := getattr(request, "sequence_id", None):
         return store.sequence(sequence_id).name
     return outputs[0].label if outputs else "Generation"
+
+
+def checkpoints(outputs: list[PlannedOutput], approval: str) -> list[str]:
+    """Where an approval mode waits for the person (change 0006). `base`: after the outputs that others
+    depend on (a hero, a belonging's hero, the pose mannequins), once each run of them ends; `each`: also
+    after every pack."""
+    if approval == "auto":
+        return []
+    sources = {d.output for o in outputs for d in o.depends_on}
+    points: list[str] = []
+    for i, out in enumerate(outputs):
+        nxt = outputs[i + 1] if i + 1 < len(outputs) else None
+        if (out.id in sources and (nxt is None or nxt.id not in sources)) or (
+            approval == "each"
+            and nxt is not None
+            and (nxt.pack, nxt.subjects[:1]) != (out.pack, out.subjects[:1])
+        ):
+            points.append(out.id)
+    return points

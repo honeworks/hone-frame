@@ -15,12 +15,15 @@ export async function render(main) {
   const retries = h("input", { class: "input", type: "number", min: 0, max: 5, value: d.selection.technical_retries });
   const pack = select(presetOptions("style_pack"), project.style_pack);
   const theme = select([["system", "Follow the system"], ["light", "Light"], ["dark", "Dark"]], state.settings?.theme || "system");
+  const models = await api("/models").catch(() => ({ chat: [] }));
+  const vision = (models.chat || []).filter((m) => m.vision);
+  const strong = select([["", "None"], ...vision.map((m) => [m.id, `${m.id}${m.local ? "" : " (hosted)"}`])], state.settings?.strong_judge || "", { "aria-label": "Stronger judge" });
   const save = async () => {
     try {
       await api(projectPath(), { method: "PATCH", body: { style_pack: pack.value, defaults: { ...d, profile: profile.value, selection: {
         strategy: strategy.value, rounds: Number(rounds.value), candidates: Number(candidates.value), stop: stop.value,
         auto_judge: judge.input.checked, auto_pick: pick.input.checked, technical_retries: Number(retries.value) } } } });
-      state.settings = await api("/workspace/settings", { method: "PATCH", body: { theme: theme.value } });
+      state.settings = await api("/workspace/settings", { method: "PATCH", body: { theme: theme.value, strong_judge: strong.value || null } });
       applyTheme(theme.value);
       toast("Settings saved. New requests use them; running jobs keep theirs.");
     } catch (error) { failure(error); }
@@ -34,6 +37,7 @@ export async function render(main) {
       h("div", { class: "setting" }, h("div", {}, h("div", { style: "font-weight:500" }, "Auto judge"), h("div", { class: "caption" }, "Evaluate every candidate with the judge model")), judge.node),
       h("div", { class: "setting" }, h("div", {}, h("div", { style: "font-weight:500" }, "Auto pick"), h("div", { class: "caption" }, "Needs the judge: picks the best candidate that passes")), pick.node)),
     h("section", { class: "panel span-6 stack" }, h("h2", {}, "Appearance"), field("Theme", theme),
+      field("Stronger judge", strong, "A vision model offered as the judge for base images or for everything when generation starts. On this machine none is clearly better than the default; a hosted one needs its API key."),
       h("hr", { class: "divider" }), h("h2", {}, "Connections"),
       h("p", { class: "caption" }, "Models come from hone-models: its packaged catalogue, ~/.config/hone/models.toml and ./hone-models.toml. API keys stay in environment variables or .env, and are never shown or exported here."),
       h("hr", { class: "divider" }), h("h2", {}, "Workspace"), h("p", { class: "mono caption" }, project.id))));

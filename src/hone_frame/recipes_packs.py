@@ -138,6 +138,14 @@ def character_packs(store: ProjectStore, request: CharacterPacks, built: Built) 
         extra = request.custom.get(name, [])
         for item in pack_items(store, subject, name, extra, only_extra=request.only_custom):
             maker.item(name, item)
+    _base_first(built)
+
+
+def _base_first(built: Built) -> None:
+    """The outputs others are made from (the hero, belongings' heroes, the pose mannequins) first, in
+    their order, so an approval mode asks once before the rest (change 0006)."""
+    sources = {d.output for o in built.outputs for d in o.depends_on}
+    built.outputs.sort(key=lambda o: 0 if o.id in sources else 1)
 
 
 HELD = re.compile(
@@ -201,6 +209,8 @@ class _PackMaker:
     def hero(self) -> dict[str, Any]:
         own = [self.ref(i, self.subject, "identity") for i in self.subject.reference_images]
         spec = {"item": "Hero", **packs()["hero"].items[0]}
+        if self.request.casting >= 2:  # distinct readings, one per candidate (change 0006)
+            spec |= {"casting": True, "candidates": self.request.casting}
         out = self._add("hero", spec, references=own, conditions=["identity_ref"] if own else [])
         return {"depends_on": [Dependency(output=out.id, role="identity")]}
 
