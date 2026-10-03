@@ -6,17 +6,17 @@ export async function render(main) {
   const projects = await api("/projects");
   const name = h("input", { class: "input", required: true, placeholder: "Morning at home" });
   const brief = h("textarea", { class: "input", placeholder: "What the project is about." });
-  const direction = h("input", { class: "input", placeholder: "Visual direction: soft, natural, lived-in" });
+  const direction = h("input", { class: "input", placeholder: "Costume, materials and buildings of this world, in plain sentences" });
   const pack = select(presetOptions("style_pack"), "cinematic-realism");
   const form = h("form", { class: "stack", onsubmit: async (e) => {
     e.preventDefault();
     try {
-      const created = await api("/projects", { method: "POST", body: { name: name.value, brief: brief.value, direction: direction.value, style_pack: pack.value } });
+      const created = await api("/projects", { method: "POST", body: { name: name.value, brief: brief.value, look: direction.value, style_pack: pack.value } });
       setProject(created.id);
       window.dispatchEvent(new Event("hf:projects"));
       location.hash = "#/project";
     } catch (error) { failure(error); }
-  } }, field("Name", name), field("Brief", brief), field("Visual direction", direction), field("Style pack", pack, "Every preset can still be changed per request."),
+  } }, field("Name", name), field("Brief", brief), field("Look guide", direction, "What things in this world look like: culture, period, costume, materials. Concrete words."), field("First style", pack, "You can add more variations (styles) later."),
     h("button", { class: "btn primary", type: "submit" }, "Create project"));
   const filter = h("input", { class: "input", type: "search", placeholder: "Search projects", "aria-label": "Search projects" });
   const list = h("div", { class: "stack" });

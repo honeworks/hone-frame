@@ -52,6 +52,9 @@ export function subjectDialog(kind, subject, { owner } = {}) {
   const description = h("textarea", { class: "input", value: subject?.description || "" });
   const inputs = Object.fromEntries((FIELDS[kind] || []).map(([key]) =>
     [key, h("textarea", { class: "input", style: "min-height:64px", value: text(subject?.fields?.[key]) })]));
+  const listBox = (value, placeholder) => h("textarea", { class: "input", style: "min-height:56px", value: (value || []).join("\n"), placeholder });
+  const must = listBox(subject?.must, "One per line, e.g. onyx armlet on the right upper arm");
+  const never = listBox(subject?.never, "One per line, e.g. plate armour, a cape");
   const states = h("div", { class: "stack", style: "gap:8px" });
   const remove = (row) => row.remove();
   for (const state of subject?.states || []) states.append(stateRow(state, remove));
@@ -66,7 +69,8 @@ export function subjectDialog(kind, subject, { owner } = {}) {
       if (input.value.trim()) fields[key] = parsed(before, input.value); else delete fields[key];
     }
     const rows = [...states.children].map((row) => row.read()).filter((s) => s.name);
-    const body = { name: name.value.trim(), description: description.value.trim(), fields, states: rows };
+    const lines = (box) => box.value.split("\n").map((x) => x.trim()).filter(Boolean);
+    const body = { name: name.value.trim(), description: description.value.trim(), fields, states: rows, must: lines(must), never: lines(never) };
     try {
       if (subject) await api(projectPath(`/subjects/${subject.id}`), { method: "PATCH", body });
       else await api(projectPath("/subjects"), { method: "POST", body: { kind, ...body, ...(owner ? { owner } : {}) } });
@@ -83,6 +87,8 @@ export function subjectDialog(kind, subject, { owner } = {}) {
       field("Name", name),
       field("Description", description, "Who or what this is, in a few sentences."),
       (FIELDS[kind] || []).map(([key, label, hint]) => field(label, inputs[key], hint)),
+      h("div", { class: "row", style: "flex-wrap:nowrap;align-items:flex-start" },
+        field("Always shown", must, "Checked by the judge in every image."), field("Never shown", never, "The judge fails an image that has one.")),
       h("div", { class: "row" }, h("h3", {}, "States"), h("span", { class: "spacer" }), addState),
       h("p", { class: "caption", style: "margin:0" }, "Named changes that keep the identity: an outfit, helmet on or off, wet, damaged."),
       states,

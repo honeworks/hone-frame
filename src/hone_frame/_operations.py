@@ -116,6 +116,22 @@ class ProjectOperations:
         self._store.info.variation_of(variation_id)
         return self._store.update(variation=variation_id)
 
+    def world_plan(
+        self, variation: str | None = None, *, profile: str = "", selection: Selection | None = None
+    ) -> dict[str, Any]:
+        """What generating the whole world of a variation would make, and how long (change 0005)."""
+        from hone_frame.world_runs import world_plan
+
+        return world_plan(self._store, variation, profile=profile, selection=selection)
+
+    def generate_world(
+        self, variation: str | None = None, *, profile: str = "", selection: Selection | None = None
+    ) -> dict[str, Any]:
+        """Queue the whole world of a variation; its scenes follow the last character (change 0005)."""
+        from hone_frame.world_runs import generate_world
+
+        return generate_world(self._store, variation, profile=profile, selection=selection)
+
     def project_file(self) -> dict[str, Any]:
         """The project as a project file (change 0004), ready to edit and import again."""
         from hone_frame.project_file import project_file

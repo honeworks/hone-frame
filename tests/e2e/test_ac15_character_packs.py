@@ -14,13 +14,15 @@ def test_every_pack_from_one_hero(ws: hf.Workspace) -> None:
     assert not plan.errors
     hero, *rest = plan.outputs
     assert (hero.pack, hero.item, hero.depends_on) == ("hero", "Hero", [])
-    assert [o.pack for o in rest if o.pack == "hero"] == []
-    assert all(o.depends_on[0].output == hero.id for o in rest if o.pack not in ("assets", "pose-library"))
-    assert {o.pack for o in plan.outputs} == (set(packs()) - {"states"}) | {"pose-library"}  # no other states
+    assert [o.pack for o in rest if o.pack == "hero" and o.kind == "character"] == []
+    character = [o for o in rest if o.kind in ("character", "interaction")]  # objects follow their own hero
+    assert all(o.depends_on[0].output == hero.id for o in character)
+    expected = (set(packs()) - {"states", "assets"}) | {"pose-library", "views"}  # objects: hero and views
+    assert {o.pack for o in plan.outputs} == expected  # Rostam has no other states
     assert [o.item for o in rest if o.pack == "outfits"] == ["Feast"]
     assert [o.item for o in rest if o.pack == "actions"] == ["Mace"]
     action = next(o for o in rest if o.pack == "actions")
-    mace = next(o for o in rest if o.pack == "assets")
+    mace = next(o for o in rest if o.pack == "hero" and o.kind == "asset")  # the belonging's own hero
     assert {d.output for d in action.depends_on} == {hero.id, mace.id}  # the belonging as an object
 
 
@@ -66,7 +68,10 @@ def test_bad_requests_are_named(ws: hf.Workspace) -> None:
         "takes no items"
         in p.plan(hf.CharacterPacks(subject_id="char_001", custom={"assets": ["a shield"]})).errors[0]
     )
-    assert "packs are made for characters" in p.plan(hf.CharacterPacks(subject_id="obj_001")).errors[0]
+    assert (
+        "packs are made for characters and objects"
+        in p.plan(hf.CharacterPacks(subject_id="env_001")).errors[0]
+    )
 
 
 def test_custom_items_need_their_pack(ws: hf.Workspace) -> None:

@@ -91,7 +91,8 @@ def view(c: Ctx) -> str:
         return ""
     part = c.parts[0]
     noun = NOUN.get(str(part.get("kind")), "subject")
-    where = str(c.camera.get("view") or "from the same angle")
+    words = str(c.inputs.get("camera") or "").strip().rstrip(",")  # a free-text view (objects, 0005)
+    where = str(c.camera.get("view") or words or "from the same angle")
     lead = f"now {c.inputs['pose']}, " if _pose_leads(c) else ""  # an edit model keeps the pose it is shown
     mannequin = next((n for n, (r, _) in enumerate(c.refs, 1) if r.role == "pose"), None)
     if lead and mannequin:  # the pose library's mannequin shows it (change 0005)

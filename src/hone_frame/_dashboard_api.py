@@ -100,6 +100,8 @@ def create_project(ws: Workspace, *, body: Any, **_: Any) -> dict[str, Any]:
         direction=str(data.get("direction", "")),
         style_pack=str(data.get("style_pack") or "cinematic-realism"),
     )
+    if data.get("look"):
+        store.update(look=str(data["look"]))
     return store.info.model_dump(mode="json")
 
 

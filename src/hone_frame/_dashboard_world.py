@@ -6,7 +6,7 @@ from typing import Any
 
 from hone_frame._dashboard_api import ID, P, api, json_body
 from hone_frame._dashboard_data import image_card
-from hone_frame.characters import variation_id
+from hone_frame.characters import belonging_row, variation_id
 from hone_frame.recipes_packs import accepted_hero
 from hone_frame.records import Selection
 from hone_frame.workspace import Workspace
@@ -70,6 +70,13 @@ def generate_all(ws: Workspace, project_id: str, *, body: Any, **_: Any) -> dict
     store = ws.project(project_id)
     return generate_world(store, data.get("variation") or None, profile=str(data.get("profile") or ""),
                           selection=_selection(data))  # fmt: skip
+
+
+@api("GET", P + "/objects/" + ID)
+def object_row(ws: Workspace, project_id: str, subject_id: str, **_: Any) -> dict[str, Any]:
+    """An object's hero and views in the active variation, as a page section (change 0005)."""
+    store = ws.project(project_id)
+    return belonging_row(store, store.subject(subject_id), variation_id(store, None))
 
 
 @api("GET", P + "/subjects/" + ID + "/compare")

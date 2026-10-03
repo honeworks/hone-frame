@@ -11,10 +11,17 @@ from pydantic import BaseModel, Field
 from hone_frame._dashboard_data import image_card
 from hone_frame.errors import HoneFrameError
 from hone_frame.profiles import resolve_profile
-from hone_frame.recipes_packs import accepted_hero, carried_objects, owned_assets, pack_items, packs
+from hone_frame.recipes_packs import (
+    accepted_hero,
+    carried_objects,
+    owned_assets,
+    pack_items,
+    packs,
+    unstable_features,
+)
 from hone_frame.records import ImageRecord, Scene, SceneRef, SheetRecipe, Subject
 from hone_frame.references import ACCEPTED
-from hone_frame.requests import RequestBase, SubjectReferences
+from hone_frame.requests import CharacterPacks, RequestBase, SubjectReferences
 from hone_frame.runs import OutputRecord, RunView, all_runs, view
 from hone_frame.sheets import MODEL_SHEET
 
@@ -100,27 +107,62 @@ def character_page(store: ProjectStore, subject_id: str, variation: str | None =
     rows: list[dict[str, Any]] = []
     for name, pack in packs().items():
         if name == "assets":
-            continue  # the character's assets are their own subjects, listed below
+            continue  # the belongings get a section each, below (change 0005)
         defaults = [
             str(i["item"])
             for i in ([{"item": "Hero"}] if name == "hero" else pack_items(store, subject, name, []))
         ]
-        extra = sorted({k[1] for k in (*latest, *accepted) if k[0] == name} - set(defaults))
-        items = [
-            _item_view(store, (name, i), latest.get((name, i)), accepted.get((name, i)))
-            for i in defaults + extra
-        ]
+        items = _items(store, name, defaults, latest, accepted)
         rows.append({"id": name, "label": pack.label, "description": pack.description,
                      "custom": pack.custom, "items": items})  # fmt: skip
+    rows += [belonging_row(store, a, v) for a in owned_assets(store, subject_id)]
     return {
         "subject": subject.model_dump(mode="json"),
-        "warnings": carried_objects(subject),
+        "warnings": carried_objects(subject) + unstable_features(subject),
         "variation": v,
         "hero": image_card(store, store.image(h)) if (h := accepted_hero(store, subject_id, v)) else None,
         "packs": rows,
         "assets": [world_card(store, a, v) for a in owned_assets(store, subject_id)],
         "sheet": _sheet_of(store, subject_id, v),
     }
+
+
+def _items(
+    store: ProjectStore,
+    name: str,
+    defaults: list[str],
+    latest: dict[tuple[str, str], dict[str, Any]],
+    accepted: dict[tuple[str, str], ImageRecord],
+) -> list[dict[str, Any]]:
+    """A pack's item views: its default items, then any others made for it."""
+    extra = sorted({k[1] for k in (*latest, *accepted) if k[0] == name} - set(defaults))
+    return [
+        _item_view(store, (name, i), latest.get((name, i)), accepted.get((name, i))) for i in defaults + extra
+    ]
+
+
+def belonging_row(store: ProjectStore, asset: Subject, v: str) -> dict[str, Any]:
+    """A belonging as a section of its character's page (change 0005): its hero and its views together,
+    like a pack; its images are its own (the asset's), made before the actions that use it."""
+    latest = {_object_key(k): x for k, x in _latest_outputs(store, asset.id, v).items()}
+    accepted = {_object_key(k): x for k, x in _accepted(store, asset.id, v).items()}
+    views = packs("asset")["views"]
+    rows: list[dict[str, Any]] = []
+    for name, defaults in (("hero", ["Hero"]), ("views", [str(i["item"]) for i in views.items])):
+        rows += _items(store, name, defaults, latest, accepted)
+    return {
+        "id": f"belonging:{asset.id}",
+        "label": f"Belonging: {asset.name}",
+        "description": asset.description or "An object that belongs to this character.",
+        "custom": "camera",
+        "subject": asset.id,
+        "items": rows,
+    }
+
+
+def _object_key(key: tuple[str, str]) -> tuple[str, str]:
+    """A belonging's image from before change 0005 (pack "assets") is its hero."""
+    return ("hero", "Hero") if key[0] == "assets" else key
 
 
 def character_cards(store: ProjectStore, variation: str | None = None) -> list[dict[str, Any]]:
@@ -158,12 +200,18 @@ def world(store: ProjectStore, variation: str | None = None) -> list[dict[str, A
 
 def world_requests(
     store: ProjectStore, subject_ids: list[str] | None, variation: str | None = None
-) -> list[SubjectReferences]:
+) -> list[SubjectReferences | CharacterPacks]:
     """One reference request per chosen world asset; by default those without an accepted hero."""
     v = variation_id(store, variation)
     if subject_ids is None:
         subject_ids = [s["id"] for s in world(store, v) if s["hero"] is None]
-    return [SubjectReferences(subject_id=i, variation=v) for i in subject_ids]
+    kinds = {s.id: s.kind for s in store.subjects()}
+    return [  # objects get their hero and views (change 0005); places their presentation
+        CharacterPacks(subject_id=i, variation=v)
+        if kinds.get(i) == "asset"
+        else SubjectReferences(subject_id=i, variation=v)
+        for i in subject_ids
+    ]
 
 
 # ------------------------------------------------------------------------------------------ model sheet
