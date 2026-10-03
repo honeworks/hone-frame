@@ -23,11 +23,16 @@ from hone_frame.testing import FakeModels
 
 ws = hf.Workspace(Path(tempfile.mkdtemp()) / "studio", models=FakeModels())
 world = ws.create_project("Rostam and Sohrab", style_pack="historical-epic")
-world.update(look="Knee-length lamellar coats laced with red cord over silk kaftans with roundel patterns, "
-             "conical segmented steel helmets with mail curtains, loose trousers gathered at the ankle.")
+world.update(
+    look="Knee-length lamellar coats laced with red cord over silk kaftans with roundel patterns, "
+    "conical segmented steel helmets with mail curtains, loose trousers gathered at the ankle."
+)
 sohrab = world.add_subject(
-    "character", "Sohrab", description="a young warrior of seventeen",
-    must=["an onyx armlet with a gold setting on the right upper arm"], never=["plate armour", "a cape"],
+    "character",
+    "Sohrab",
+    description="a young warrior of seventeen",
+    must=["an onyx armlet with a gold setting on the right upper arm"],
+    never=["plate armour", "a cape"],
 )
 print([v.id for v in world.info.all_variations()])  # ['main']
 
