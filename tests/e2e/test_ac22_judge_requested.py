@@ -26,8 +26,6 @@ def test_the_judge_is_told_what_was_asked(rostam_project: hf.ProjectStore) -> No
 
 
 def test_the_judge_writes_its_finding_before_its_verdict() -> None:
-    from hone_frame.judging import CheckAnswer, answer_schema
-
     schema = CheckAnswer.model_json_schema()
     assert list(schema["properties"])[:2] == ["finding", "verdict"] and schema["required"] == [
         "finding",
