@@ -226,3 +226,14 @@ def test_the_look_guide_only_where_people_are_drawn(tmp_path: Path) -> None:
     catalog = ws.presets
     names = {k: [c["name"] for c in checks_for(catalog, o)] for k, o in outs.items()}
     assert "solo" in names["hero"] and "no_people" in names["place"] and "object_alone" in names["object"]
+
+
+def test_solo_only_on_heroes(rostam_project: hf.ProjectStore) -> None:
+    rostam = rostam_project.subjects("character")[0]
+    packs_plan = rostam_project.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["hero", "poses"]))
+    refs_plan = rostam_project.plan(hf.SubjectReferences(subject_id=rostam.id))
+    for out in [*packs_plan.outputs, *refs_plan.outputs]:
+        if out.kind != "character":
+            continue
+        hero = out.label == "Hero"
+        assert ("solo" in out.conditions) is hero and bool(out.prompt_inputs.get("solo")) is hero, out.label

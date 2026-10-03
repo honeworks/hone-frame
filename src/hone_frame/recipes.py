@@ -52,13 +52,8 @@ def reference_look(kind: str) -> tuple[dict[str, Any], list[str]]:
     if kind == "environment":
         return {"empty_place": True}, ["empty_place"]
     hands = kind == "character"
-    look: dict[str, Any] = {
-        "background": WHITE,
-        "empty_hands": hands,
-        "solo": hands,
-        "object_alone": not hands,
-    }
-    flags = ["clean_background"] + (["no_props", "solo"] if hands else ["object_alone"])  # solo: heroes only
+    look: dict[str, Any] = {"background": WHITE, "empty_hands": hands, "object_alone": not hands}
+    flags = ["clean_background"] + (["no_props"] if hands else ["object_alone"])  # `solo`: heroes, by caller
     return look, flags
 
 
