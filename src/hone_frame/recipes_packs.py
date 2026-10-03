@@ -94,14 +94,7 @@ def pack_items(
             key = "outfit" if state.kind == "outfit" else "state"
             items.append({"item": state.name, key: words, **CUSTOM[key]})
     if pack.from_assets:
-        for asset in owned_assets(store, subject.id):
-            if name == "actions":
-                size = str(asset.fields.get("scale") or "").strip()
-                about = ", ".join(x for x in (f"{asset.name}: {asset.description}".rstrip(": "), size) if x)
-                text = f"{subject.name} holds and uses {about}"
-                items.append({"item": asset.name, "action": text, "asset_id": asset.id, **CUSTOM["action"]})
-            else:
-                items.append({"item": asset.name, "asset_id": asset.id})
+        items += _asset_items(store, subject, name)
     if extra and pack.custom is None:
         raise InvalidRequest(f"the {pack.label} pack takes no items of your own")
     kind = str(pack.custom)
@@ -109,6 +102,20 @@ def pack_items(
         if text.strip():
             items.append({"item": text.strip(), kind: text.strip(), **CUSTOM[kind]})
     return [i | {"framing": pack.framing} if pack.framing and "framing" not in i else i for i in items]
+
+
+def _asset_items(store: ProjectStore, subject: Subject, name: str) -> list[dict[str, Any]]:
+    """One item per owned object: its own pack, or an action with it (never with a worn one, 0007)."""
+    from hone_frame.recipes_elements import action_text, is_worn  # noqa: PLC0415 - imports this module
+
+    items: list[dict[str, Any]] = []
+    for asset in owned_assets(store, subject.id):
+        if name == "actions" and not is_worn(asset):  # a crown is worn, not used
+            text = action_text(subject, asset)
+            items.append({"item": asset.name, "action": text, "asset_id": asset.id, **CUSTOM["action"]})
+        elif name != "actions":
+            items.append({"item": asset.name, "asset_id": asset.id})
+    return items
 
 
 def character_packs(store: ProjectStore, request: CharacterPacks, built: Built) -> None:
@@ -200,6 +207,9 @@ class _PackMaker:
         self.identity: dict[str, Any] = {}
         self.asset_outputs: dict[str, str] = {}  # asset id -> its output in this request
         self.mannequins: dict[str, str] = {}  # pose -> its mannequin's output in this request
+        from hone_frame.identity import build_class  # noqa: PLC0415 - small, no cycle
+
+        self.build = build_class(subject.parameters)  # the mannequins' build (change 0007)
 
     def ref(self, image_id: str, subject: Subject, role: str) -> PlannedRef:
         return PlannedRef.model_validate(
@@ -223,8 +233,9 @@ class _PackMaker:
         flags += ["state"] if spec.get("state") or spec.get("outfit") else []
         if pack == "poses" and spec.get("pose"):  # the mannequin of the pose library (change 0005)
             words = fragment(self.built.choices, "pose", str(spec["pose"]))
-            for k, v in pose_reference(self.store, self.built, words, self.mannequins).items():
+            for k, v in pose_reference(self.store, self.built, words, self.mannequins, self.build).items():
                 fields.setdefault(k, []).extend(v)
+        self._element(pack, spec, fields)
         if asset_id := spec.get("asset_id"):  # an action: its belonging is the object reference
             v = self.built.choices.variation.id
             image = None if asset_id in self.asset_outputs else accepted_hero(self.store, asset_id, v)
@@ -240,6 +251,24 @@ class _PackMaker:
             flags.append("object_ref")
         self._add(pack, spec, conditions=flags, **fields)
 
+    def _element(self, pack: str, spec: dict[str, Any], fields: dict[str, Any]) -> None:
+        """Change 0007: an action's mannequin (its use pose); a worn element's hero as a reference in a
+        full-figure view that is not a pose, when the model has a free slot."""
+        from hone_frame.recipes_elements import element_reference, mannequin_pose  # noqa: PLC0415
+
+        if pack == "actions" and spec.get("asset_id"):
+            if pose := mannequin_pose(self.store.subject(spec["asset_id"])):
+                for k, v in pose_reference(self.store, self.built, pose, self.mannequins, self.build).items():
+                    fields.setdefault(k, []).extend(v)
+            return
+        if (
+            pack not in ("turnaround", "outfits", "states")
+            or len(fields.get("depends_on", [])) + len(fields.get("references", [])) >= 2
+        ):
+            return
+        if found := element_reference(self.store, self.subject, self.built.choices.variation.id):
+            fields.setdefault("references", []).append(self.ref(found[1], found[0], "object"))
+
     def _asset(self, spec: dict[str, Any]) -> None:
         """A belonging's whole object pack, before the actions that use it (change 0005): its hero
         (unless one is accepted) and its views."""
@@ -254,7 +283,9 @@ class _PackMaker:
         self, pack: str, spec: dict[str, Any], *, who: Subject | None = None, **fields: Any
     ) -> PlannedOutput:
         subject = who or self.subject
-        values = {k: v for k, v in spec.items() if k not in ("item", "asset_id", "outfit", "state")}
+        values = {
+            k: v for k, v in spec.items() if k not in ("item", "asset_id", "outfit", "state", "pose_kind")
+        }
         empty_hands = packs()[pack].empty_hands and subject.kind == "character"
         action = pack == "actions"
         flags = list(fields.pop("conditions", [])) + view_flags(values.get("camera"))
@@ -262,9 +293,18 @@ class _PackMaker:
         solo = subject.kind == "character" and pack == "hero"  # drawn anew: only this character (D-039)
         flags += ["solo"] if solo else []
         links = [SubjectLink(subject_id=subject.id, version=subject.version)]
+        drawn: list[tuple[Subject, str | None]] = [
+            (subject, spec.get("state") if subject.kind == "character" else None)
+        ]
         if action and spec.get("asset_id"):
             asset = self.store.subject(spec["asset_id"])
             links.append(SubjectLink(subject_id=asset.id, version=asset.version))
+            drawn.append((asset, None))  # its must and never are checked too (change 0007, cause F)
+        from hone_frame.recipes_elements import worn_lines  # noqa: PLC0415 - imports this module
+
+        close = pack == "expressions"
+        worn = worn_lines(self.store, subject, close) if subject.kind == "character" else []
+        extra = {"worn": worn, "tags": [f"view:{spec['item']}"], "pose_kind": spec.get("pose_kind")}
         return self.built.add(
             spec["item"],
             "interaction" if action else subject.kind,
@@ -276,9 +316,10 @@ class _PackMaker:
             prompt_inputs=base_inputs(
                 self.built.choices,
                 self.request,
-                who=[(subject, spec.get("state") if subject.kind == "character" else None)],
+                who=drawn,
                 reference=True,
                 background=WHITE,
+                **{k: v for k, v in extra.items() if v},
                 empty_hands=empty_hands,
                 solo=solo,
                 context=packs()[pack].context,

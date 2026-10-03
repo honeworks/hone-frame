@@ -38,6 +38,8 @@ def model_inputs(
         inputs["negative"] = negative
     if (angle := out.prompt_inputs.get("camera_angle")) and not camera_in_prompt:
         inputs["camera_angle"] = angle
+    if out.prompt_inputs.get("lora_strength") is not None:  # the Multiple-Angles LoRA for a turn (0007)
+        inputs["lora_strength"] = out.prompt_inputs["lora_strength"]
     if out.mode == "upscale":
         if not refs:
             raise ModelFailure(
