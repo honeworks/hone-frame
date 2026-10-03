@@ -39,7 +39,7 @@ when = "expression"
 
 [[presets.values.checks]]
 name = "pose"
-question = "Is the body pose the one under 'Requested pose'? A different pose (for example standing when running or sitting was asked) is a fail."
+question = "Name the body position you see (standing, walking, running, sitting, kneeling, crouching, lying), then compare it with 'Requested pose'. A different position (standing or crouching when sitting was asked, walking when running was asked) is a fail."
 required = true
 when = "pose"
 

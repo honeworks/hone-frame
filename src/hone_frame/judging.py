@@ -14,9 +14,12 @@ from hone_frame.requests import PlannedOutput
 
 
 class CheckAnswer(BaseModel):
+    """`finding` comes first, so the judge says what it sees before it decides (change 0004: with the
+    verdict first, the 7B judge wrote "not kneeling" and still answered pass)."""
+
+    finding: str = Field(min_length=3)
     verdict: Literal["pass", "fail", "uncertain", "not_assessable"]
     score: float | None = Field(default=None, ge=0.0, le=1.0)
-    finding: str = ""
 
 
 class JudgeAnswer(BaseModel):
@@ -69,8 +72,9 @@ def judge_prompt(out: PlannedOutput, checks: list[dict[str, Any]], prompt: str, 
         f"It was asked to show: {out.label} ({out.kind}).",
         *requested(out),
         f"The prompt it was made from: {prompt}",
-        "First describe what you actually see in image 1. Then answer every check below with a verdict "
-        "(pass, fail, uncertain, not_assessable), a score from 0 to 1, and one concrete finding sentence. "
+        "First describe what you actually see in image 1. Then answer every check below: first one concrete "
+        "finding sentence about what you see, then the verdict that follows from it (pass, fail, uncertain, "
+        "not_assessable; a finding that says it does not match is a fail), then a score from 0 to 1. "
         "Use uncertain when you cannot tell; never guess a pass.",
         *(f"- {c['name']}: {c['question']}" for c in checks),
         "Then give overall (0 to 1): how good it is among acceptable candidates, and a one-line summary.",
