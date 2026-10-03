@@ -404,3 +404,11 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
   of characters.
 - **Reason:** in the overnight run, the White Fortress's detail view, asked to keep "the same face, hair,
   build, clothes", came out as a man's portrait in front of the fortress (the judge rejected it).
+
+## D-041: the Z-Image planner rules give no person-only example  (2026-10-03)
+
+- **Choice:** the Z-Image dialect's planner rules ask for clothing "for a person" only, give a neutral
+  example of a positive constraint ("the background is plain white"), and tell the planner to add no
+  constraint of its own.
+- **Reason:** the planner copied the old example, "the whole figure from head to feet is visible", into
+  the Battle plain's establishing shot (and into object prompts), asking a landscape for a figure.

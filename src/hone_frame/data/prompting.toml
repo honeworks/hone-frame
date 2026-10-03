@@ -10,7 +10,7 @@ summary = "Z-Image Turbo: long, structured text-to-image prompts; no negative pr
 sections = ["style_lead", "shot", "look", "subject", "outfit", "features", "must", "pose", "expression", "gaze", "action", "state", "scene", "frame", "background", "props", "alone", "lighting", "text_refs", "note", "fixes", "style_close"]
 max_words = 250
 style = "full"
-rules = "Write 80 to 250 words of plain descriptive English in this order: shot and composition, the subject's appearance, every piece of clothing with colours and materials, background, lighting, style. Z-Image ignores negative prompts: state every constraint as a positive sentence (for example 'the whole figure from head to feet is visible'). Keep the opening and closing style words."
+rules = "Write 80 to 250 words of plain descriptive English in this order: shot and composition, the subject's appearance, for a person every piece of clothing with colours and materials, background, lighting, style. Z-Image ignores negative prompts: state every constraint already in the prompt as a positive sentence (for example 'the background is plain white'); add no constraint of your own. Keep the opening and closing style words."
 
 [dialects.flux-klein]
 models = ["flux.2-klein*", "flux.2*"]
