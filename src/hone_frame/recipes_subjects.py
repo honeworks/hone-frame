@@ -9,6 +9,7 @@ from hone_frame.errors import InvalidRequest
 from hone_frame.recipes import (
     HERO_CAMERA,
     JUDGING,
+    OBJECT_FRAMING,
     Built,
     base_inputs,
     reference_lighting,
@@ -107,7 +108,7 @@ def _hero_framing(kind: str) -> str:
     return {
         "character": "full body from head to feet, centred, nothing cropped",
         "environment": "the whole place, its main anchors visible",
-        "asset": "the whole object centred on a plain background",
+        "asset": OBJECT_FRAMING,
     }[kind]
 
 

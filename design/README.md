@@ -61,6 +61,7 @@ chooses a paid model.
 | [`changes/0001-initial-design.md`](changes/0001-initial-design.md) | the first design, from the owner's brief |
 | [`changes/0002-prompt-dialects.md`](changes/0002-prompt-dialects.md) | prompts written per model, task and style |
 | [`changes/0003-character-first.md`](changes/0003-character-first.md) | complete character packs, world and character assets, a dashboard that follows the work |
+| [`changes/0004-robust-generation.md`](changes/0004-robust-generation.md) | prompts that keep what they are for, a judge told what was asked, project files |
 | [`history/`](history/) | the owner's product brief, kept in full |
 | [`decisions.md`](decisions.md) | small implementation choices, and the items awaiting owner review |
 

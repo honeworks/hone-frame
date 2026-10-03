@@ -329,8 +329,11 @@ this order: `hero` (front, full figure, neutral pose), `turnaround` (Front, 3/4,
 - **The hero is drawn once.** When the character has an accepted hero (an accepted image with pack
   `hero`, or an older one labelled "Hero") it is every item's identity reference; otherwise the hero is
   the first output and the others depend on it (§8.7). `redraw_hero` draws a new one.
-- An action depends on its belonging's output in the same request, or takes the belonging's accepted
-  image as its `object` reference.
+- An action takes the belonging's accepted image as its `object` reference; a belonging without one is
+  made first in the same request and the action depends on it (change 0004).
+- A character whose features or outfit put an object in its hands (a weapon, "holding"...) gets a plan
+  warning (`carried_objects`): reference images are drawn with empty hands, and the object belongs in
+  Belongings.
 - **Reference look.** Every item of a character or object reference (packs and `SubjectReferences`) is
   written on `a plain pure white background` and, for characters except actions, with **empty hands**
   (the `props` section); the outputs carry the conditions `clean_background` and `no_props`, which the
@@ -480,6 +483,12 @@ character-identity, object-fidelity and interaction-plausibility profiles ask wh
 plain white) and, for characters with empty hands, `no_props` (character-identity asks whether the hands
 are empty).
 
+**What was asked** (change 0004): the judge prompt lists the request from the plan, not only the prompt
+that was sent: `Requested view`, framing, pose, facial expression, clothing, state, action, background
+and empty hands, so a rewritten or shortened prompt cannot redefine what passes. `view` asks only about
+the requested view; a back view (`rear`) also gets `faces_away`. `anatomy` names hands and feet (fingers,
+missing, merged or twisted feet, feet that point a way the body could not stand).
+
 The answer schema:
 
 ```python
@@ -498,8 +507,9 @@ class Evaluation(BaseModel):  # what hone-frame stores
 
 - **The judge's schema names every check.** The schema sent to the judge (`answer_schema(checks)`)
   makes `checks` an object with one required key per check name (any name: fields are aliased), each
-  `{verdict, score, finding}`, so a
-  judge cannot mislabel or skip a check (D-020).
+  `{finding, verdict, score}` in that order, so a judge cannot mislabel or skip a check (D-020) and
+  writes what it sees before it decides (change 0004: with the verdict first, the 7B judge wrote "not
+  kneeling" and answered pass). `finding` is required in the schema sent and tolerated empty when read.
 - **Rear views** (camera `rear`, in subject references and scenes) replace `identity` with
   `identity_from_behind`: build, hair, clothing
   and distinguishing features against the reference, no face expected (D-020).
@@ -593,16 +603,21 @@ Output statuses:
   `faces_away` leaves the face out everywhere and says it is not visible; a full-figure output asks for
   the whole figure and uses `wide shot` in the camera phrase; a reference output (`reference`) uses the
   style pack's `short` form, never its scene and mood wording.
-- **Budget:** over `max_words`, optional sections are dropped, least important first (`style_close`,
-  `text_refs`, `frame`, `gaze`, `features`, `style_lead`...); `camera_phrase`, `view`, `keep`, `subject`,
-  `scene`, `background`, `props` and `fixes` are never dropped.
+- **Budget** (change 0004): over `max_words`, `keep` first becomes compact ("the same clothes, armour
+  and colours", since the reference image shows them), then optional sections are dropped, least
+  important first (`style_close`, `text_refs`, `frame`, `features`, `lighting`, `roles`...). Never
+  dropped: what was **asked** (`pose`, `expression`, `outfit`, `state`, `action`, `gaze`, a person's
+  `note`), the framing and style (`shot`, `style_lead`) and `camera_phrase`, `view`, `keep`, `subject`,
+  `scene`, `background`, `props`, `fixes`. A prompt that still does not fit is sent whole and a
+  `prompt_long` event says so.
 - An outfit item (`outfit` input) replaces the clothes: `keep` no longer lists the default outfit and
   `outfit` says what is worn instead; a view's `framing` is appended to its `view` sentence.
 - **Style packs** carry `short` and optional `dialects.<name>.prefix / suffix` (clean 2D animation opens
   and closes a z-image prompt with its 2D wording). **Camera presets** carry `view`, `faces_away`,
   `azimuth`, `elevation` and `distance`.
-- **Planner check:** a rewrite is refused when it is longer than 125% of `max_words`, loses the camera
-  phrase, or no longer names `image 1` when the draft did.
+- **Planner check:** the planner is told what the image exists to show. A rewrite is refused when it is
+  longer than 125% of `max_words` (or 110% of a draft that is already longer), loses the camera phrase,
+  no longer names `image 1` when the draft did, or loses most of the words of what was asked.
 - When the dialect writes the camera phrase, `camera_angle` is not also sent as an input. The `planned`
   event and each image's `generation` record the `dialect` and `mode`.
 
@@ -872,6 +887,8 @@ standard library (`ThreadingHTTPServer`).
 | POST | `/api/projects/{p}/characters/{id}/sheet` | compose (again) the character model sheet |
 | GET | `/api/projects/{p}/world` | places and objects without an owner |
 | POST | `/api/projects/{p}/world/generate` | `{"subject_ids"}` (default: those without an accepted hero) → one run each |
+| POST | `/api/import` | `{"text", "format": "toml" \| "json"}`: create or update a project from a project file (change 0004) |
+| GET | `/api/projects/{p}/file` | the project as a project file |
 | POST | `/api/projects/{p}/exports` | `{"kind": "sheet" \| "pack" \| "sequence" \| "project", "id"}` → a download URL |
 
 Errors are `{"error": message}` with 400 (an invalid request, with the plan errors), 404 or 409 (a run in
@@ -922,6 +939,10 @@ Charts use real character, environment, asset and scene work only.
   events (`since`). It updates the parts that changed in place, so open panels, scroll position and
   focus stay where they are.
 - **Reloads.** A refresh or a server restart loses nothing, because the state is in the workspace.
+- **Pages** (change 0004) render into their own container; a request or poll of a page the person left
+  finds its container detached and stops, so it can never redraw over the current page.
+- **Magnifier:** every image has a magnifier button that opens it in a full-window viewer (fit, or 1:1 on
+  click) with a link to the file.
 
 ## 13. Modules
 
@@ -937,6 +958,7 @@ Charts use real character, environment, asset and scene work only.
 | `profiles.py` | profiles, selection settings, the effective preset of each category |
 | `requests.py` | request models, planned outputs, plans |
 | `recipes.py`, `recipes_subjects.py`, `recipes_scenes.py`, `recipes_packs.py` + `data/character_packs.toml` | request → planned outputs: the shared parts; subject references and interactions; state pairs, sequences, grids and promotion; character packs |
+| `project_file.py` | project files: parse, import by name, write back (change 0004) |
 | `characters.py` | the character page and cards, the world, world requests, the model sheet recipe, scene belonging suggestions |
 | `references.py` | reference resolution, precedence, reduction, size limits |
 | `planning.py` | `plan()`: models per output, counts, warnings, errors, preset versions, the estimate |
@@ -984,6 +1006,10 @@ models.
 | AC-18 | Scene belongings | saving a scene with `suggest` asks the planner which belongings appear and adds them as suggested `object` references; a failing planner adds none |
 | AC-19 | Model sheet | the character model sheet is composed from the accepted hero, turnaround and expressions with no model call; without them it is refused |
 | AC-20 | Character API | the project home, the character page and its actions: generate, add an item, choose another candidate on an accepted item, compose the model sheet; scene save with suggestions |
+| AC-21 | Prompts keep what was asked | in runs for several styles and every profile, every image of a whole character keeps its pose, expression, outfit, state or action, its white background and its empty hands (the full matrix over every style is a unit test) |
+| AC-22 | Judge told what was asked | in a run, the judge prompt lists the request from the plan; back views get `faces_away`; other views carry no back-view wording; anatomy names hands and feet |
+| AC-23 | Belongings first | actions wait for their belongings, made first in the same request when they have no image |
+| AC-24 | Project files | `ws.import_file` creates a project with characters, belongings, world and scenes; importing again versions only what changed and keeps what the file leaves out; bad files are refused with the place of the error; CLI import and export |
 | AC-14 (real model) | One `SubjectReferences` hero with the draft profile on the GPU (`scripts/gpu-lock.sh`) | an image is generated and judged by the real models; the run completes as `done` or `needs_review`; the models are unloaded afterwards |
 
 ## 15. Known limits (0.1.0)

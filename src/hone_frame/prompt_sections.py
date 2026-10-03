@@ -3,6 +3,7 @@ sentence, or nothing. Dialects choose which pieces, in what order (dialects.py).
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
@@ -35,6 +36,7 @@ class Ctx:
     mode: Mode
     style_form: str
     inputs: dict[str, Any] = field(default_factory=dict[str, Any])
+    compact: bool = False  # over budget: `keep` names the clothes instead of listing them (change 0004)
 
     @property
     def parts(self) -> list[dict[str, Any]]:
@@ -90,7 +92,8 @@ def view(c: Ctx) -> str:
     part = c.parts[0]
     noun = NOUN.get(str(part.get("kind")), "subject")
     where = str(c.camera.get("view") or "from the same angle")
-    sentence = f"Show the same {noun} as in image 1, {part.get('name')}, {where}"
+    lead = f"now {c.inputs['pose']}, " if _pose_leads(c) else ""  # an edit model keeps the pose it is shown
+    sentence = f"Show the same {noun} as in image 1, {part.get('name')}, {lead}{where}"
     if c.inputs.get("full_body"):
         sentence += ", the whole figure from head to feet"
     if c.inputs.get("framing"):
@@ -98,6 +101,12 @@ def view(c: Ctx) -> str:
     if c.faces_away:
         sentence += "; the face is not visible, the figure faces away from the camera"
     return sentence
+
+
+def _pose_leads(c: Ctx) -> bool:
+    """A pose image (change 0004): the new pose opens the edit instruction, the first words an edit model
+    weighs most, instead of following the long list of what stays the same."""
+    return c.mode == "view" and c.out.pack == "poses" and bool(c.inputs.get("pose"))
 
 
 def subject(c: Ctx) -> str:
@@ -126,12 +135,33 @@ def features(c: Ctx) -> str:
     return ". ".join(_field(p, "features") for p in c.parts if _field(p, "features"))
 
 
+def short_outfit(text: str) -> str:
+    """Every piece of clothing named, without its details, so a long outfit fits a view's budget and no
+    piece (a helmet) is forgotten: each comma part up to its first "with", split where another garment
+    is worn over or under it ("over a tunic", not "over the hair"), six words a piece."""
+    pieces: list[str] = []
+    for part in text.split(","):
+        bare = re.split(r"\s+with\s+", part.strip(), maxsplit=1)[0]
+        pieces += [
+            p for p in re.split(r"\s+(?:worn\s+(?:over|under)|(?:over|under)(?=\s+an?\s))\s+", bare) if p
+        ]
+    short = [" ".join(piece.split()[:6]) for piece in pieces]
+    return ("the same clothes: " + ", ".join(short)) if short else "the same clothes and colours"
+
+
 def keep(c: Ctx) -> str:
     if not c.parts:
         return ""
     part = c.parts[0]
     kept = ["the same build and height, the same hair" if c.faces_away else "the same face, hair and build"]
-    clothes = "" if c.inputs.get("outfit") else _field(part, "outfits")
+    if c.inputs.get("outfit"):
+        clothes = ""
+    elif c.camera.get("distance") == "close-up" and not c.inputs.get("full_body"):
+        clothes = "the same clothes and colours where they show"  # naming boots would widen a close-up
+    elif c.compact:
+        clothes = short_outfit(_field(part, "outfits"))
+    else:
+        clothes = _field(part, "outfits")
     kept += [x for x in (clothes, _field(part, "features")) if x]
     return "Keep exactly the same as in image 1: " + "; ".join(kept) + ". Change only what is asked above"
 
@@ -187,7 +217,7 @@ SECTION: dict[str, Callable[[Ctx], str]] = {
     "roles": roles,
     "action": _labelled("Action", "action"),
     "expression": _labelled("", "expression"),
-    "pose": _labelled("", "pose"),
+    "pose": lambda c: "" if _pose_leads(c) else str(c.inputs.get("pose") or ""),
     "gaze": _labelled("Gaze", "gaze"),
     "state": _labelled("State", "state"),
     "frame": _labelled("", "frame"),

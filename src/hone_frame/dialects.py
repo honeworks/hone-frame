@@ -18,16 +18,19 @@ SECTIONS = (
     "expression", "pose", "gaze", "state", "frame", "background", "props", "lighting", "style_lead",
     "style_close", "text_refs", "note", "fixes",
 )  # fmt: skip
+# always kept: what the image is, its framing, its style and its look (change 0004)
 REQUIRED = {
     "camera_phrase",
+    "shot",
     "view",
     "keep",
     "subject",
     "scene",
     "background",
     "props",
+    "style_lead",
     "fixes",
-}  # always kept
+}
 
 
 class ModeRules(BaseModel):

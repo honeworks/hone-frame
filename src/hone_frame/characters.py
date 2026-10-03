@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 from hone_frame._dashboard_data import image_card
 from hone_frame.errors import HoneFrameError
 from hone_frame.profiles import resolve_profile
-from hone_frame.recipes_packs import accepted_hero, owned_assets, pack_items, packs
+from hone_frame.recipes_packs import accepted_hero, carried_objects, owned_assets, pack_items, packs
 from hone_frame.records import ImageRecord, Scene, SceneRef, SheetRecipe, Subject
 from hone_frame.references import ACCEPTED
 from hone_frame.requests import RequestBase, SubjectReferences
@@ -105,6 +105,7 @@ def character_page(store: ProjectStore, subject_id: str) -> dict[str, Any]:
                      "custom": pack.custom, "items": items})  # fmt: skip
     return {
         "subject": subject.model_dump(mode="json"),
+        "warnings": carried_objects(subject),
         "hero": image_card(store, store.image(h)) if (h := accepted_hero(store, subject_id)) else None,
         "packs": rows,
         "assets": [world_card(store, a) for a in owned_assets(store, subject_id)],

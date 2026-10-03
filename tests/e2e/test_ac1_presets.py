@@ -138,7 +138,7 @@ def test_runs_record_preset_versions(tmp_path: Path) -> None:
     woman = p.add_subject("character", "Woman", description="x")
     run = p.submit(hf.SubjectReferences(subject_id=woman.id))
     assert run.presets["style_pack:inked-comic"] == 2
-    assert run.presets["profile:draft"] == 1 and run.presets["judging:character-identity"] == 3
+    assert run.presets["profile:draft"] == 1 and run.presets["judging:character-identity"] == 4
     (tmp_path / "presets").mkdir()
     (tmp_path / "presets" / "v2.toml").write_text(
         '[[presets]]\nid = "inked-comic"\ncategory = "style_pack"\nversion = 3\nname = "Inked"\n'

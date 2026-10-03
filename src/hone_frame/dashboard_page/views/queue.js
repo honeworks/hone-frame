@@ -40,7 +40,7 @@ async function runTable(main) {
   const tick = async () => {
     try {
       const rows = await refresh();
-      if (rows.some((r) => LIVE.has(r.status))) timer = setTimeout(tick, 2000);
+      if (body.isConnected && rows.some((r) => LIVE.has(r.status))) timer = setTimeout(tick, 2000);
     } catch (error) { failure(error); }
   };
   await tick();
@@ -80,6 +80,7 @@ async function runPage(main, project, runId) {
   async function tick() {
     try {
       const data = await api(`/runs/${project}/${runId}?since=${since}`);
+      if (!main.isConnected) return;  // the person left this page
       since = data.next;
       misses = 0;
       draw(data);
@@ -87,7 +88,7 @@ async function runPage(main, project, runId) {
     } catch (error) {
       misses += 1;  // a dropped poll is retried; a run of failures is shown once
       if (misses === 3 || error.status === 404) failure(error);
-      if (error.status !== 404) timer = setTimeout(tick, Math.min(2000 * misses, 10000));
+      if (error.status !== 404 && main.isConnected) timer = setTimeout(tick, Math.min(2000 * misses, 10000));
     }
   }
 

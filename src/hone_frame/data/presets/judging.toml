@@ -3,7 +3,7 @@
 
 [[presets]]
 id = "character-identity"
-version = 3
+version = 4
 name = "Character identity"
 description = "Character reference images: is it the same person, in the requested view, expression, outfit and framing, drawn correctly?"
 
@@ -22,18 +22,24 @@ when = "rear"
 
 [[presets.values.checks]]
 name = "view"
-question = "Is the camera view and angle the one requested? For a rear view the character must face away: back of the head and back of the body, no face."
+question = "Is the camera view and angle the one under 'Requested view' (front, three-quarter, side, back, close-up)?"
 required = true
 
 [[presets.values.checks]]
+name = "faces_away"
+question = "This is a back view: does the character face away from the camera, showing the back of the head and the back of the body, with no face visible?"
+required = true
+when = "rear"
+
+[[presets.values.checks]]
 name = "expression"
-question = "Is the facial expression the one requested?"
+question = "Is the facial expression the one under 'Requested facial expression'? A neutral face when another expression was asked is a fail."
 required = true
 when = "expression"
 
 [[presets.values.checks]]
 name = "pose"
-question = "Is the pose the one requested?"
+question = "Name the body position you see (standing, walking, running, sitting, kneeling, crouching, lying), then compare it with 'Requested pose'. A different position (standing or crouching when sitting was asked, walking when running was asked) is a fail."
 required = true
 when = "pose"
 
@@ -49,7 +55,7 @@ required = true
 
 [[presets.values.checks]]
 name = "anatomy"
-question = "Are hands, limbs and face anatomically correct (no extra or missing fingers, no distortions)?"
+question = "Look closely at each hand and each foot, then the limbs and face. Fail if a hand has the wrong number of fingers, if a foot is missing, extra, merged or twisted, if the feet point a way the body could not stand (in a side view both feet point the same way as the face), or if any limb, joint or the face is distorted."
 required = true
 
 [[presets.values.checks]]
@@ -157,7 +163,7 @@ required = false
 
 [[presets]]
 id = "interaction-plausibility"
-version = 2
+version = 3
 name = "Interaction plausibility"
 description = "A character using an object: identity of both, believable contact, hands and orientation."
 
@@ -195,7 +201,7 @@ required = true
 
 [[presets.values.checks]]
 name = "anatomy"
-question = "Are hands, limbs and face anatomically correct?"
+question = "Look closely at each hand and each foot, then the limbs and face. Fail if a hand has the wrong number of fingers, if a foot is missing, extra, merged or twisted, if the feet point a way the body could not stand (in a side view both feet point the same way as the face), or if any limb, joint or the face is distorted."
 required = true
 
 [[presets.values.checks]]
@@ -211,7 +217,7 @@ required = false
 
 [[presets]]
 id = "scene-fidelity"
-version = 2
+version = 3
 name = "Scene fidelity"
 description = "Scenes: the selected subjects are present and recognisable, doing the action, framed as asked."
 
@@ -263,7 +269,7 @@ when = "state"
 
 [[presets.values.checks]]
 name = "anatomy"
-question = "Are visible hands, limbs and faces anatomically correct?"
+question = "Look closely at every visible hand and foot, then the limbs and faces. Fail if a hand has the wrong number of fingers, a foot is missing, extra, merged or twisted, feet point a way the body could not stand, or a limb, joint or face is distorted."
 required = true
 when = "character"
 
@@ -279,7 +285,7 @@ required = false
 
 [[presets]]
 id = "sequence-continuity"
-version = 1
+version = 2
 name = "Sequence continuity"
 description = "A sequence frame: the scene checks, plus continuity with the previous frame and the intended change."
 
@@ -313,7 +319,7 @@ when = "state"
 
 [[presets.values.checks]]
 name = "anatomy"
-question = "Are visible hands, limbs and faces anatomically correct?"
+question = "Look closely at every visible hand and foot, then the limbs and faces. Fail if a hand has the wrong number of fingers, a foot is missing, extra, merged or twisted, feet point a way the body could not stand, or a limb, joint or face is distorted."
 required = true
 when = "character"
 

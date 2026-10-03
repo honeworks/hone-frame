@@ -18,6 +18,7 @@ from hone_frame.store import ProjectStore
 
 if TYPE_CHECKING:
     from hone_frame.ports import Models
+    from hone_frame.project_file import ImportReport
     from hone_frame.runs import RunView
 
 
@@ -69,6 +70,12 @@ class Workspace:
 
     def save_settings(self, settings: Settings) -> None:
         write_json(self.root / "settings.json", settings.model_dump(mode="json"))
+
+    def import_file(self, path: str | Path) -> ImportReport:
+        """Create or update a project from a TOML or JSON project file, matching by name (change 0004)."""
+        from hone_frame.project_file import import_path  # noqa: PLC0415 - that module imports this one
+
+        return import_path(self, path)
 
     def projects(self) -> list[Project]:
         folders = sorted(p for p in (self.root / "projects").iterdir() if (p / "project.json").is_file())

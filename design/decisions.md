@@ -306,3 +306,23 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
 - **Reason:** silently making nothing for text the person typed is worse than asking them to tick the
   pack (the dashboard adds the pack itself when its box has text).
 
+## D-029: the judge stays Qwen2.5-VL 7B  (2026-10-03)
+
+- **Choice:** the draft, standard and final profiles keep `qwen2.5vl-7b` as the judge. Qwen3-VL 8B was
+  tried on the owner's Rostam side view (one foot turned backwards): with a whole-image question, a
+  feet-only question and a crop of the feet, both models passed it; Qwen3-VL also answered with thinking
+  text only on some calls. Gemma 4 and Qwen 3.6 builds here take no images.
+- **Reason:** no local vision model that fits the 8 GB GPU detects foot direction reliably. The defence is
+  prevention in the prompt (side and three-quarter views ask for the feet to turn with the body), a
+  judge told what was asked, and the person's eye (the magnifier, **Use this one**, **Generate again**).
+  A hosted judge (for example `gpt-4.1-mini`, with `OPENAI_API_KEY`) can be set per project.
+
+## D-030: project files are imported by name and never delete  (2026-10-03)
+
+- **Choice:** a project file matches the project, subjects (by kind and name) and scenes by name;
+  missing ones are created, changed ones get a new version, the rest are left alone, and nothing absent
+  from the file is deleted. Write-back is JSON (`project_file`), since the standard library reads TOML
+  but does not write it.
+- **Reason:** the owner tests by editing one file and importing it again; deleting what a file leaves out
+  would lose images and runs made since.
+

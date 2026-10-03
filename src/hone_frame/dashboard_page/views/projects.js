@@ -1,5 +1,5 @@
 // Projects: the list, search and the create form.
-import { api, empty, failure, field, h, presetOptions, replace, select, state, when } from "../core.js";
+import { api, empty, failure, field, h, importButton, presetOptions, replace, select, state, when } from "../core.js";
 import { setProject } from "../app.js";
 
 export async function render(main) {
@@ -28,5 +28,8 @@ export async function render(main) {
   draw();
   replace(main, h("div", { class: "page-head" }, h("div", {}, h("h1", {}, "Projects"), h("p", { class: "muted" }, "Each project holds its own characters, environments, assets, scenes, sheets and runs."))),
     h("div", { class: "grid" }, h("section", { class: "span-8 stack" }, filter, projects.length ? list : empty("No projects yet", "Create the first one; the presets are ready before it exists.")),
-      h("section", { class: "panel span-4" }, h("h2", { style: "margin-bottom:12px" }, "New project"), form)));
+      h("section", { class: "span-4 stack" }, h("div", { class: "panel" }, h("h2", { style: "margin-bottom:12px" }, "New project"), form),
+        h("div", { class: "panel stack" }, h("h2", {}, "From a file"),
+          h("p", { class: "caption", style: "margin:0" }, "A TOML or JSON project file with the project, characters, belongings, places, objects and scenes (see docs/project-files.md). Importing it again updates what changed."),
+          importButton("Import a project file")))));
 }

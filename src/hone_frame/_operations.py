@@ -99,6 +99,12 @@ class ProjectOperations:
 
         return export_project(self._store, Path(out))
 
+    def project_file(self) -> dict[str, Any]:
+        """The project as a project file (change 0004), ready to edit and import again."""
+        from hone_frame.project_file import project_file
+
+        return project_file(self._store)
+
     @property
     def _store(self) -> ProjectStore:
         return self  # type: ignore[return-value]  # pyright: ignore[reportReturnType]

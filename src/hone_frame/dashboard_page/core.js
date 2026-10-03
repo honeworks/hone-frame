@@ -73,6 +73,7 @@ const ICONS = {
   arrow: "M5 12h14M13 6l6 6-6 6",
   plus: "M12 5v14M5 12h14",
   download: "M12 4v12M6 10l6 6 6-6M4 20h16",
+  zoom: "M10.5 4a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zM20 20l-4.8-4.8M10.5 7.5v6M7.5 10.5h6",
 };
 
 export function icon(name, label) {
@@ -156,7 +157,31 @@ export function failure(error) {
 
 export function img(card, alt) {
   if (!card) return h("span", { class: "placeholder-img" }, "No image yet");
-  return h("img", { src: card.url, alt: alt || card.label || card.id, loading: "lazy", width: card.width, height: card.height });
+  const picture = h("img", { src: card.url, alt: alt || card.label || card.id, loading: "lazy", width: card.width, height: card.height });
+  return zoomable(picture, card.url, alt || card.label || card.id);
+}
+
+// An image with a magnifier button that opens it full size (change 0004).
+export function zoomable(picture, url, title) {
+  const button = h("button", { class: "zoom-btn", type: "button", title: "Magnify", "aria-label": `Magnify ${title || "image"}`,
+    onclick: (event) => { event.preventDefault(); event.stopPropagation(); lightbox(url, title); },
+    onkeydown: (event) => event.stopPropagation() }, icon("zoom"));
+  return h("span", { class: "zoomable" }, picture, button);
+}
+
+export function lightbox(url, title) {
+  const picture = h("img", { src: url, alt: title || "", class: "lightbox-img" });
+  picture.addEventListener("click", () => picture.classList.toggle("actual"));
+  const dialog = h("dialog", { class: "lightbox", "aria-label": title || "Image" },
+    h("div", { class: "lightbox-bar" }, h("span", { class: "lightbox-title" }, title || ""),
+      h("span", { class: "caption" }, "Click the image for full size"),
+      h("a", { class: "btn small", href: url, target: "_blank", rel: "noopener" }, "Open in a new tab"),
+      h("button", { class: "btn small", type: "button", onclick: () => dialog.close(), "aria-label": "Close" }, icon("close"))),
+    h("div", { class: "lightbox-body" }, picture));
+  dialog.addEventListener("click", (event) => { if (event.target === dialog) dialog.close(); });
+  document.body.append(dialog);
+  dialog.addEventListener("close", () => dialog.remove());
+  dialog.showModal();
 }
 
 export function empty(title, text, action) {
@@ -185,3 +210,35 @@ export function presetOptions(category, { kind, blank } = {}) {
 }
 
 export function projectPath(rest = "") { return `/projects/${state.project}${rest}`; }
+
+// Project files (change 0004): import a TOML or JSON file, or download a project as one.
+export function importButton(label = "Import a file") {
+  const file = h("input", { type: "file", accept: ".toml,.json,application/json", hidden: true, "aria-label": "Project file" });
+  file.addEventListener("change", async () => {
+    const chosen = file.files?.[0];
+    if (!chosen) return;
+    try {
+      const text = await chosen.text();
+      const format = chosen.name.toLowerCase().endsWith(".json") ? "json" : "toml";
+      const report = await api("/import", { method: "POST", body: { text, format } });
+      toast(`${chosen.name}: ${report.created.length} added, ${report.updated.length} updated, ${report.unchanged.length} unchanged.`);
+      try { localStorage.setItem("hf.project", report.project); } catch { /* private mode */ }
+      state.project = report.project;
+      location.hash = "#/project";
+      window.dispatchEvent(new Event("hf:projects"));
+    } catch (error) {
+      failure(error.problems?.length ? new Error(`${error.message}: ${error.problems.slice(0, 3).join("; ")}`) : error);
+    } finally { file.value = ""; }
+  });
+  return h("label", { class: "btn" }, icon("plus"), label, file);
+}
+
+export async function downloadProject(projectId) {
+  try {
+    const data = await api(`/projects/${projectId}/file`);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const link = h("a", { href: URL.createObjectURL(blob), download: `${projectId}.json` });
+    document.body.append(link); link.click(); link.remove();
+  } catch (error) { failure(error); }
+}
+

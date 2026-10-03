@@ -59,11 +59,11 @@ values = { view = "from the front, facing the camera", faces_away = false, azimu
 
 [[presets]]
 id = "profile"
-version = 2
+version = 3
 name = "Profile"
 description = "A side view: exactly 90 degrees from the front."
-prompt = { prefix = "Side profile view, turned 90 degrees to the camera, eye level,", suffix = "" }
-values = { view = "from the side, in profile, turned 90 degrees to the camera", faces_away = false, azimuth = "right side view", elevation = "eye-level shot", distance = "medium shot", camera_angle = "right_side" }
+prompt = { prefix = "Side profile view, turned 90 degrees to the camera, eye level, the face, chest and both feet pointing the same way,", suffix = "" }
+values = { view = "from the side, in profile, turned 90 degrees to the camera, the face, chest and both feet pointing the same way", faces_away = false, azimuth = "right side view", elevation = "eye-level shot", distance = "medium shot", camera_angle = "right_side" }
 
 [[presets]]
 id = "rear"
@@ -75,11 +75,11 @@ values = { view = "from directly behind: the back of the head and the back of th
 
 [[presets]]
 id = "three-quarter"
-version = 2
+version = 3
 name = "Three-quarter"
 description = "Turned 45 degrees: the classic turnaround angle between front and side."
-prompt = { prefix = "Three-quarter view, turned 45 degrees from the front, eye level,", suffix = "" }
-values = { view = "turned 45 degrees, in three-quarter view", faces_away = false, azimuth = "front-right quarter view", elevation = "eye-level shot", distance = "medium shot", camera_angle = "right_45" }
+prompt = { prefix = "Three-quarter view, turned 45 degrees from the front, eye level, the feet turned with the body,", suffix = "" }
+values = { view = "turned 45 degrees, in three-quarter view, the feet turned with the body", faces_away = false, azimuth = "front-right quarter view", elevation = "eye-level shot", distance = "medium shot", camera_angle = "right_45" }
 
 [[presets]]
 id = "overhead"

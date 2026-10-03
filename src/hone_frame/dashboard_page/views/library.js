@@ -1,5 +1,5 @@
 // Library: flat tabs for characters, environments, assets and images, with a details side panel.
-import { api, empty, failure, h, icon, img, pill, projectPath, replace, select, state, toast, when } from "../core.js";
+import { api, empty, failure, h, icon, img, pill, projectPath, replace, select, state, toast, when, zoomable } from "../core.js";
 import { subjectDialog } from "./subject_form.js";
 
 const TABS = [["characters", "Characters", "character"], ["environments", "Environments", "environment"], ["assets", "Assets", "asset"], ["images", "Images", null]];
@@ -62,7 +62,7 @@ function subjectPanel(side, s) {
   });
   replace(side, h("div", { class: "panel stack" },
     h("div", { class: "row" }, h("h2", {}, s.name), h("span", { class: "spacer" }), h("span", { class: "chip" }, s.kind)),
-    s.cover ? h("img", { class: "preview-img", src: s.cover.url, alt: s.name }) : null,
+    s.cover ? zoomable(h("img", { class: "preview-img", src: s.cover.url, alt: s.name }), s.cover.url, s.name) : null,
     h("p", { style: "margin:0" }, s.description || h("span", { class: "muted" }, "No description.")),
     Object.entries(s.fields || {}).map(([k, v]) => h("div", { class: "caption" }, h("strong", {}, `${k}: `), Array.isArray(v) ? v.join(", ") : String(v))),
     s.states?.length ? h("div", {}, h("div", { class: "overline" }, "States"), h("div", { class: "chips" }, s.states.map((st) => h("span", { class: "chip", title: st.description }, `${st.name} · ${st.kind}`)))) : null,
@@ -79,7 +79,7 @@ async function imagePanel(side, id) {
   const ev = r.evaluation;
   replace(side, h("div", { class: "panel stack" },
     h("div", { class: "row" }, h("h2", { class: "mono" }, r.id), h("span", { class: "spacer" }), pill(r.status)),
-    h("img", { class: "preview-img", src: data.url, alt: r.label || r.id }),
+    zoomable(h("img", { class: "preview-img", src: data.url, alt: r.label || r.id }), data.url, r.label || r.id),
     h("div", { class: "caption" }, `${r.width} × ${r.height} · ${r.source} · ${when(r.created_at)}`),
     r.generation ? h("div", { class: "stack", style: "gap:4px" }, h("div", { class: "overline" }, "Generation"),
       h("div", { class: "mono caption" }, `${r.generation.model} · seed ${r.generation.seed ?? "—"}${r.run_id ? ` · run ${r.run_id} ${r.output_id} r${r.round}c${r.candidate}` : ""}`),

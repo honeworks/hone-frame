@@ -1,0 +1,134 @@
+# A whole project in one file (change 0004). Import it with `hone-frame import examples/projects/rostam-and-sohrab.toml`,
+# or from the dashboard (Projects > Import a file). Importing again after editing updates what changed.
+format_version = "1"
+
+[project]
+name = "Rostam and Sohrab"
+brief = "The tragedy of Rostam and Sohrab from Ferdowsi's Shahnameh. Rostam, the champion of Iran, spends one night in Samangan with the princess Tahmineh. Their son Sohrab grows up without knowing his father, leads an army against Iran, defeats the warrior woman Gordafarid at the White Fortress, and finally meets Rostam in single combat. Neither knows who the other is until Sohrab lies dying and Rostam sees the armlet he once gave Tahmineh."
+direction = "Ancient Persian epic, Sasanian-era costume and armour, rich earth tones with gold, crimson and lapis blue, grand and tragic"
+style = "historical-epic"
+
+[[characters]]
+name = "Rostam"
+description = "Rostam, son of Zal, the legendary champion of Iran, a giant warrior in his prime, powerful and fearless, with a heavy, commanding presence"
+appearance = "weathered mature face in his fifties, thick dark beard reaching the chest, heavy dark eyebrows, dark deep-set eyes, strong hooked nose, sun-darkened skin"
+build = "enormous, far taller and broader than other men, massive chest and shoulders, thick arms and neck"
+features = "a long old scar across his left cheek"
+outfit = "tiger-skin coat worn over a long mail shirt with lamellar plates on the shoulders, leopard-skin helmet with cheek guards, wide leather belt with a gold buckle, loose dark trousers, brown leather boots"
+states = [
+  { name = "Feast", kind = "outfit", description = "a long crimson silk robe embroidered with gold, a gold-trimmed cap, no armour" },
+  { name = "Bareheaded", kind = "outfit", description = "the same armour and tiger-skin coat without the helmet, dark hair tied back" },
+  { name = "Battle-worn", kind = "condition", description = "dust and blood on the face and armour, torn tiger-skin coat, exhausted" },
+]
+
+[[characters.belongings]]
+name = "Rostam's mace"
+description = "gorz-e gavsar, Rostam's legendary ox-headed war mace"
+size = "a heavy one-handed mace about one metre long; the head is as big as a man's head"
+materials = "iron head, wooden haft bound with leather, bronze fittings"
+colours = "dark iron, worn brown leather, bronze"
+details = "the head is shaped like an ox's head with two short curved horns, the haft wrapped in leather straps"
+
+[[characters.belongings]]
+name = "Rostam's lasso"
+description = "Rostam's long coiled lasso of twisted rawhide"
+size = "a coil about as wide as a shield"
+materials = "twisted rawhide rope"
+colours = "pale tan and brown"
+details = "thick braided rope coiled in loops, a wide running noose at one end"
+
+[[characters]]
+name = "Sohrab"
+description = "Sohrab, son of Rostam and the princess Tahmineh, a young warrior who has never met his father, bold and proud, already stronger than any grown man"
+appearance = "young face of about seventeen, the first dark beard on the jaw, dark eyes, strong straight nose, thick dark hair to the shoulders, fair olive skin, a face that resembles Rostam's"
+build = "very tall and broad-chested for his age, long powerful limbs, lean"
+features = "an onyx armlet with a gold setting on his right upper arm, always visible"
+outfit = "polished steel mail shirt over a dark blue tunic, steel helmet with a mail neck guard, red cloak fastened at the shoulder, leather belt, dark trousers, black leather boots"
+states = [
+  { name = "Helmet off", kind = "outfit", description = "the same armour without the helmet, dark hair loose to the shoulders" },
+  { name = "Wounded", kind = "condition", description = "mortally wounded, pale, blood on the chest of the mail shirt, the armour torn open on the right side so the onyx armlet shows" },
+]
+
+[[characters.belongings]]
+name = "Sohrab's spear"
+description = "Sohrab's long cavalry spear"
+size = "taller than a man, about three metres"
+materials = "ash-wood shaft, steel spearhead"
+colours = "pale wood, bright steel, a red tassel below the head"
+details = "a long leaf-shaped steel spearhead with a red horsehair tassel tied below it"
+
+[[characters]]
+name = "Tahmineh"
+description = "Tahmineh, princess of Samangan, daughter of its king, Sohrab's mother, beautiful, wise and resolute"
+appearance = "young woman of about twenty-five, oval face, dark arched eyebrows that meet, large dark eyes lined with kohl, small red lips, very long black hair in braids"
+build = "tall and slender, upright graceful posture"
+features = "a small dark beauty mark above her lip"
+outfit = "long deep green silk gown embroidered with gold, sheer white veil over the hair, gold diadem, gold earrings and necklace, embroidered slippers"
+states = [
+  { name = "Night", kind = "outfit", description = "a simple long white silk gown, hair loose without the veil" },
+]
+
+[[characters]]
+name = "Gordafarid"
+description = "Gordafarid, daughter of Gozhdaham, the warrior woman who defends the White Fortress against Sohrab, brave, quick and clever"
+appearance = "young woman of about twenty, sharp determined face, dark eyes, strong dark eyebrows, long dark brown hair"
+build = "tall, athletic and strong, broad shoulders for a woman"
+outfit = "steel mail armour over a dark red tunic, closed steel helmet with a mail veil that hides her hair, leather bracers, leather belt, riding trousers and tall boots"
+states = [
+  { name = "Helmet off", kind = "outfit", description = "the same armour with the helmet removed, long dark brown hair spilling down over her shoulders" },
+]
+
+[[characters.belongings]]
+name = "Gordafarid's bow"
+description = "Gordafarid's recurved composite bow"
+size = "about one metre tall when strung"
+materials = "horn, wood and sinew, leather grip"
+colours = "dark brown, black horn tips, red leather grip"
+details = "a strongly recurved Persian bow with black horn tips and a red leather grip"
+
+[[places]]
+name = "White Fortress"
+description = "Dezh-e Sepid, the White Fortress on Iran's northern border, a white stone fortress on a rocky hill above the plain"
+anchors = "a tall gatehouse with a heavy wooden gate in the centre, high crenellated walls on both sides, a round watchtower on the left, a steep path up the hill to the gate"
+materials = "white limestone walls, dark iron-bound wooden gate, rough grey rock"
+viewpoints = "from the plain below looking up at the gate; from the top of the walls looking down at the plain"
+recurring_objects = "blue and gold banners on the towers"
+
+[[places]]
+name = "Samangan palace hall"
+description = "the great hall of the king of Samangan, a rich Persian palace hall lit by oil lamps"
+anchors = "tall carved columns in two rows, a raised throne platform at the far end, wide arched doorway at the front"
+materials = "carved stone columns, painted plaster walls, patterned carpets"
+viewpoints = "from the doorway looking toward the throne"
+recurring_objects = "bronze oil lamps on stands, large patterned carpets on the floor"
+
+[[places]]
+name = "Battle plain"
+description = "the wide dusty plain between the armies of Iran and Turan, where Rostam and Sohrab fight"
+anchors = "flat open ground, low brown hills on the horizon, the Iranian camp tents on the left, the Turanian camp on the right"
+materials = "dry earth, dust, sparse yellow grass"
+viewpoints = "wide view across the plain at eye level"
+recurring_objects = "the two camps with their banners in the distance"
+
+[[objects]]
+name = "Rakhsh"
+description = "Rakhsh, Rostam's legendary war horse, powerful and fierce"
+size = "a very large war horse, taller than ordinary horses"
+materials = "horse, with a leather saddle and bronze-studded bridle"
+colours = "rose-coloured coat dappled with pale spots, dark mane and tail"
+details = "rose-coloured dappled coat, dark flowing mane, fierce eyes, leather saddle with a tiger-skin saddle cloth"
+
+[[scenes]]
+name = "Duel"
+description = "Rostam and Sohrab fight on horseback on the battle plain, Rostam swinging his mace, Sohrab thrusting his spear"
+camera = "wide"
+characters = ["Rostam", "Sohrab"]
+places = ["Battle plain"]
+objects = ["Rakhsh", "Rostam's mace", "Sohrab's spear"]
+
+[[scenes]]
+name = "Gordafarid unmasked"
+description = "Before the White Fortress, Sohrab pulls the helmet from the warrior he has unseated and Gordafarid's long hair spills over her shoulders"
+camera = "medium"
+characters = ["Sohrab", "Gordafarid"]
+places = ["White Fortress"]

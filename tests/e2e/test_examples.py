@@ -20,6 +20,7 @@ def test_ac13_examples_are_the_set() -> None:
         "sheets_and_exports",
         "run_control",
         "coverage_states_sequences",
+        "project_file",
     }
 
 

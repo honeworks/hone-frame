@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, ConfigDict, Field, create_model
 
 from hone_frame.ports import Models
 from hone_frame.presets import PresetCatalog
@@ -14,9 +14,14 @@ from hone_frame.requests import PlannedOutput
 
 
 class CheckAnswer(BaseModel):
+    """`finding` comes first, so the judge says what it sees before it decides (change 0004: with the
+    verdict first, the 7B judge wrote "not kneeling" and still answered pass)."""
+
+    model_config = ConfigDict(json_schema_extra={"required": ["finding", "verdict"]})  # asked of the judge
+
+    finding: str = ""  # an empty one is accepted when read back
     verdict: Literal["pass", "fail", "uncertain", "not_assessable"]
     score: float | None = Field(default=None, ge=0.0, le=1.0)
-    finding: str = ""
 
 
 class JudgeAnswer(BaseModel):
@@ -67,9 +72,11 @@ def judge_prompt(out: PlannedOutput, checks: list[dict[str, Any]], prompt: str, 
         "You are a strict visual quality judge. Image 1 is the candidate.",
         refs,
         f"It was asked to show: {out.label} ({out.kind}).",
+        *requested(out),
         f"The prompt it was made from: {prompt}",
-        "First describe what you actually see in image 1. Then answer every check below with a verdict "
-        "(pass, fail, uncertain, not_assessable), a score from 0 to 1, and one concrete finding sentence. "
+        "First describe what you actually see in image 1. Then answer every check below: first one concrete "
+        "finding sentence about what you see, then the verdict that follows from it (pass, fail, uncertain, "
+        "not_assessable; a finding that says it does not match is a fail), then a score from 0 to 1. "
         "Use uncertain when you cannot tell; never guess a pass.",
         *(f"- {c['name']}: {c['question']}" for c in checks),
         "Then give overall (0 to 1): how good it is among acceptable candidates, and a one-line summary.",
@@ -142,3 +149,31 @@ def findings(evaluation: Evaluation | None) -> list[str]:
     if evaluation is None:
         return []
     return [f"{c.name}: {c.finding}" for c in evaluation.checks if c.required and c.verdict != "pass"]
+
+
+REQUESTED = (
+    ("pose", "Requested pose"),
+    ("expression", "Requested facial expression"),
+    ("outfit", "Requested clothing"),
+    ("state", "Requested state"),
+    ("action", "Requested action"),
+)
+
+
+def requested(out: PlannedOutput) -> list[str]:
+    """What the output was asked for, from its plan rather than from the prompt that was sent, so a check
+    is judged against the request even when the prompt was rewritten (change 0004)."""
+    p = out.prompt_inputs
+    camera: dict[str, Any] = dict(p.get("camera_values") or {})
+    view = camera.get("view") or str(p.get("camera") or "").strip().rstrip(",")
+    lines = [f"Requested view: {view}." if view else ""]
+    lines.append(
+        "Requested framing: the whole figure from head to feet." if p.get("full_body") else
+        (f"Requested framing: {p['framing']}." if p.get("framing") else "")
+    )  # fmt: skip
+    lines += [f"{label}: {p[key]}." for key, label in REQUESTED if p.get(key)]
+    if p.get("background"):
+        lines.append(f"Requested background: {p['background']}.")
+    if p.get("empty_hands"):
+        lines.append("Requested: empty hands, nothing held or carried.")
+    return [line for line in lines if line]
