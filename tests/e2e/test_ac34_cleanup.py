@@ -35,3 +35,29 @@ def test_unchosen_candidates_and_variations(tmp_path: Path) -> None:
     p.use_variation("main")
     assert cleanup(p, "variation", flat.id)["deleted"] >= 1
     assert [v.id for v in p.info.all_variations()] == ["main"] and not p.images(variation=flat.id)
+
+
+def test_images_in_use_are_kept(tmp_path: Path) -> None:
+    ws = hf.Workspace(tmp_path / "ws", models=FakeModels())
+    p = ws.project(ws.import_file(FILE).project)
+    p.submit(
+        hf.CharacterPacks(
+            subject_id="char_001", packs=["hero"], selection=hf.Selection(rounds=1, candidates=2)
+        )
+    )
+    run_all(p)
+    unchosen = cleanup_candidates(p, "unchosen")
+    p.edit_subject("char_001", reference_images=[unchosen[0]])  # a person chose it as a reference
+    result = cleanup(p, "unchosen")
+    assert result["kept_in_use"] == 1 and p.image(unchosen[0])
+    with pytest.raises(InvalidRequest, match="name the variation"):
+        cleanup(p, "variation", None)
+    flat = p.add_variation("Flat", style_pack="clean-2d-animation")
+    p.submit(hf.CharacterPacks(subject_id="char_001", packs=["hero"], selection=hf.Selection(rounds=1)))
+    run_all(p)
+    flat_image = p.images(variation=flat.id)[0].id
+    p.use_variation("main")
+    p.edit_subject("char_001", reference_images=[flat_image])
+    with pytest.raises(InvalidRequest, match="still in use"):
+        cleanup(p, "variation", flat.id)
+    assert [v.id for v in p.info.all_variations()] == ["main", flat.id]  # nothing was removed

@@ -19,9 +19,31 @@ def test_each_candidate_is_another_reading(tmp_path: Path) -> None:
     run_all(p)
     heroes = [i for i in p.images(subject_id="char_001") if i.pack == "hero"]
     assert len(heroes) == 4
-    readings = {i.generation.prompt.rsplit(".", 2)[-2] for i in heroes if i.generation}
-    assert len({h.generation.prompt for h in heroes if h.generation}) == 4 and readings
-    assert all("reading" in (h.generation.prompt if h.generation else "") for h in heroes)
+    prompts = sorted(h.generation.prompt for h in heroes if h.generation)
+    assert [t.split(". ", 1)[0] for t in prompts] == [
+        f"Reading {i}: a distinct face" for i in range(1, 5)
+    ] or all(
+        t.startswith(f"reading {i}: a distinct face. ") for i, t in enumerate(prompts, 1)
+    )  # each candidate opens with its own reading
+
+
+def test_the_camera_phrase_stays_first(tmp_path: Path) -> None:
+    ws = hf.Workspace(tmp_path / "ws", models=FakeModels())
+    p = ws.project(ws.import_file(FILE).project)
+    p.submit(
+        hf.CharacterPacks(
+            subject_id="char_001",
+            packs=["hero"],
+            casting=2,
+            profile="final",
+            selection=hf.Selection(rounds=1),
+        )
+    )
+    run_all(p)
+    prompts = [
+        i.generation.prompt for i in p.images(subject_id="char_001") if i.pack == "hero" and i.generation
+    ]
+    assert len(prompts) == 2 and all(t.startswith("<sks> ") and ". reading " in t for t in prompts)
 
 
 def test_without_a_planner_answer_seeds_only(tmp_path: Path) -> None:

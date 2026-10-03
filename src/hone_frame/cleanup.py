@@ -48,8 +48,14 @@ def cleanup_candidates(store: ProjectStore, what: What, variation: str | None = 
 
 def cleanup(store: ProjectStore, what: What, variation: str | None = None) -> dict[str, Any]:
     """Delete them; an image still in use is kept and counted. Deleting a variation also removes it."""
+    doomed = cleanup_candidates(store, what, variation)
+    if what == "variation" and (used := [i for i in doomed if store.image_uses(i)]):
+        uses = "; ".join(f"{i}: {', '.join(store.image_uses(i))}" for i in used[:3])
+        raise InvalidRequest(
+            f"{len(used)} image(s) of this variation are still in use ({uses}); remove those uses first"
+        )
     deleted, kept = 0, 0
-    for image_id in cleanup_candidates(store, what, variation):
+    for image_id in doomed:
         if store.image_uses(image_id):
             kept += 1
             continue

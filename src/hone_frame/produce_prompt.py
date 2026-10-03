@@ -74,4 +74,8 @@ def cast(self: Producer, prompt: str, c: int, count: int) -> str:
     if not self.record.readings:
         return prompt
     reading = self.record.readings[(c - 1) % len(self.record.readings)].strip().rstrip(".")
-    return f"{reading}. {prompt}"  # first, where the model weighs the words most
+    phrase = self.composed.camera_phrase if self.composed else ""
+    if phrase and prompt.startswith(phrase):  # a dialect's camera phrase stays first (qwen-edit)
+        return f"{phrase}. {reading}. {prompt[len(phrase) :].lstrip('. ')}"
+    # first, where the model weighs the words most; the prompt may run longer than its budget by it
+    return f"{reading}. {prompt}"

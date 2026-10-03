@@ -516,7 +516,7 @@ judging profile chosen for the output kind:
 |---|---|---|
 | hero, view, expression, pose of a character | character-identity | identity (not for the hero), view, expression, outfit_state, framing, anatomy, style (preference) |
 | environment output | environment-continuity | viewpoint, anchors, recurring_objects (when listed), materials, lighting, style (preference) |
-| asset output | object-fidelity | shape, details, material, view_state, scale_cues (preference), style (preference) |
+| asset output | object-fidelity | shape, details, material, view_state, object_alone (object packs, 0006), scale_cues (preference), style (preference) |
 | interaction | interaction-plausibility | identity, contact, hand_placement, object_orientation, scale, anatomy, style (preference) |
 | scene, coverage, state | scene-fidelity | subject_presence, identity, action, reference_roles, composition, camera, state, style (preference) |
 | sequence frame | sequence-continuity | the scene-fidelity checks plus continuity and state_progression |
@@ -524,7 +524,9 @@ judging profile chosen for the output kind:
 Reference outputs of characters and objects (change 0003) also carry `clean_background` (the
 character-identity, object-fidelity and interaction-plausibility profiles ask whether the background is
 plain white) and, for characters with empty hands, `no_props` (character-identity asks whether the hands
-are empty).
+are empty). An object pack's images (change 0006) carry `object_alone`: the prompt has the required
+`alone` section ("The object alone: no person, no hands, nobody holding, wearing or riding it") and
+object-fidelity asks whether anyone is in the picture.
 
 **What was asked** (change 0004): the judge prompt lists the request from the plan, not only the prompt
 that was sent: `Requested view`, framing, pose, facial expression, clothing, state, action, background

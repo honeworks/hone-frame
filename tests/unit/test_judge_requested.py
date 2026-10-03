@@ -49,3 +49,21 @@ def test_the_judge_writes_its_finding_before_its_verdict() -> None:
     assert CheckAnswer.model_validate({"verdict": "pass"}).finding == ""  # read back leniently
     sent = answer_schema([{"name": "pose"}]).model_json_schema()
     assert "finding" in str(sent)
+
+
+def test_object_alone_is_judged_for_objects_only(rostam_project: hf.ProjectStore) -> None:
+    from hone_frame.judging import evaluate
+    from hone_frame.testing import judge_answer
+
+    plan = rostam_project.plan(hf.CharacterPacks(subject_id="char_001", packs=["actions"]))
+    obj = next(o for o in plan.outputs if o.kind == "asset")
+    character = next(o for o in plan.outputs if o.kind == "character")
+    catalog = rostam_project.workspace.presets
+    assert "object_alone" in [c["name"] for c in checks_for(catalog, obj)]
+    assert "object_alone" not in [c["name"] for c in checks_for(catalog, character)]
+    fails = FakeModels(judge=lambda _i, prompt, _im: judge_answer(prompt, fail=("object_alone",)))
+    evaluation = evaluate(fails, judge="qwen2.5vl-7b", think=False, out=obj, checks=checks_for(catalog, obj),
+                          candidate=Path(__file__), references=[], prompt="a spear")  # fmt: skip
+    assert not evaluation.passed and any(
+        c.name == "object_alone" and c.verdict == "fail" for c in evaluation.checks
+    )

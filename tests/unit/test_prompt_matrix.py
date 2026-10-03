@@ -79,6 +79,7 @@ def test_every_pack_prompt_keeps_what_it_is_for(
                 checked[key] = checked.get(key, 0) + 1
         assert WHITE in text, f"{where}: no white background"
         assert ("empty hands" in text) is bool(p.get("empty_hands")), f"{where}: hands"
+        assert ("the object alone" in text) is bool(p.get("object_alone")), f"{where}: nobody with an object"
         if out.pack == "actions" or out.kind == "asset":
             assert "empty hands" not in text, where
         assert len(composed.text.split()) <= composed.max_words * (1.5 if composed.over_budget else 1), where
