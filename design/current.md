@@ -380,7 +380,8 @@ this order: `hero` (front, full figure, neutral pose), `turnaround` (Front, 3/4,
 - **Judge options** (change 0006): `judge_mode` `default`, `strong_base` or `strong_all` uses the
   workspace's `strong_judge` for the base images or for every image; a plan without one set has an error.
 - **Clean-up** (change 0006, `cleanup.py`): delete unchosen candidates of finished outputs, or a
-  variation's images (not the active or only one); images in use are kept.
+  variation's images (not the active or only one). `unchosen` keeps and counts images in use; deleting a
+  variation is refused (`InvalidRequest`, naming the uses) while any of its images is in use.
 - **Whole-world runs** (change 0005, `world_runs.py`): `p.world_plan(variation)` lists the runs of every
   place and object without an image and every character, with an estimate (measured median seconds per
   image, or 70 s before any measurement); `p.generate_world(variation)` queues them in that order and
@@ -1082,7 +1083,7 @@ models.
 | AC-31 | Hero casting | candidates from distinct readings; seeds only when the planner fails |
 | AC-32 | Standard issues | fixes in the prompt, checks in the judging; unknown issues refused |
 | AC-33 | Judge options | the stronger judge where asked; a plan error without one |
-| AC-34 | Clean-up | unchosen candidates or a variation's images; images in use kept; the active variation refused |
+| AC-34 | Clean-up | unchosen candidates deleted, those in use kept and counted; a variation deleted only when none of its images is in use; the active variation refused |
 | AC-14 (real model) | One `SubjectReferences` hero with the draft profile on the GPU (`scripts/gpu-lock.sh`) | an image is generated and judged by the real models; the run completes as `done` or `needs_review`; the models are unloaded afterwards |
 
 ## 15. Known limits (0.1.0)

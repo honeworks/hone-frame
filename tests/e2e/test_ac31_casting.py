@@ -20,11 +20,8 @@ def test_each_candidate_is_another_reading(tmp_path: Path) -> None:
     heroes = [i for i in p.images(subject_id="char_001") if i.pack == "hero"]
     assert len(heroes) == 4
     prompts = sorted(h.generation.prompt for h in heroes if h.generation)
-    assert [t.split(". ", 1)[0] for t in prompts] == [
-        f"Reading {i}: a distinct face" for i in range(1, 5)
-    ] or all(
-        t.startswith(f"reading {i}: a distinct face. ") for i, t in enumerate(prompts, 1)
-    )  # each candidate opens with its own reading
+    for n, prompt in enumerate(prompts, 1):
+        assert prompt.startswith(f"reading {n}: a distinct face. ")  # each candidate opens with its own
 
 
 def test_the_camera_phrase_stays_first(tmp_path: Path) -> None:

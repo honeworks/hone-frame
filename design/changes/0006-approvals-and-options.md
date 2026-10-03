@@ -31,8 +31,9 @@ candidates nobody chose and with variations that were dropped.
    everything. The stronger judge is a workspace setting (`strong_judge`); without one the plan says so.
    On this machine no local vision model is clearly stronger (D-029), so the setting starts empty.
 5. **Desktop notifications** when a run waits for approval, needs a choice, or is done.
-6. **Clean-up**, the person's action: delete candidates of finished outputs that were not chosen, or a
-   whole variation's images (not the active or only one); an image in use is kept.
+6. **Clean-up**, the person's action: delete candidates of finished outputs that were not chosen (one in
+   use is kept), or a whole variation (not the active or only one; refused while any of its images is
+   in use, naming the uses).
 
 Found on the real models and fixed here:
 
