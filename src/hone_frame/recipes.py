@@ -57,11 +57,12 @@ def reference_look(kind: str) -> tuple[dict[str, Any], list[str]]:
     return look, flags
 
 
-def reference_lighting(built: Built, request: RequestBase) -> str:
+def reference_lighting(built: Built, request: RequestBase, kind: str = "") -> str:
     """Reference images use neutral studio light on a plain background, whatever the style pack's mood
-    lighting, unless the request or the project chose a lighting on purpose (brief §12, decisions D-021)."""
+    lighting, unless the request or the project chose a lighting on purpose (brief §12, decisions D-021);
+    a place uses daylight (change 0007: studio light failed outdoor places)."""
     chosen = request.presets.get("lighting") or built.choices.layers[2].get("lighting")
-    return chosen or "neutral-studio"
+    return chosen or ("soft-daylight" if kind == "environment" else "neutral-studio")
 
 
 class Built:
