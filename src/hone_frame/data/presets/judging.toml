@@ -3,7 +3,7 @@
 
 [[presets]]
 id = "character-identity"
-version = 4
+version = 5
 name = "Character identity"
 description = "Character reference images: is it the same person, in the requested view, expression, outfit and framing, drawn correctly?"
 
@@ -71,13 +71,19 @@ required = true
 when = "no_props"
 
 [[presets.values.checks]]
+name = "solo"
+question = "Is the character the only person in the picture, with nobody else in it?"
+required = true
+when = "solo"
+
+[[presets.values.checks]]
 name = "style"
 question = "Does it match the requested art style?"
 required = false
 
 [[presets]]
 id = "environment-continuity"
-version = 1
+version = 2
 name = "Environment continuity"
 description = "Environment images: right viewpoint, the place's anchors and recurring objects where they belong, materials and light."
 
@@ -107,6 +113,12 @@ required = true
 name = "lighting"
 question = "Is the lighting the one requested?"
 required = true
+
+[[presets.values.checks]]
+name = "no_people"
+question = "Is the place empty, with no people or animals in it?"
+required = true
+when = "empty_place"
 
 [[presets.values.checks]]
 name = "style"

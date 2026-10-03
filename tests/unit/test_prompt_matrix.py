@@ -188,3 +188,18 @@ def test_objects_in_the_hands_are_reported(rostam_project: hf.ProjectStore) -> N
         assert any("mace" in w and "Belongings" in w for w in warnings)
     finally:
         rostam_project.edit_subject(rostam.id, fields=rostam.fields)
+
+
+def test_references_show_nobody_else(rostam_project: hf.ProjectStore) -> None:
+    """A hero is alone, a place is empty, an object has nobody holding it (change 0006: a look guide that
+    describes warriors filled places and object images with people)."""
+    rostam = rostam_project.subjects("character")[0]
+    place = rostam_project.subjects("environment")[0]
+    hero = rostam_project.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["hero"])).outputs[0]
+    hall = rostam_project.plan(hf.SubjectReferences(subject_id=place.id)).outputs[0]
+    for out, words, flag in (
+        (hero, "only rostam, alone", "solo"),
+        (hall, "the place is empty", "empty_place"),
+    ):
+        text = compose(out, [], [], rostam_project.workspace.dialects.for_model(out.model)).text.lower()
+        assert words in text and flag in out.conditions

@@ -527,7 +527,9 @@ character-identity, object-fidelity and interaction-plausibility profiles ask wh
 plain white) and, for characters with empty hands, `no_props` (character-identity asks whether the hands
 are empty). An object pack's images (change 0006) carry `object_alone`: the prompt has the required
 `alone` section ("The object alone: no person, no hands, nobody holding, wearing or riding it") and
-object-fidelity asks whether anyone is in the picture.
+object-fidelity asks whether anyone is in the picture. Likewise a character drawn anew carries `solo`
+("Only Rostam, alone", judged `solo`) and a place's reference `empty_place` ("The place is empty: no
+people", judged `no_people`) (D-039).
 
 **What was asked** (change 0004): the judge prompt lists the request from the plan, not only the prompt
 that was sent: `Requested view`, framing, pose, facial expression, clothing, state, action, background
@@ -664,8 +666,9 @@ Output statuses:
 - **Planner check:** the planner is told what the image exists to show. A rewrite is refused when it is
   longer than 125% of `max_words` (or 110% of a draft that is already longer), loses the camera phrase,
   no longer names `image 1` when the draft did, or loses most of the words of what was asked.
-- **The look guide and must lists** (change 0005): sections `look` (after the shot; in every mode except
-  an edit of the same subject, unless the item's pack has `context = "full"`, like outfits and states)
+- **The look guide and must lists** (change 0005): sections `look` (after the shot; in prompts that draw
+  people: characters and scenes, not a place's or an object's own images (D-039); not in an edit of the
+  same subject unless the item's pack has `context = "full"`, like outfits and states)
   and `must` ("Always visible: …"); both are never dropped. The variation's `direction` follows the style
   words in `style_lead`. A subject's `never` list goes into the negative of models that take one.
 - When the dialect writes the camera phrase, `camera_angle` is not also sent as an input. The `planned`

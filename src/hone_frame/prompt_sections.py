@@ -204,7 +204,22 @@ def look(c: Ctx) -> str:
     new into the picture, like an outfit (`context` "full")."""
     if c.mode == "view" and c.inputs.get("context") != "full":
         return ""
+    if c.mode != "compose" and c.parts and c.parts[0].get("kind") in ("environment", "asset"):
+        return ""  # a place's or an object's own description says what it looks like; the look guide's
+        # people and costumes would walk into the picture (change 0006: crowds in an empty fortress)
     return str(c.inputs.get("look") or "").strip()
+
+
+def alone(c: Ctx) -> str:
+    """Nobody else in a reference image (change 0006): an object alone, a character alone, a place
+    empty. A look guide that describes people otherwise brings them into the picture."""
+    if c.inputs.get("object_alone"):
+        return "The object alone: no person, no hands, nobody holding, wearing or riding it"
+    if c.inputs.get("empty_place"):
+        return "The place is empty: no people, no animals, nobody in it"
+    if c.inputs.get("solo") and c.parts and c.mode != "view":  # an edit of one person keeps one person
+        return f"Only {c.parts[0].get('name')}, alone: no other people in the picture"
+    return ""
 
 
 def _items(value: Any) -> list[Any]:
@@ -251,11 +266,7 @@ SECTION: dict[str, Callable[[Ctx], str]] = {
     "background": _labelled("", "background"),
     "look": look,
     "must": must,
-    "alone": lambda c: (
-        "The object alone: no person, no hands, nobody holding, wearing or riding it"
-        if c.inputs.get("object_alone")
-        else ""
-    ),
+    "alone": alone,
     "props": lambda c: (
         "Empty hands: no weapon, tool or object held or carried" if c.inputs.get("empty_hands") else ""
     ),

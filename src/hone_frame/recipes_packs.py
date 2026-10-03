@@ -259,6 +259,7 @@ class _PackMaker:
         action = pack == "actions"
         flags = list(fields.pop("conditions", [])) + view_flags(values.get("camera"))
         flags += ["clean_background"] + (["no_props"] if empty_hands else [])
+        flags += ["solo"] if subject.kind == "character" else []
         links = [SubjectLink(subject_id=subject.id, version=subject.version)]
         if action and spec.get("asset_id"):
             asset = self.store.subject(spec["asset_id"])
@@ -278,6 +279,7 @@ class _PackMaker:
                 reference=True,
                 background=WHITE,
                 empty_hands=empty_hands,
+                solo=subject.kind == "character",
                 context=packs()[pack].context,
                 outfit=spec.get("outfit"),
                 state=spec.get("state"),
