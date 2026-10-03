@@ -91,7 +91,7 @@ class _ObjectMaker:
             "asset",
             subjects=[SubjectLink(subject_id=self.obj.id, version=self.obj.version)],
             judging="object-fidelity",
-            conditions=(["identity_ref"] if refs else []) + ["clean_background"],
+            conditions=(["identity_ref"] if refs else []) + ["clean_background", "object_alone"],
             pack=pack,
             item=spec["item"],
             prompt_inputs=base_inputs(
@@ -101,6 +101,7 @@ class _ObjectMaker:
                 reference=True,
                 background=WHITE,
                 empty_hands=False,
+                object_alone=True,
                 context="full" if pack == "hero" else "short",
                 lighting=self.lighting,
                 camera=spec.get("camera"),

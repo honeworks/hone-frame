@@ -73,4 +73,5 @@ def cast(self: Producer, prompt: str, c: int, count: int) -> str:
         )
     if not self.record.readings:
         return prompt
-    return f"{prompt} {self.record.readings[(c - 1) % len(self.record.readings)]}"
+    reading = self.record.readings[(c - 1) % len(self.record.readings)].strip().rstrip(".")
+    return f"{reading}. {prompt}"  # first, where the model weighs the words most

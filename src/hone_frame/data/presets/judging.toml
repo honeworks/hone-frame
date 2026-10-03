@@ -115,7 +115,7 @@ required = false
 
 [[presets]]
 id = "object-fidelity"
-version = 2
+version = 3
 name = "Object fidelity"
 description = "Object images: shape, distinctive details, material, the requested view and state."
 
@@ -149,6 +149,12 @@ required = true
 name = "scale_cues"
 question = "Do the scale cues make sense?"
 required = false
+
+[[presets.values.checks]]
+name = "object_alone"
+question = "Is the object shown alone, with no person, hands, horse rider or anyone holding, wearing or using it?"
+required = true
+when = "object_alone"
 
 [[presets.values.checks]]
 name = "clean_background"

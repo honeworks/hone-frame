@@ -34,6 +34,16 @@ candidates nobody chose and with variations that were dropped.
 6. **Clean-up**, the person's action: delete candidates of finished outputs that were not chosen, or a
    whole variation's images (not the active or only one); an image in use is kept.
 
+Found on the real models and fixed here:
+
+- An object's hero came out as a warrior holding the spear in a palace courtyard: the look guide (which
+  describes warriors) pulled a person into the picture. Object images now carry the required prompt
+  piece "The object alone: no person, no hands, nobody holding, wearing or riding it" and the judge check
+  `object_alone` (object-fidelity version 3); the spear then came out alone on white.
+- Casting readings appended at the end changed little; they now open the prompt, where the model weighs
+  words most. The four Sohrab candidates then differed in build, sleeves, coat length and colouring;
+  faces stay close (the description fixes most of the face).
+
 Documented, not built now:
 
 - **Grouping work by model** (all planning, then all images, then all judging) as an option. Outputs that
