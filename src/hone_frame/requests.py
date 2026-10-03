@@ -18,6 +18,8 @@ class RequestBase(Record):
     note: str = ""
     title: str = ""
     variation: str = ""  # a variation id (change 0005); empty: the project's active one
+    approval: Literal["auto", "base", "each"] = "auto"  # when the run waits for the person (0006)
+    judge_mode: Literal["default", "strong_base", "strong_all"] = "default"  # the stronger judge (0006)
 
     @property
     def task(self) -> str:
@@ -184,3 +186,6 @@ class Plan(Record):
     errors: list[str] = Field(default_factory=list[str])
     sheet_layout: str | None = None
     variation: str = ""  # the variation every image of this plan belongs to (change 0005)
+    checkpoints: list[str] = Field(default_factory=list[str])  # outputs after which the run waits (0006)
+    approval: str = "auto"
+    judge_mode: str = "default"

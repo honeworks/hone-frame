@@ -26,7 +26,16 @@ from hone_frame.produce_refs import resolve_refs
 from hone_frame.prompts import Composed, PlannerAnswer, compose, planner_problem, planner_prompt
 from hone_frame.records import ImageRecord
 from hone_frame.requests import PlannedOutput, PlannedRef
-from hone_frame.runs import OutputRecord, RunRecord, StopRequested, control, load_output, run_dir, save_output
+from hone_frame.runs import (
+    OutputRecord,
+    RunRecord,
+    StopRequested,
+    control,
+    load_output,
+    run_dir,
+    save_output,
+    set_control,
+)
 
 if TYPE_CHECKING:
     from hone_frame.store import ProjectStore
@@ -76,7 +85,18 @@ class Producer:
         self.log.write(
             "output_finished", output=self.out.id, status=self.record.status, message=self.record.reason
         )
+        self._checkpoint()
         return self.record
+
+    def _checkpoint(self) -> None:
+        """After a checkpoint output (an approval mode, change 0006), ask the person before going on:
+        the run stops before the next output, and Approve (resume) lets it continue."""
+        plan = self.run.plan
+        if self.out.id not in plan.checkpoints or plan.outputs[-1].id == self.out.id:
+            return
+        message = f"Waiting for your approval: {self.out.label} and what came before it"
+        set_control(self.store, self.run.id, "approve", message)
+        self.log.write("approval_needed", output=self.out.id, message=message)
 
     # ------------------------------------------------------------------------------------------ rounds
 
@@ -307,9 +327,9 @@ class Producer:
 
     def _check(self) -> None:
         action = control(self.store, self.run.id)
-        if action in ("pause", "cancel"):
+        if action in ("pause", "cancel", "approve"):  # approve: a checkpoint waits for the person (0006)
             self.log.write("stopped", output=self.out.id, message=action)
-            raise StopRequested(action)
+            raise StopRequested("cancel" if action == "cancel" else "pause")
 
     def _all_candidates(self) -> list[str]:
         mine = [i for i in self.store.images() if i.run_id == self.run.id and i.output_id == self.out.id]
