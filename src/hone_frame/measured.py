@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 from PIL import Image
 
 from hone_frame.ports import ModelFailure
-from hone_frame.records import CheckResult
+from hone_frame.records import CheckResult, Evaluation
 
 if TYPE_CHECKING:
     from hone_frame.produce import Producer
@@ -149,3 +149,16 @@ def _pose_kind(kind: str, rows: list[dict[str, Any]]) -> CheckResult:
                f"{theirs[0]:.2f}/{theirs[1]:.2f}" + ("; the figure stands" if upright else ""))  # fmt: skip
     return CheckResult(name="pose_kind", verdict=verdict, score=round(max(0.0, 1 - gap), 3), required=False,
                        finding=finding)  # fmt: skip
+
+
+def failed_early(p: Producer, image: ImageRecord, measured: list[CheckResult]) -> ImageRecord | None:
+    """A required measured failure: the candidate is rejected without asking the vision judge."""
+    failed = [c for c in measured if c.required and c.verdict == "fail"]
+    if not failed:
+        return None
+    summary = "; ".join(c.finding for c in failed)
+    evaluation = Evaluation(checks=measured, summary=summary, judge="measured", passed=False)
+    found = [c.finding for c in failed]
+    p.log.write("judged", output=p.out.id, round=image.round, candidate=image.candidate, image=image.id,
+                model="measured", passed=False, overall=0.0, message=summary, findings=found)  # fmt: skip
+    return p.store.update_image(image.id, evaluation=evaluation, status="rejected")

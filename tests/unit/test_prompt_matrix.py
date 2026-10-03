@@ -109,7 +109,7 @@ def _no_contradictions(out: PlannedOutput, composed: Composed, where: str) -> No
         assert "helmet" in text and "boots" in text, f"{where}: a piece of the outfit forgotten"
     if p.get("outfit"):
         assert "tiger-skin coat worn over" not in text, f"{where}: the usual outfit kept in an outfit change"
-    if composed.dialect == "qwen-edit":
+    if composed.dialect == "qwen-edit" and composed.mode != "compose":  # compose: no LoRA phrase (0007)
         assert composed.text.startswith("<sks> "), f"{where}: camera phrase not first"
     assert not re.search(r"\.\s*\.", composed.text) and composed.text.endswith("."), f"{where}: punctuation"
     sentences = [s.strip() for s in composed.text.split(". ") if s.strip()]

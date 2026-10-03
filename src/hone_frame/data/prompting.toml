@@ -46,7 +46,7 @@ max_words = 110
 style = "short"
 rules = "Keep the camera phrase that starts with <sks> exactly as it is, first. Then an edit instruction in the pattern 'keep X, change Y': name the reference as 'image 1', say what changes, then list what must not change. Do not describe the whole character again. Up to 110 words."
 [dialects.qwen-edit.compose]
-sections = ["camera_phrase", "scene", "look", "roles", "identity", "worn", "must", "action", "expression", "pose", "gaze", "shot", "state", "background", "props", "alone", "lighting", "text_refs", "style_lead", "note", "fixes"]
+sections = ["scene", "look", "roles", "identity", "worn", "must", "action", "expression", "pose", "gaze", "shot", "state", "background", "props", "alone", "lighting", "text_refs", "style_lead", "note", "fixes"]
 max_words = 150
 style = "short"
 rules = "Keep the camera phrase that starts with <sks> exactly as it is, first. Name each reference by number ('the woman from image 1', 'the kitchen from image 2') and say what each one contributes; then the action, light and style. Up to 150 words."

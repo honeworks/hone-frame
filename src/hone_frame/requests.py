@@ -18,6 +18,7 @@ class RequestBase(Record):
     note: str = ""
     title: str = ""
     variation: str = ""  # a variation id (change 0005); empty: the project's active one
+    use_best_available: bool = False  # unattended: a dependency nothing passed goes on from its best (0007)
     approval: Literal["auto", "base", "each"] = "auto"  # when the run waits for the person (0006)
     judge_mode: Literal["default", "strong_base", "strong_all"] = "default"  # the stronger judge (0006)
 

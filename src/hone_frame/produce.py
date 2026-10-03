@@ -19,6 +19,7 @@ from hone_frame.candidates import (
 from hone_frame.errors import NotFound
 from hone_frame.events import EventLog
 from hone_frame.judging import checks_for, evaluate, findings
+from hone_frame.measured import failed_early, measured_checks
 from hone_frame.pick import decide
 from hone_frame.ports import Generated, ModelFailure, ModelInfo
 from hone_frame.produce_prompt import cast, write_prompt
@@ -211,6 +212,9 @@ class Producer:
 
     def _judge(self, image: ImageRecord) -> ImageRecord:
         self.log.write("stage", stage="judging", output=self.out.id)
+        measured = measured_checks(self, image)  # numbers before opinions (change 0007)
+        if early := failed_early(self, image, measured):
+            return early
         self.log.write(
             "judging",
             output=self.out.id,
@@ -242,6 +246,7 @@ class Producer:
         except ModelFailure as exc:
             self.log.write("judge_failed", output=self.out.id, image=image.id, message=str(exc))
             return image
+        evaluation = evaluation.model_copy(update={"checks": [*evaluation.checks, *measured]})
         status = "candidate" if evaluation.passed else ("uncertain" if evaluation.uncertain else "rejected")
         image = self.store.update_image(image.id, evaluation=evaluation, status=status)
         self.log.write(
