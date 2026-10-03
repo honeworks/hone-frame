@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from hone_frame.errors import InvalidRequest
-from hone_frame.recipes import WHITE, Built, base_inputs, reference_lighting, view_flags
+from hone_frame.recipes import OBJECT_FRAMING, WHITE, Built, base_inputs, reference_lighting, view_flags
 from hone_frame.records import Subject, SubjectLink
 from hone_frame.references import ACCEPTED
 from hone_frame.requests import CharacterPacks, Dependency, PlannedOutput, PlannedRef
@@ -184,7 +184,7 @@ class _PackMaker:
         own = [self.ref(i, asset, "object") for i in asset.reference_images]
         out = self._add(
             "assets",
-            {"item": asset.name, "camera": "front", "framing": "the whole object centred"},
+            {"item": asset.name, "camera": "front", "framing": OBJECT_FRAMING},
             who=asset,
             references=own,
             conditions=["identity_ref"] if own else [],
