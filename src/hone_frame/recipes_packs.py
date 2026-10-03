@@ -209,6 +209,8 @@ class _PackMaker:
     def hero(self) -> dict[str, Any]:
         own = [self.ref(i, self.subject, "identity") for i in self.subject.reference_images]
         spec = {"item": "Hero", **packs()["hero"].items[0]}
+        if self.request.casting >= 2:  # distinct readings, one per candidate (change 0006)
+            spec |= {"casting": True, "candidates": self.request.casting}
         out = self._add("hero", spec, references=own, conditions=["identity_ref"] if own else [])
         return {"depends_on": [Dependency(output=out.id, role="identity")]}
 

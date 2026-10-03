@@ -55,6 +55,12 @@ def plan(store: ProjectStore, request: RequestBase | dict[str, Any]) -> Plan:
     checker = ModelCheck(store, profile, errors, warnings)
     outputs = [checker.finish(o) for o in built.outputs]
     checker.judge(selection.auto_judge)
+    if request.judge_mode != "default":
+        strong = store.workspace.settings.strong_judge
+        if strong is None:
+            errors.append("no stronger judge is set: choose one in Settings, or use the default judge")
+        else:
+            checker.info(strong, "stronger judge")
     if selection.auto_pick and not selection.auto_judge:
         errors.append("automatic pick needs automatic judging: turn the judge on, or pick by hand")
     if not outputs and not errors:

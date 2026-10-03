@@ -16,16 +16,17 @@ from hone_frame.candidates import (
     round_findings,
     seed_for,
 )
-from hone_frame.dialects import Dialect
 from hone_frame.errors import NotFound
 from hone_frame.events import EventLog
 from hone_frame.judging import checks_for, evaluate, findings
 from hone_frame.pick import decide
 from hone_frame.ports import Generated, ModelFailure, ModelInfo
+from hone_frame.produce_prompt import cast, write_prompt
 from hone_frame.produce_refs import resolve_refs
-from hone_frame.prompts import Composed, PlannerAnswer, compose, planner_problem, planner_prompt
+from hone_frame.prompts import Composed
 from hone_frame.records import ImageRecord
 from hone_frame.requests import PlannedOutput, PlannedRef
+from hone_frame.run_options import checkpoint, judge_for
 from hone_frame.runs import (
     OutputRecord,
     RunRecord,
@@ -34,7 +35,6 @@ from hone_frame.runs import (
     load_output,
     run_dir,
     save_output,
-    set_control,
 )
 
 if TYPE_CHECKING:
@@ -63,21 +63,25 @@ class Producer:
         self.composed: Composed | None = None
         self._infos: dict[str, ModelInfo | None] = {}
 
+    @property
+    def judge_model(self) -> str | None:
+        return judge_for(self.store, self.plan, self.profile.judge, self.out)
+
     def run_output(self) -> OutputRecord:
         if self.record.status in ("done", "replaced"):
             return self.record  # accepted earlier, or asked again in another run (D-019): never touched again
-        self._save(status="running", started_at=self.record.started_at or now(), error=None, reason="")
+        self.save(status="running", started_at=self.record.started_at or now(), error=None, reason="")
         self.log.write("output_started", output=self.out.id, label=self.out.label)
         try:
-            self._check()
+            self.check()
             self.refs = resolve_refs(self.store, self.run, self.out, self.folder / "work")
             self._rounds()
             self._pick()
         except StopRequested as stop:
-            self._save(status="paused" if stop.action == "pause" else "canceled", reason=str(stop))
+            self.save(status="paused" if stop.action == "pause" else "canceled", reason=str(stop))
             raise
         except ModelFailure as exc:
-            self._save(
+            self.save(
                 status="failed", error=str(exc), reason="technical failure after retries", ended_at=now()
             )
             self.log.write("output_finished", output=self.out.id, status="failed", message=str(exc))
@@ -89,14 +93,7 @@ class Producer:
         return self.record
 
     def _checkpoint(self) -> None:
-        """After a checkpoint output (an approval mode, change 0006), ask the person before going on:
-        the run stops before the next output, and Approve (resume) lets it continue."""
-        plan = self.run.plan
-        if self.out.id not in plan.checkpoints or plan.outputs[-1].id == self.out.id:
-            return
-        message = f"Waiting for your approval: {self.out.label} and what came before it"
-        set_control(self.store, self.run.id, "approve", message)
-        self.log.write("approval_needed", output=self.out.id, message=message)
+        checkpoint(self.store, self.run, self.out, self.log)
 
     # ------------------------------------------------------------------------------------------ rounds
 
@@ -108,17 +105,18 @@ class Producer:
         }
         found: list[str] = []
         for r in range(1, self.selection.rounds + 1):
-            missing = [c for c in range(1, self.selection.candidates + 1) if (r, c) not in stored]
+            count = int(self.out.prompt_inputs.get("candidates") or self.selection.candidates)  # casting
+            missing = [c for c in range(1, count + 1) if (r, c) not in stored]
             prompt = self._prompt(found) if missing else self.record.prompt
             round_images: list[ImageRecord] = []
-            for c in range(1, self.selection.candidates + 1):
-                image = stored.get((r, c)) or self._candidate(r, c, prompt)
+            for c in range(1, count + 1):
+                image = stored.get((r, c)) or self._candidate(r, c, self._cast(prompt, c, count))
                 if image is None:
                     continue
-                if self.selection.auto_judge and image.evaluation is None and self.profile.judge:
+                if self.selection.auto_judge and image.evaluation is None and self.judge_model:
                     image = self._judge(image)
                 round_images.append(image)
-            self._save(rounds_done=r, candidates=self._all_candidates())
+            self.save(rounds_done=r, candidates=self._all_candidates())
             if self.selection.stop == "stop_on_pass" and any(
                 i.evaluation and i.evaluation.passed for i in round_images
             ):
@@ -132,50 +130,10 @@ class Producer:
 
     def _prompt(self, found: list[str]) -> str:
         """The prompt in the model's dialect for this mode; the planner only within its rules (§8.8)."""
-        self._check()
-        self.log.write("stage", stage="planning", output=self.out.id)
-        dialect = self.store.workspace.dialects.for_model(self.out.model)
-        draft = compose(self.out, [(ref, name) for ref, _, name in self.refs], found, dialect)
-        self.composed = draft
-        prompt = draft.text
-        if draft.over_budget:
-            self.log.write(
-                "prompt_long",
-                output=self.out.id,
-                message=f"{len(prompt.split())} words, over the {draft.max_words}-word guide for "
-                f"{draft.dialect}; sent whole rather than without what was asked",
-            )
-        if self.profile.planner and draft.mode not in ("promotion", "fixed"):
-            prompt = self._planned(draft, dialect, found) or prompt
-        self._save(prompt=prompt)
-        self.log.write("planned", output=self.out.id, message=prompt, dialect=draft.dialect, mode=draft.mode)
-        return prompt
+        return write_prompt(self, found)
 
-    def _planned(self, draft: Composed, dialect: Dialect, found: list[str]) -> str | None:
-        try:
-            answer = self._retrying(
-                "planner",
-                lambda: self.models.ask(
-                    self.profile.planner or "",
-                    planner_prompt(self.out, draft, dialect, found),
-                    images=[],
-                    schema=PlannerAnswer,
-                    think=self.profile.planner_think,
-                ),
-            )
-        except ModelFailure as exc:
-            self.log.write(
-                "planner_failed", output=self.out.id, message=f"{exc}; the composed prompt is used"
-            )
-            return None
-        text = answer.prompt.strip()
-        if problem := planner_problem(text, draft):
-            self.log.write(
-                "planner_rejected", output=self.out.id, message=f"{problem}; the composed prompt is used"
-            )
-            return None
-        self.negative = answer.negative
-        return text
+    def _cast(self, prompt: str, c: int, count: int) -> str:
+        return cast(self, prompt, c, count)
 
     def _info(self, model_id: str) -> ModelInfo | None:
         """What the port says about a model; when it cannot say, an event records what was left out."""
@@ -201,7 +159,7 @@ class Producer:
         out.parent.mkdir(parents=True, exist_ok=True)
         started = time.monotonic()
         try:
-            result = self._retrying("generate", lambda: self._generate(prompt, out, seed))
+            result = self.retrying("generate", lambda: self._generate(prompt, out, seed))
         except CandidateRefused as exc:
             self.log.write("candidate_failed", **slot, message=str(exc))
             return None
@@ -235,7 +193,7 @@ class Producer:
             cost_estimated=result.cost_estimated or None,
             duration_s=round(result.elapsed_s or time.monotonic() - started, 3),
         )
-        self._save(candidates=[*self._all_candidates()])
+        self.save(candidates=[*self._all_candidates()])
         return image
 
     def _generate(self, prompt: str, out: Path, seed: int) -> Generated:
@@ -258,7 +216,7 @@ class Producer:
             output=self.out.id,
             round=image.round,
             candidate=image.candidate,
-            model=self.profile.judge,
+            model=self.judge_model,
             image=image.id,
             label=self.out.label,
         )
@@ -268,11 +226,11 @@ class Producer:
         ]
         started = time.monotonic()
         try:
-            evaluation = self._retrying(
+            evaluation = self.retrying(
                 "judge",
                 lambda: evaluate(
                     self.models,
-                    judge=self.profile.judge or "",
+                    judge=self.judge_model or "",
                     think=self.profile.judge_think,
                     out=self.out,
                     checks=checks,
@@ -292,7 +250,7 @@ class Producer:
             round=image.round,
             candidate=image.candidate,
             image=image.id,
-            model=self.profile.judge,
+            model=self.judge_model,
             passed=evaluation.passed,
             overall=evaluation.overall,
             message=evaluation.summary,
@@ -302,30 +260,30 @@ class Producer:
         return image
 
     def _pick(self) -> None:
-        self._check()
+        self.check()
         self.log.write("stage", stage="selecting", output=self.out.id)
         images = [self.store.image(i) for i in self._all_candidates()]
         status, winner, best, reason = decide(
             self.store, images, self.selection.auto_pick, self.folder / "select.jsonl"
         )
-        self._save(status=status, selected=winner, best_available=best, reason=reason, ended_at=now())
+        self.save(status=status, selected=winner, best_available=best, reason=reason, ended_at=now())
         self.log.write("picked", output=self.out.id, image=winner, message=reason)
 
     # --------------------------------------------------------------------------------------- helpers
 
-    def _retrying(self, what: str, call: Callable[[], T]) -> T:
+    def retrying(self, what: str, call: Callable[[], T]) -> T:
         for attempt in range(self.selection.technical_retries + 1):
-            self._check()
+            self.check()
             try:
                 return call()
             except ModelFailure as exc:
                 if not exc.transient or attempt == self.selection.technical_retries:
                     raise
-                self._save(retries=self.record.retries + 1)
+                self.save(retries=self.record.retries + 1)
                 self.log.write("retry", output=self.out.id, what=what, attempt=attempt + 1, message=str(exc))
         raise AssertionError("unreachable")  # pragma: no cover
 
-    def _check(self) -> None:
+    def check(self) -> None:
         action = control(self.store, self.run.id)
         if action in ("pause", "cancel", "approve"):  # approve: a checkpoint waits for the person (0006)
             self.log.write("stopped", output=self.out.id, message=action)
@@ -335,6 +293,6 @@ class Producer:
         mine = [i for i in self.store.images() if i.run_id == self.run.id and i.output_id == self.out.id]
         return [i.id for i in sorted(mine, key=lambda i: (i.round or 0, i.candidate or 0))]
 
-    def _save(self, **fields: Any) -> None:
+    def save(self, **fields: Any) -> None:
         self.record = self.record.model_copy(update=fields)
         save_output(self.store, self.run.id, self.record)

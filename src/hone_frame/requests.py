@@ -96,6 +96,7 @@ class CharacterPacks(RequestBase):
     custom: dict[str, list[str]] = Field(default_factory=dict[str, list[str]])  # pack -> extra items
     redraw_hero: bool = False  # draw a new hero even when one is accepted
     only_custom: bool = False  # make only the `custom` items ("add to a pack"), not the packs' defaults
+    casting: int = Field(default=0, ge=0, le=8)  # hero candidates from distinct readings (change 0006)
 
 
 class Promote(RequestBase):

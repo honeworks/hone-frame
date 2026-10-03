@@ -7,6 +7,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, create_model
 
+from hone_frame.issues import issue_checks
 from hone_frame.ports import Models
 from hone_frame.presets import PresetCatalog
 from hone_frame.records import CheckResult, Evaluation
@@ -51,6 +52,7 @@ def checks_for(catalog: PresetCatalog, out: PlannedOutput) -> list[dict[str, Any
         c for c in checks if (not c.get("when") or c["when"] in flags) and c.get("unless") not in flags
     ]
     applicable += subject_checks(out)
+    applicable += issue_checks(list(out.prompt_inputs.get("issues") or []))
     if "preserve" in flags:
         applicable.append(
             {

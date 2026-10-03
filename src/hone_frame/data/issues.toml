@@ -1,0 +1,123 @@
+# Standard issues a person can tick on "Generate again" (change 0006). Each adds its `fix` to the prompt of
+# the new attempt and its `check` to the judge's required checks for it. Keep `fix` a positive instruction
+# (image models without a negative prompt draw what they read).
+
+[issues.wrong_pose]
+label = "Wrong pose"
+group = "Body"
+fix = "the body pose must be exactly the one asked for"
+check = "Name the body position, then compare it with the requested pose. Is it the one asked for?"
+
+[issues.face_differs]
+label = "Face is not the same person"
+group = "Identity"
+fix = "the face must be exactly the face of the reference image: same shape, eyes, nose, mouth, beard and hair"
+check = "Is the face the same person as the reference image (shape, eyes, nose, mouth, hair, beard)?"
+
+[issues.body_differs]
+label = "Build or height changed"
+group = "Identity"
+fix = "keep exactly the same build, height and proportions as the reference image"
+check = "Are the build, height and proportions the same as the reference?"
+
+[issues.hands]
+label = "Extra or missing fingers, bad hands"
+group = "Anatomy"
+fix = "two natural hands with five fingers each, clearly drawn"
+check = "Count the fingers of each visible hand: are there exactly five, naturally shaped?"
+
+[issues.feet]
+label = "Malformed or wrongly turned feet"
+group = "Anatomy"
+fix = "two natural feet, both pointing the same way as the body, firmly on the ground"
+check = "Are both feet whole and pointing the way the body faces, not twisted, merged or missing?"
+
+[issues.limbs]
+label = "Twisted or extra limbs"
+group = "Anatomy"
+fix = "two arms and two legs, naturally jointed and in proportion"
+check = "Are there exactly two arms and two legs, naturally jointed?"
+
+[issues.outfit_piece]
+label = "A piece of the outfit is wrong or missing"
+group = "Clothing"
+fix = "every piece of the outfit exactly as described and as in the reference image"
+check = "Is every piece of the outfit present and as described (helmet, coat, belt, trousers, boots)?"
+
+[issues.colours]
+label = "Wrong colours"
+group = "Clothing"
+fix = "the colours exactly as described and as in the reference image"
+check = "Are the colours of the clothing and objects as described and as in the reference?"
+
+[issues.period]
+label = "Wrong culture or period"
+group = "Clothing"
+fix = "costume, armour and objects strictly of the world's culture and period, as the look guide describes"
+check = "Do the costume, armour and objects belong to the culture and period described, with nothing from another era or region?"
+
+[issues.background]
+label = "Background is not plain white"
+group = "Look"
+fix = "a plain pure white background with nothing on it"
+check = "Is the background plain white, with no scenery, floor or objects?"
+
+[issues.object_in_hands]
+label = "Holds an object it should not"
+group = "Look"
+fix = "both hands empty and open, holding nothing"
+check = "Are both hands empty?"
+
+[issues.camera]
+label = "Wrong camera angle or view"
+group = "Framing"
+fix = "the camera view exactly as asked"
+check = "Is the camera view and angle exactly the one requested?"
+
+[issues.cropped]
+label = "Cropped or cut off"
+group = "Framing"
+fix = "the whole subject inside the frame with space around it, nothing cut off"
+check = "Is the whole subject inside the frame, nothing cut off?"
+
+[issues.too_far]
+label = "Too far away or too small"
+group = "Framing"
+fix = "the subject large in the frame, filling most of the image height"
+check = "Does the subject fill most of the image height?"
+
+[issues.expression]
+label = "Wrong facial expression"
+group = "Face"
+fix = "the facial expression must clearly and strongly show the emotion asked for"
+check = "Does the face clearly show the requested expression?"
+
+[issues.style_drift]
+label = "Style drifted"
+group = "Look"
+fix = "exactly the same art style as the reference image and the style asked for"
+check = "Is the art style the same as the reference and the style requested?"
+
+[issues.extra_people]
+label = "Extra people or creatures"
+group = "Look"
+fix = "only the one subject in the picture, nobody and nothing else"
+check = "Is the subject alone, with no extra people or creatures?"
+
+[issues.text]
+label = "Text, letters or watermark"
+group = "Look"
+fix = "no lettering anywhere in the picture"
+check = "Is the picture free of text, letters, logos and watermarks?"
+
+[issues.blurry]
+label = "Blurry or low detail"
+group = "Look"
+fix = "sharp focus and fine detail throughout"
+check = "Is the image sharp and detailed?"
+
+[issues.object_shape]
+label = "Object shape is wrong"
+group = "Objects"
+fix = "the object's shape exactly as described and as in its reference image"
+check = "Is the object's shape as described and as in its reference image?"

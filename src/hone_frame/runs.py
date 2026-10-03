@@ -56,6 +56,7 @@ class OutputRecord(Record):
     manual_note: str = ""
     reason: str = ""
     replaced_by: dict[str, str] | None = None  # {"run", "output"}: a person asked for it again
+    readings: list[str] = Field(default_factory=list[str])  # a casting hero's readings (change 0006)
     retries: int = 0
     error: str | None = None
     prompt: str = ""

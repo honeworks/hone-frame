@@ -7,6 +7,7 @@ from typing import Any
 from hone_frame._dashboard_api import ID, P, api, json_body
 from hone_frame._dashboard_data import image_card
 from hone_frame.characters import belonging_row, variation_id
+from hone_frame.cleanup import cleanup, cleanup_candidates
 from hone_frame.recipes_packs import accepted_hero
 from hone_frame.records import Selection
 from hone_frame.workspace import Workspace
@@ -89,3 +90,15 @@ def compare(ws: Workspace, project_id: str, subject_id: str, **_: Any) -> list[d
         card = image_card(store, store.image(hero)) if hero else None
         rows.append({"variation": v.model_dump(mode="json"), "hero": card})
     return rows
+
+
+@api("POST", P + "/cleanup")
+def clean_up(ws: Workspace, project_id: str, *, body: Any, **_: Any) -> dict[str, Any]:
+    """`{"what": "unchosen" | "variation", "variation", "dry_run"}`: what a clean-up deletes, or do it."""
+    data = json_body(body)
+    store = ws.project(project_id)
+    what = "variation" if data.get("what") == "variation" else "unchosen"
+    variation = str(data.get("variation") or "") or None
+    if data.get("dry_run"):
+        return {"images": len(cleanup_candidates(store, what, variation))}
+    return cleanup(store, what, variation)

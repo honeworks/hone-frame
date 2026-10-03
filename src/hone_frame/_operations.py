@@ -64,10 +64,13 @@ class ProjectOperations:
         note: str = "",
         profile: str | None = None,
         selection: Selection | None = None,
+        issues: list[str] | None = None,
     ) -> RunView:
         from hone_frame.control import rerun
 
-        return rerun(self._store, run_id, output_id, note=note, profile=profile, selection=selection)
+        return rerun(
+            self._store, run_id, output_id, note=note, profile=profile, selection=selection, issues=issues
+        )
 
     def pick(self, run_id: str, output_id: str, image_id: str, *, note: str = "") -> OutputRecord:
         from hone_frame.control import pick

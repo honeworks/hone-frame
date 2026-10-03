@@ -122,6 +122,11 @@ class FakeModels:
         if issubclass(schema, JudgeAnswer):
             judged = sum(1 for c in self.asked[: index + 1] if "quality judge" in c.prompt) - 1
             return schema.model_validate(self.judge(judged, prompt, list(images)))
+        if "readings" in schema.model_fields:  # hero casting: as many distinct readings as asked
+            n = int(re.search(r"Write (\d+) distinct readings", prompt).group(1))  # type: ignore[union-attr]
+            return schema.model_validate(
+                {"readings": [f"reading {i}: a distinct face" for i in range(1, n + 1)]}
+            )
         if "use" in schema.model_fields:  # the planner's choice of a scene's belongings: those named in it
             scene = prompt.split("Scene: ", 1)[-1].split("\n", 1)[0].lower()
             rows = re.findall(r"^- ([a-z]+_\d+): ([^,]+),", prompt, re.M)
