@@ -363,3 +363,24 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
 - **Reason:** a hero drawn from words now carries the look guide as well as the description; the model's
   text encoder reads long prompts, and the guides' range is 50 to 150 words.
 
+## D-036: approval is a planned pause  (2026-10-03)
+
+- **Choice:** an approval mode is a list of checkpoint outputs in the plan; after one the producer sets
+  the run's control to `approve` with a message, so the run stops before the next output exactly as a
+  pause does; approving is resuming. Base outputs are planned first so `base` asks once.
+- **Reason:** it reuses the tested pause and resume path and keeps every image; nothing new runs while
+  the person looks.
+
+## D-037: casting varies what the description leaves open  (2026-10-03)
+
+- **Choice:** hero candidates come from planner-written readings that keep every stated fact and vary
+  only what is unstated; the readings are stored on the output so a resumed run uses the same ones.
+- **Reason:** z-image-turbo is distilled and gives near-copies for one prompt whatever the seed.
+
+## D-038: no final pass and no grouping by model yet  (2026-10-03)
+
+- **Choice:** both are documented in 0006 and not built: no upscaler is installed (SeedVR2 3B is 3.9 GB
+  with ~15 GB free), and grouping by model needs the base group made and judged first, which approvals
+  now provide.
+- **Reason:** the owner asked for them as options, not defaults; neither may slow down development work.
+

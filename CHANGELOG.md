@@ -8,6 +8,13 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Choices when generation starts (change 0006): run automatically, approve the base images first, or
+  approve each step; a stronger judge for base images or for everything; hero candidates that really
+  differ (drawn from distinct readings of the description).
+- "Generate again" offers 20 standard issues to tick (wrong pose, malformed feet, wrong culture or period,
+  background not white...), each fixing the next prompt and judged.
+- Desktop notifications when a run waits for approval, needs a choice or is done; a Clean up action for
+  unchosen candidates and dropped variations.
 - Variations (change 0005): one world, several styles; every image belongs to a variation, each with its
   own heroes; a switcher on the project page; compare a character's hero across variations.
 - The world's look guide (culture, period, costume, materials in plain sentences) in every prompt that

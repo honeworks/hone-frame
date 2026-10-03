@@ -29,7 +29,13 @@ def checkpoint(store: ProjectStore, run: RunRecord, out: PlannedOutput, log: Eve
     plan = run.plan
     if out.id not in plan.checkpoints or plan.outputs[-1].id == out.id:
         return
-    message = f"Waiting for your approval: {out.label} and what came before it"
+    done = plan.outputs[: plan.outputs.index(out) + 1]
+    since = [
+        o.label
+        for o in done[max((i for i, o in enumerate(done[:-1]) if o.id in plan.checkpoints), default=-1) + 1 :]
+    ]
+    shown = ", ".join(since[:4]) + (f" and {len(since) - 4} more" if len(since) > 4 else "")
+    message = f"Waiting for your approval: {shown}"
     set_control(store, run.id, "approve", message)
     log.write("approval_needed", output=out.id, message=message)
 
