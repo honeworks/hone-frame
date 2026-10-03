@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, create_model
+from pydantic import BaseModel, ConfigDict, Field, create_model
 
 from hone_frame.ports import Models
 from hone_frame.presets import PresetCatalog
@@ -17,7 +17,9 @@ class CheckAnswer(BaseModel):
     """`finding` comes first, so the judge says what it sees before it decides (change 0004: with the
     verdict first, the 7B judge wrote "not kneeling" and still answered pass)."""
 
-    finding: str = Field(min_length=3)
+    model_config = ConfigDict(json_schema_extra={"required": ["finding", "verdict"]})  # asked of the judge
+
+    finding: str = ""  # an empty one is accepted when read back
     verdict: Literal["pass", "fail", "uncertain", "not_assessable"]
     score: float | None = Field(default=None, ge=0.0, le=1.0)
 
