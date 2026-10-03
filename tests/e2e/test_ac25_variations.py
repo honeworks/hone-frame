@@ -18,7 +18,7 @@ def _project(tmp_path: Path) -> tuple[hf.ProjectStore, FakeModels]:
 
 
 def test_variations_keep_their_own_images(tmp_path: Path) -> None:
-    p, fake = _project(tmp_path)
+    p, _ = _project(tmp_path)
     first = p.info.variation_of().id
     assert first == "main" and p.info.all_variations()[0].style_pack == "historical-epic"
     p.submit(hf.CharacterPacks(subject_id="char_001", packs=["turnaround"], selection=ONE))
@@ -29,8 +29,6 @@ def test_variations_keep_their_own_images(tmp_path: Path) -> None:
     assert plan.variation == flat.id and plan.outputs[0].pack == "hero"  # a new hero for this variation
     hero = plan.outputs[0]
     assert "2D" in hero.prompt_inputs["style"]["short"]  # the variation's style pack
-        "prefix", "Flat 2D vector animation"
-    )
     assert hero.prompt_inputs["style"]["direction"] == "thick outlines"
     p.submit(hf.CharacterPacks(subject_id="char_001", packs=["turnaround"], selection=ONE))
     run_all(p)

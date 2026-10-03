@@ -197,7 +197,7 @@ function sheetSection(page) {
 
 function generateDialog(page) {
   const belongings = page.assets.length ? [{ id: "assets", label: "Belongings", custom: null, items: page.assets.map((a) => ({ item: a.name, image: a.hero })) }] : [];
-  const packs = [...page.packs, ...belongings];
+  const packs = [...page.packs.filter((p) => !p.subject), ...belongings];  // belonging sections: the Belongings row
   const boxes = {};
   const extras = {};
   const rows = packs.map((p) => {

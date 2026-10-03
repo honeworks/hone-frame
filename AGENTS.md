@@ -36,6 +36,8 @@ src/hone_frame/
   recipes.py  recipes_subjects.py  recipes_scenes.py  recipes_packs.py   request -> planned outputs
   data/character_packs.toml  characters.py   character packs; the character page, world, model sheet
   project_file.py                        project files (TOML/JSON): import by name, write back
+  variations.py  world_runs.py           variations of a world; whole-world runs and follow-ups
+  recipes_objects.py  data/object_packs.toml  pose_library.py   object packs; mannequin pose references
   references.py  planning.py             reference roles and limits, plans
   prompts.py  prompt_sections.py  dialects.py  data/prompting.toml   prompts per model dialect, task and style
   judging.py  pick.py                    judging profiles and verdicts, hone-select picks
@@ -44,7 +46,8 @@ src/hone_frame/
   events.py                              events, estimates, usage
   sheets.py  sheets_model.py  exports.py   the Pillow compositor and model sheet, zip exports
   ports.py  models.py                    the Models port; HoneModels (hone-models)
-  dashboard.py  _dashboard_api.py  _dashboard_work.py  _dashboard_characters.py  _dashboard_data.py
+  dashboard.py  _dashboard_api.py  _dashboard_work.py  _dashboard_characters.py  _dashboard_world.py
+  _dashboard_data.py
   dashboard_page/                        the local dashboard
   cli.py                                 the CLI (extra cli)
   testing/                               FakeModels, sample_workspace

@@ -23,9 +23,9 @@ example: four characters, their belongings, three places, a shared object and tw
 | Section | Keys |
 |---|---|
 | `format_version` | `"1"` |
-| `[project]` | `name` (required), `brief`, `direction`, `style` (a style pack id, e.g. `historical-epic`, `clean-2d-animation`) |
-| `[[characters]]` | `name`, `description`, `appearance`, `build`, `features`, `outfit`, `states` (a list of `{name, kind, description}`; kind is `outfit`, `expression`, `condition`, `lighting` or `other`) |
-| `[[characters.belongings]]` | objects that belong to that character: `name`, `description`, `size`, `materials`, `colours`, `details` |
+| `[project]` | `name` (required), `brief`, `direction`, `style` (the first variation's style pack, e.g. `historical-epic`), `look` (the world's look guide: what things look like, in concrete sentences), `variations` (more ways of drawing it: a list of `{name, style, direction}`) |
+| `[[characters]]` | `name`, `description`, `appearance`, `build`, `features`, `outfit`, `must` and `never` (lists: what every image always or never shows), `states` (a list of `{name, kind, description}`; kind is `outfit`, `expression`, `condition`, `lighting` or `other`) |
+| `[[characters.belongings]]` | objects that belong to that character: `name`, `description`, `size`, `materials`, `colours`, `details`, `must`, `never` |
 | `[[places]]` | `name`, `description`, `anchors`, `materials`, `viewpoints`, `recurring_objects` |
 | `[[objects]]` | shared objects (no owner), with the belongings' keys |
 | `[[scenes]]` | `name`, `description`, `action`, `camera`, `expression`, `pose`, `lighting` (preset ids or words), and the names in `characters`, `places` and `objects` (world objects or belongings) |

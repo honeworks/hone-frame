@@ -326,3 +326,40 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
 - **Reason:** the owner tests by editing one file and importing it again; deleting what a file leaves out
   would lose images and runs made since.
 
+## D-031: variations hold images, the world holds what things are  (2026-10-03)
+
+- **Choice:** subjects, scenes and the look guide belong to the project; style, style notes and every
+  generated image belong to a variation. A project made before change 0005 has one implicit variation,
+  `main`, and its visual direction becomes its look guide.
+- **Reason:** the owner wants to try styles before choosing one, without typing the world again; a
+  Sasanian warrior is Sasanian in every style.
+
+## D-032: mannequins as pose references, drawn once per project  (2026-10-03)
+
+- **Choice:** pose items take a plain wooden mannequin in the pose as a `pose` reference. Mannequins are
+  made with one fixed wording (no planner), judged by `pose-reference`, belong to no variation and are
+  reused by every character of the project.
+- **Reason:** with the mannequin FLUX.2 klein drew kneeling, running and sitting correctly in a realistic
+  and a 2D style; with text alone it kept the standing pose of the hero.
+
+## D-033: belongings are made before actions, as whole objects  (2026-10-03)
+
+- **Choice:** a belonging without an accepted hero is made (hero and five views) in the character's
+  request before its actions; it is shown as a section of the character page, not on a page of its own.
+  World objects use the same object packs and show their sections on the World page.
+- **Reason:** the owner never saw the spear before the action that used it, and wants belongings handled
+  like the character's own packs.
+
+## D-034: "never" goes to the judge and the negative, not the prompt  (2026-10-03)
+
+- **Choice:** a subject's never list becomes a required judge check and part of the negative prompt of
+  models that take one; it is never written into the positive prompt.
+- **Reason:** "no cape" in a positive prompt tends to draw a cape; z-image and FLUX.2 have no negative,
+  so the judge is what enforces it there.
+
+## D-035: FLUX.2 klein text-to-image budget 150 words  (2026-10-03)
+
+- **Choice:** the FLUX.2 klein `generate` budget rises from 120 to 150 words.
+- **Reason:** a hero drawn from words now carries the look guide as well as the description; the model's
+  text encoder reads long prompts, and the guides' range is 50 to 150 words.
+

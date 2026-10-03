@@ -13,7 +13,8 @@ const refresh = () => window.dispatchEvent(new Event("hf:projects"));
 
 export async function variationBar() {
   const data = await api(projectPath("/variations"));
-  const chooser = select(data.variations.map((v) => [v.id, `${v.name} · ${styleName(v.style_pack)}`]), data.active, { "aria-label": "Variation", style: "width:auto;height:36px" });
+  const label = (v) => (v.name === styleName(v.style_pack) ? v.name : `${v.name} · ${styleName(v.style_pack)}`);
+  const chooser = select(data.variations.map((v) => [v.id, label(v)]), data.active, { "aria-label": "Variation", style: "width:auto;height:36px" });
   chooser.addEventListener("change", async () => {
     try { await api(projectPath(`/variations/${chooser.value}/use`), { method: "POST", body: {} }); toast("Variation switched: every page now shows its images."); refresh(); }
     catch (error) { failure(error); }

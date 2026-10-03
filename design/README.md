@@ -62,6 +62,7 @@ chooses a paid model.
 | [`changes/0002-prompt-dialects.md`](changes/0002-prompt-dialects.md) | prompts written per model, task and style |
 | [`changes/0003-character-first.md`](changes/0003-character-first.md) | complete character packs, world and character assets, a dashboard that follows the work |
 | [`changes/0004-robust-generation.md`](changes/0004-robust-generation.md) | prompts that keep what they are for, a judge told what was asked, project files |
+| [`changes/0005-world-variations.md`](changes/0005-world-variations.md) | variations of one world, the look guide, must/never lists, the pose library, object packs, whole-world runs |
 | [`history/`](history/) | the owner's product brief, kept in full |
 | [`decisions.md`](decisions.md) | small implementation choices, and the items awaiting owner review |
 

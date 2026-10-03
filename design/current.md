@@ -195,16 +195,29 @@ assert [r.subject_id for r in shot.outputs[0].references] == [woman.id, kitchen.
 
 ### 4.2 Projects and subjects
 
-- `Project`: `id`, `name`, `brief`, `direction`, `style_pack` (preset id), `defaults` (profile names per
+- `Project`: `id`, `name`, `brief`, `direction`, `style_pack` (preset id), `look` (the world's look
+  guide, change 0005), `variations` and `variation` (the active one; §4.5), `defaults` (profile names per
   role, a `Selection`, preset choices per category), `created_at`, `updated_at`.
 - `Subject`: `id`, `kind` (`character` | `environment` | `asset`), `name`, `description`, `version`,
   `fields` (by kind: character: `appearance`, `proportions`, `features`, `outfits`; environment:
   `anchors`, `materials`, `viewpoints`, `recurring_objects`; asset: `scale`, `materials`, `colours`,
   `details`), `states` (a `State(name, kind, description)` each, kind `outfit`, `expression`,
-  `condition`, `lighting` or `other`), `tags`, and `reference_images` (image ids the person chose as the
-  subject's references, in order).
+  `condition`, `lighting` or `other`), `tags`, `reference_images` (image ids the person chose as the
+  subject's references, in order), `owner` (a belonging's character, 0003), and `must` / `never` (what
+  every image of it always or never shows, 0005).
 - **Versions.** `edit_subject` writes a new version with the changed fields. Older versions stay readable
   (`p.subject(id, version=1)`), and a version's content never changes.
+
+### 4.5 Variations (change 0005)
+
+A project is a world; a **variation** is one way of drawing it: `Variation(id, name, style_pack,
+direction)`. The world (subjects, scenes, the look guide) is shared; every generated image belongs to one
+variation (`ImageRecord.variation`; a plan's `variation`; a request may name one, else the project's
+active one). Accepted heroes, references, the character page, model sheets and world assets are looked up
+per variation, so each variation has its own hero of each character. A project without variations has
+one, `main`, from its style pack; images without a variation belong to the first one. A project made
+before this change uses its `direction` as its look guide. `add_variation`, `edit_variation` and
+`use_variation` on the project store.
 
 ### 4.3 Images
 
@@ -340,8 +353,25 @@ this order: `hero` (front, full figure, neutral pose), `turnaround` (Front, 3/4,
   judge checks (§8.3). Places keep their own background.
 - Planned outputs and images record `pack` and `item`. The character page (§12.4) shows per item the
   latest accepted image and the newest output with its candidates.
-- **World assets** are places and objects without an `owner`; `world_requests` makes one
-  `SubjectReferences` per chosen world asset, by default those without an accepted hero.
+- **World assets** are places and objects without an `owner`; `world_requests` makes one request per
+  chosen world asset (a place: `SubjectReferences`; an object: its object packs), by default those
+  without an accepted hero.
+- **Object packs** (change 0005, `data/object_packs.toml`, `recipes_objects.py`): an object (a belonging
+  or a world object) gets a `hero` (three-quarter, from slightly above) and `views` (front, side, back,
+  top, and a close-up of its distinctive detail) made from it; `CharacterPacks` on an object makes them.
+  A character's request makes each belonging without an accepted hero first (hero and views); its
+  actions take the belonging's hero as their `object` reference. The character page shows each
+  belonging as a section, like a pack.
+- **The pose library** (change 0005, `pose_library.py`): every pose item but standing takes a plain
+  wooden mannequin in its pose as its `pose` reference; the mannequin is drawn first in the same request
+  (fixed wording, judged by `pose-reference`) unless the project already has an accepted one, and is
+  reused by every character (mannequins belong to no variation).
+- **Plan warnings:** objects in a character's hands (0004) and small marks that drift between images
+  (beauty marks, moles, freckles, tattoos, scars: give an exact place and size, or remove them; 0005).
+- **Whole-world runs** (change 0005, `world_runs.py`): `p.world_plan(variation)` lists the runs of every
+  place and object without an image and every character, with an estimate (measured median seconds per
+  image, or 70 s before any measurement); `p.generate_world(variation)` queues them in that order and
+  gives the last run its scenes as follow-up requests (`RunRecord.then`), queued when it finishes.
 
 ### 6.2 Plans
 
@@ -618,6 +648,10 @@ Output statuses:
 - **Planner check:** the planner is told what the image exists to show. A rewrite is refused when it is
   longer than 125% of `max_words` (or 110% of a draft that is already longer), loses the camera phrase,
   no longer names `image 1` when the draft did, or loses most of the words of what was asked.
+- **The look guide and must lists** (change 0005): sections `look` (after the shot; in every mode except
+  an edit of the same subject, unless the item's pack has `context = "full"`, like outfits and states)
+  and `must` ("Always visible: …"); both are never dropped. The variation's `direction` follows the style
+  words in `style_lead`. A subject's `never` list goes into the negative of models that take one.
 - When the dialect writes the camera phrase, `camera_angle` is not also sent as an input. The `planned`
   event and each image's `generation` record the `dialect` and `mode`.
 
@@ -889,6 +923,13 @@ standard library (`ThreadingHTTPServer`).
 | POST | `/api/projects/{p}/world/generate` | `{"subject_ids"}` (default: those without an accepted hero) → one run each |
 | POST | `/api/import` | `{"text", "format": "toml" \| "json"}`: create or update a project from a project file (change 0004) |
 | GET | `/api/projects/{p}/file` | the project as a project file |
+| GET, POST | `/api/projects/{p}/variations` | the variations and the active one; add one (`name`, `style_pack`, `direction`, `active`) |
+| PATCH | `/api/projects/{p}/variations/{id}` | rename, restyle |
+| POST | `/api/projects/{p}/variations/{id}/use` | make it the active variation |
+| POST | `/api/projects/{p}/world/plan` | what Generate everything would make, with the estimate |
+| POST | `/api/projects/{p}/world/generate-all` | queue it (`profile`, `rounds`) |
+| GET | `/api/projects/{p}/objects/{id}` | an object's hero and views as a page section |
+| GET | `/api/projects/{p}/subjects/{id}/compare` | its hero in every variation |
 | POST | `/api/projects/{p}/exports` | `{"kind": "sheet" \| "pack" \| "sequence" \| "project", "id"}` → a download URL |
 
 Errors are `{"error": message}` with 400 (an invalid request, with the plan errors), 404 or 409 (a run in
@@ -914,8 +955,8 @@ heavy shadow, and motion respects `prefers-reduced-motion`.
 | View | Contents |
 |---|---|
 | Projects | list, search, create |
-| Project | the brief and style (edit), **Generate assets** (the world's places and objects, with a checklist), the next step of the four (characters, generate them, world, scenes), the characters with their hero and progress, the world, the scenes, the activity |
-| Characters | the characters' tiles; the **character page**: the hero beside the details (edit), **Generate assets** (every pack ticked, custom items per pack, quality and attempts), one section per pack with its item tiles ("Not made yet", "Queued", "Generating…", "Waiting for the hero", "Needs your choice", "Ready"), **Regenerate** and **Add** per pack, **Draw a new hero**; an item opens its candidates with their failed checks, **Use this one** and **Generate again** with a note; the belongings (add); the model sheet (compose, export). The page refreshes while items are being made |
+| Project | the brief (edit), the **variation switcher** (choose, add, edit; the top bar shows the active variation on every page), the **look guide** (edit), **Generate assets** (the world's places and objects), **Generate everything** (the whole world of the variation, with the estimate), the next step, the characters with their hero and progress, the world, the scenes, the activity |
+| Characters | the characters' tiles; the **character page**: the hero beside the details (edit), **Generate assets** (every pack ticked, custom items per pack, quality and attempts), one section per pack with its item tiles ("Not made yet", "Queued", "Generating…", "Waiting for the hero", "Needs your choice", "Ready"), **Regenerate** and **Add** per pack, **Draw a new hero**; an item opens its candidates with their failed checks, **Use this one** and **Generate again** with a note; each belonging as a section with its hero and views (change 0005), the belongings list (add), the hero in every variation side by side, the model sheet (compose, export). The page refreshes while items are being made |
 | World | places and shared objects: add, edit, **Generate assets** |
 | Create | a settings column (task, description, subjects and references, presets, profile, auto judge and pick, rounds, candidates, stopping rule; an "Advanced" disclosure for model settings and the raw prompt) and a larger results area: the plan preview with counts and warnings before launch, then the live output grid. Primary action: Generate |
 | Library | tabs Characters, Environments, Assets, Images (Images has filters for kind, subject, status, model and date). Tiles show the image, name, id, size and state. Selecting an item opens a side panel (description, references, states, results, history). Multi-select reveals Export, Tag and Delete, and Delete lists the uses first. This is the second mockup, whose scene builder panel is the Scenes view's side panel |
@@ -959,6 +1000,7 @@ Charts use real character, environment, asset and scene work only.
 | `requests.py` | request models, planned outputs, plans |
 | `recipes.py`, `recipes_subjects.py`, `recipes_scenes.py`, `recipes_packs.py` + `data/character_packs.toml` | request → planned outputs: the shared parts; subject references and interactions; state pairs, sequences, grids and promotion; character packs |
 | `project_file.py` | project files: parse, import by name, write back (change 0004) |
+| `variations.py`, `world_runs.py`, `recipes_objects.py` + `data/object_packs.toml`, `pose_library.py`, `_dashboard_world.py` | variations; whole-world runs and follow-ups; object packs; the pose library; their API routes (change 0005) |
 | `characters.py` | the character page and cards, the world, world requests, the model sheet recipe, scene belonging suggestions |
 | `references.py` | reference resolution, precedence, reduction, size limits |
 | `planning.py` | `plan()`: models per output, counts, warnings, errors, preset versions, the estimate |
@@ -1010,6 +1052,11 @@ models.
 | AC-22 | Judge told what was asked | in a run, the judge prompt lists the request from the plan; back views get `faces_away`; other views carry no back-view wording; anatomy names hands and feet |
 | AC-23 | Belongings first | actions wait for their belongings, made first in the same request when they have no image |
 | AC-24 | Project files | `ws.import_file` creates a project with characters, belongings, world and scenes; importing again versions only what changed and keeps what the file leaves out; bad files are refused with the place of the error; CLI import and export |
+| AC-25 | Variations | a new variation draws a new hero in its style; images stay in their variation; switching back plans no new hero |
+| AC-26 | Look guide, must, never | the look guide is in heroes and outfits, not expressions; must and never reach prompts, judge and negatives; small marks are warned about |
+| AC-27 | Pose library | pose images depend on a mannequin made first; another character reuses it |
+| AC-28 | Object packs | an object's hero and five views; belongings before actions, shown as character-page sections |
+| AC-29 | Whole-world runs | an estimate; one run per subject; scenes queued after the last character |
 | AC-14 (real model) | One `SubjectReferences` hero with the draft profile on the GPU (`scripts/gpu-lock.sh`) | an image is generated and judged by the real models; the run completes as `done` or `needs_review`; the models are unloaded afterwards |
 
 ## 15. Known limits (0.1.0)
