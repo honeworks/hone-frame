@@ -3,11 +3,11 @@ sentence, or nothing. Dialects choose which pieces, in what order (dialects.py).
 
 from __future__ import annotations
 
-import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
+from hone_frame import sections_more as more
 from hone_frame.dialects import Dialect, Mode
 from hone_frame.requests import PlannedOutput, PlannedRef
 
@@ -120,6 +120,7 @@ def subject(c: Ctx) -> str:
     for part in c.parts:
         name, about = str(part.get("name") or ""), str(part.get("description") or "").strip().rstrip(".")
         bits = [about if about.startswith(name) else f"{name}: {about}".rstrip(": ")]
+        bits += more.own_fields(part)  # an object's or a place's own fields (change 0007, cause B)
         if not c.faces_away and _field(part, "appearance"):
             bits.append(_field(part, "appearance"))
         if _field(part, "proportions"):
@@ -134,25 +135,12 @@ def outfit(c: Ctx) -> str:
         return f"{c.parts[0].get('name')} now wears {c.inputs['outfit']} instead of the usual clothes"
     if c.mode == "view":
         return ""
-    return ". ".join(f"{p.get('name')} wears {_field(p, 'outfits')}" for p in c.parts if _field(p, "outfits"))
+    worn = [(p, more.garment_details(p) or _field(p, "outfits")) for p in c.parts]
+    return ". ".join(f"{p.get('name')} wears {w}" for p, w in worn if w)
 
 
 def features(c: Ctx) -> str:
     return ". ".join(_field(p, "features") for p in c.parts if _field(p, "features"))
-
-
-def short_outfit(text: str) -> str:
-    """Every piece of clothing named, without its details, so a long outfit fits a view's budget and no
-    piece (a helmet) is forgotten: each comma part up to its first "with", split where another garment
-    is worn over or under it ("over a tunic", not "over the hair"), six words a piece."""
-    pieces: list[str] = []
-    for part in text.split(","):
-        bare = re.split(r"\s+with\s+", part.strip(), maxsplit=1)[0]
-        pieces += [
-            p for p in re.split(r"\s+(?:worn\s+(?:over|under)|(?:over|under)(?=\s+an?\s))\s+", bare) if p
-        ]
-    short = [" ".join(piece.split()[:6]) for piece in pieces]
-    return ("the same clothes: " + ", ".join(short)) if short else "the same clothes and colours"
 
 
 KEPT = {
@@ -173,10 +161,10 @@ def keep(c: Ctx) -> str:
         clothes = ""
     elif c.camera.get("distance") == "close-up" and not c.inputs.get("full_body"):
         clothes = "the same clothes and colours where they show"  # naming boots would widen a close-up
-    elif c.compact:
-        clothes = short_outfit(_field(part, "outfits"))
+    elif more.garments(part):  # garment names: short, and none cut mid-phrase (change 0007, cause A)
+        clothes = "the same clothes: " + more.garment_names(part)
     else:
-        clothes = _field(part, "outfits")
+        clothes = _field(part, "outfits")  # never split (0004's comma-shortening broke garments)
     kept += [x for x in (clothes, _field(part, "features")) if x]
     return "Keep exactly the same as in image 1: " + "; ".join(kept) + ". Change only what is asked above"
 
@@ -215,6 +203,9 @@ def look(c: Ctx) -> str:
     new into the picture, like an outfit (`context` "full")."""
     if c.mode == "view" and c.inputs.get("context") != "full":
         return ""
+    ids = {r.subject_id for r, _ in c.refs if r.subject_id}
+    if c.mode == "compose" and c.parts and all(p.get("id") in ids for p in c.parts):
+        return ""  # every subject has its reference image: the references carry the look (0007, cause C)
     if c.mode != "compose" and c.parts and c.parts[0].get("kind") in ("environment", "asset"):
         return ""  # a place's or an object's own description says what it looks like; the look guide's
         # people and costumes would walk into the picture (change 0006: crowds in an empty fortress)
@@ -276,6 +267,8 @@ SECTION: dict[str, Callable[[Ctx], str]] = {
     "frame": _labelled("", "frame"),
     "background": _labelled("", "background"),
     "look": look,
+    "identity": more.identity,
+    "worn": more.worn,
     "must": must,
     "alone": alone,
     "props": lambda c: (

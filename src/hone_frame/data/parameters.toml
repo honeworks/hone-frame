@@ -1,0 +1,32 @@
+# Character parameters (change 0007): which short tokens a prompt carries, per kind of image. Every
+# parameter goes to the judge; a prompt carries only those that drift in that kind of image (the
+# reference image shows the rest). Tokens are built in identity.py from the character's `params`.
+
+[kinds.close]   # face close-ups: expressions
+tokens = ["who", "hair", "beard", "face_marks"]
+
+[kinds.full]    # the whole figure: turnaround, poses, outfits, states, actions
+tokens = ["who", "body", "hair", "beard", "body_marks", "face_marks"]
+
+[kinds.back]    # seen from behind
+tokens = ["who", "body", "hair", "back_marks"]
+
+[beard]
+none = "clean-shaven"
+stubble = "a stubbled jaw"
+short = "a short beard"
+chin = "a beard to the chin"
+chest = "a full beard reaching the chest"
+
+[body]
+slight = "a slight build"
+lean = "a lean build"
+average = "an average build"
+athletic = "an athletic build"
+heavy = "a heavy-set, broad build"
+massive = "a massive build, far bigger than other people"
+
+[mannequin]   # the pose library's mannequin per build class
+slight = "a slender"
+average = "a well-proportioned"
+heavy = "a broad, heavy-set"

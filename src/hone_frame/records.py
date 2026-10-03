@@ -130,6 +130,9 @@ class Subject(Record):
     reference_images: list[str] = Field(default_factory=list[str])
     owner: str | None = None  # an asset that belongs to one character (change 0003); None: a world asset
     must: list[str] = Field(default_factory=list[str])  # always shown, in every image (change 0005)
+    params: dict[str, Any] = Field(
+        default_factory=dict[str, Any]
+    )  # measurable facts: sex, age, beard... (0007)
     never: list[str] = Field(default_factory=list[str])  # never shown; checked by the judge
     created_at: str = ""
     updated_at: str = ""

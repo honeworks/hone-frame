@@ -16,7 +16,7 @@ Mode = Literal["generate", "view", "compose"]
 SECTIONS = (
     "camera_phrase", "shot", "view", "subject", "outfit", "features", "keep", "scene", "roles", "action",
     "expression", "pose", "gaze", "state", "frame", "background", "props", "lighting", "style_lead",
-    "style_close", "text_refs", "note", "fixes", "look", "must", "alone",
+    "style_close", "text_refs", "note", "fixes", "look", "must", "identity", "worn", "alone",
 )  # fmt: skip
 # always kept: what the image is, its framing, its style and its look (changes 0004, 0005)
 REQUIRED = {
@@ -33,6 +33,9 @@ REQUIRED = {
     "look",  # the world's look guide (change 0005)
     "must",
     "alone",  # an object's image shows no person (change 0006)
+    "roles",
+    "identity",
+    "worn",
 }
 
 

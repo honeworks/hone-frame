@@ -83,7 +83,9 @@ def test_every_pack_prompt_keeps_what_it_is_for(
         assert ("the object alone" in text) is bool(p.get("object_alone")), f"{where}: nobody with an object"
         if out.pack == "actions" or out.kind == "asset":
             assert "empty hands" not in text, where
-        assert len(composed.text.split()) <= composed.max_words * (1.5 if composed.over_budget else 1), where
+        assert len(composed.text.split()) <= composed.max_words * (
+            1.8 if composed.over_budget else 1
+        )  # 0007: sent long, never cut, where
         _no_contradictions(out, composed, where)
     assert {k: v > 0 for k, v in checked.items()} == dict.fromkeys(
         ("pose", "expression", "outfit", "state", "action"), True

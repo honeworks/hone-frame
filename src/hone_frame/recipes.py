@@ -208,6 +208,8 @@ def subject_part(subject: Subject, state: str | None = None) -> dict[str, Any]:
         "state": (found.description or found.name) if found else state,
         "must": list(subject.must),
         "never": list(subject.never),
+        "id": subject.id,
+        "params": dict(subject.params),
     }
 
 

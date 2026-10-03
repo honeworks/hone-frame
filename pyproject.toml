@@ -87,10 +87,12 @@ max-complexity = 10
 "src/hone_frame/{ports,runs,candidates}.py" = ["N818"]   # ModelFailure, StopRequested...: named for what happened
 "src/hone_frame/_operations.py" = ["PLC0415"]   # forwards to other modules lazily by design (no import cycle)
 "examples/**" = ["S101", "S603", "PT018", "PLW1510"]   # examples assert the facts they show and run subprocesses
+"src/hone_frame/data/tools/*.py" = ["PLC0415"]   # run in another environment: imports only when used (0007)
 "tests/**" = ["S101", "S105", "S603", "PLR0915", "PLR0917", "N802", "PT018", "PLC0415", "PLW1510"]
 
 [tool.pyright]
 include = ["src", "tests"]
+exclude = ["src/hone_frame/data/tools"]   # scripts for another Python environment (torch, transformers)
 strict = ["src"]
 pythonVersion = "3.11"
 
