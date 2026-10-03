@@ -40,7 +40,9 @@ words alone.
    action, background, empty hands), not only the prompt that was sent. `view` asks about the requested
    view only; back views get their own `faces_away` check. `anatomy` names hands and feet ("in a side
    view both feet point the same way as the face"). Side and three-quarter camera presets ask for the
-   feet to turn with the body (versions 3).
+   feet to turn with the body (versions 3). Each check's answer is `{finding, verdict, score}` in that
+   order, so the judge describes before it decides: with the verdict first it wrote "not kneeling" and
+   still answered pass. The pose check asks it to name the body position first.
 4. **Belongings before actions.** An action whose belonging has no accepted image makes the belonging
    first in the same request and waits for it; the checklist shows Belongings.
 5. **Objects in the hands are reported:** a plan warns when a character's features or outfit put an
@@ -72,7 +74,7 @@ words alone.
   close-up with a full figure, a face with a back view or scenery with a white background; a planner
   rewrite without what was asked is refused.
 - **AC-22** The judge prompt states what was asked; back views have `faces_away`; other views carry no
-  back-view wording.
+  back-view wording; the answer schema puts each check's finding before its verdict.
 - **AC-23** Actions wait for their belongings, made first in the same request when they have no image.
 - **AC-24** A project file creates a project with its characters, belongings, world and scenes; imported
   again after an edit it versions only what changed; bad files are refused with the place of the error.

@@ -2,7 +2,7 @@
 views carry no back-view wording; the anatomy check names hands and feet (change 0004)."""
 
 import hone_frame as hf
-from hone_frame.judging import checks_for, judge_prompt
+from hone_frame.judging import CheckAnswer, answer_schema, checks_for, judge_prompt
 
 
 def test_the_judge_is_told_what_was_asked(rostam_project: hf.ProjectStore) -> None:
@@ -23,3 +23,16 @@ def test_the_judge_is_told_what_was_asked(rostam_project: hf.ProjectStore) -> No
     )  # no back-view talk on a side view
     anatomy = next(c for c in side_checks if c["name"] == "anatomy")
     assert "foot" in anatomy["question"] and "same way as the face" in anatomy["question"]
+
+
+def test_the_judge_writes_its_finding_before_its_verdict() -> None:
+    from hone_frame.judging import CheckAnswer, answer_schema
+
+    schema = CheckAnswer.model_json_schema()
+    assert list(schema["properties"])[:2] == ["finding", "verdict"] and schema["required"] == [
+        "finding",
+        "verdict",
+    ]
+    assert CheckAnswer.model_validate({"verdict": "pass"}).finding == ""  # read back leniently
+    sent = answer_schema([{"name": "pose"}]).model_json_schema()
+    assert "finding" in str(sent)

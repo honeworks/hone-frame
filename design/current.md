@@ -507,8 +507,9 @@ class Evaluation(BaseModel):  # what hone-frame stores
 
 - **The judge's schema names every check.** The schema sent to the judge (`answer_schema(checks)`)
   makes `checks` an object with one required key per check name (any name: fields are aliased), each
-  `{verdict, score, finding}`, so a
-  judge cannot mislabel or skip a check (D-020).
+  `{finding, verdict, score}` in that order, so a judge cannot mislabel or skip a check (D-020) and
+  writes what it sees before it decides (change 0004: with the verdict first, the 7B judge wrote "not
+  kneeling" and answered pass). `finding` is required in the schema sent and tolerated empty when read.
 - **Rear views** (camera `rear`, in subject references and scenes) replace `identity` with
   `identity_from_behind`: build, hair, clothing
   and distinguishing features against the reference, no face expected (D-020).
