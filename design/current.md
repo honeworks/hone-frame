@@ -716,7 +716,10 @@ The first match wins:
 - `retry`, `planner_failed`, `judge_failed`, `candidate_failed`, `waiting`, `picked`, `stopped`,
   `stopped_early`;
 - `model_info_unavailable` (the port could not describe a model, so its prompt guide and local flag are
-  left out).
+  left out);
+- `prompt_long`, `planner_rejected` (change 0004);
+- `follow_up` (a follow-up request queued, or why not) and `follow_up_skipped` (the run ended failed,
+  canceled or paused, so its follow-ups were not queued) (change 0005).
 
 Events are written by the process doing the work. The dashboard tails the file.
 

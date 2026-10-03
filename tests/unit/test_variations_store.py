@@ -120,3 +120,15 @@ def _png(tmp_path: Path) -> Path:
     path = tmp_path / "x.png"
     Image.new("RGB", (8, 8), "white").save(path)
     return path
+
+
+def test_scene_rows_keep_real_plan_errors_only(tmp_path: Path) -> None:
+    ws = hf.Workspace(tmp_path / "ws", models=FakeModels())
+    p = ws.project(ws.import_file(FILE).project)
+    rows = p.world_plan()["scene_runs"]
+    assert rows and all(r["errors"] == [] for r in rows)  # only missing heroes: they come first
+    duel = next(s for s in p.scenes() if s.name == "Duel")
+    place = next(r.subject_id for r in duel.refs if r.role == "environment")
+    (p.root / "subjects" / f"{place}.json").unlink()  # its place is gone: a real plan error
+    duel_row = next(r for r in p.world_plan()["scene_runs"] if place in " ".join(r["errors"]))
+    assert duel_row["images"] == 0
