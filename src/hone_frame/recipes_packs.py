@@ -141,6 +141,12 @@ def character_packs(store: ProjectStore, request: CharacterPacks, built: Built) 
     maker = _PackMaker(store, request, built, subject)
     hero = None if request.redraw_hero else accepted_hero(store, subject.id, built.choices.variation.id)
     maker.identity = maker.hero() if hero is None else {"references": [maker.ref(hero, subject, "identity")]}
+    from hone_frame.recipes_elements import is_worn  # noqa: PLC0415 - imports this module
+
+    if "assets" in chosen:  # worn elements first: the turnaround and states wear them (change 0007)
+        for item in _asset_items(store, subject, "assets"):
+            if is_worn(store.subject(item["asset_id"])):
+                maker.item("assets", item)
     for name in [n for n in packs() if n in chosen and n != "hero"]:
         extra = request.custom.get(name, [])
         for item in pack_items(store, subject, name, extra, only_extra=request.only_custom):
@@ -226,7 +232,8 @@ class _PackMaker:
 
     def item(self, pack: str, spec: dict[str, Any]) -> None:
         if pack == "assets":
-            self._asset(spec)
+            if spec["asset_id"] not in self.asset_outputs:
+                self._asset(spec)
             return
         fields: dict[str, Any] = {k: list(v) for k, v in self.identity.items()}
         flags = ["identity_ref", "character"] + [k for k in ("expression", "pose") if spec.get(k)]
@@ -238,7 +245,7 @@ class _PackMaker:
         self._element(pack, spec, fields)
         if asset_id := spec.get("asset_id"):  # an action: its belonging is the object reference
             v = self.built.choices.variation.id
-            image = None if asset_id in self.asset_outputs else accepted_hero(self.store, asset_id, v)
+            image = None if self.asset_outputs.get(asset_id) else accepted_hero(self.store, asset_id, v)
             if image:
                 fields.setdefault("references", []).append(
                     self.ref(image, self.store.subject(asset_id), "object")
@@ -254,7 +261,7 @@ class _PackMaker:
     def _element(self, pack: str, spec: dict[str, Any], fields: dict[str, Any]) -> None:
         """Change 0007: an action's mannequin (its use pose); a worn element's hero as a reference in a
         full-figure view that is not a pose, when the model has a free slot."""
-        from hone_frame.recipes_elements import element_reference, mannequin_pose  # noqa: PLC0415
+        from hone_frame.recipes_elements import element_reference, is_worn, mannequin_pose  # noqa: PLC0415
 
         if pack == "actions" and spec.get("asset_id"):
             if pose := mannequin_pose(self.store.subject(spec["asset_id"])):
@@ -268,6 +275,10 @@ class _PackMaker:
             return
         if found := element_reference(self.store, self.subject, self.built.choices.variation.id):
             fields.setdefault("references", []).append(self.ref(found[1], found[0], "object"))
+        elif made := next(
+            (o for a, o in self.asset_outputs.items() if o and is_worn(self.store.subject(a))), None
+        ):
+            fields.setdefault("depends_on", []).append(Dependency(output=made, role="object"))  # this run's
 
     def _asset(self, spec: dict[str, Any]) -> None:
         """A belonging's whole object pack, before the actions that use it (change 0005): its hero
@@ -276,8 +287,8 @@ class _PackMaker:
 
         asset = self.store.subject(spec["asset_id"])
         hero = accepted_hero(self.store, asset.id, self.built.choices.variation.id)
-        if out := add_object(self.store, self.built, self.request, asset, hero=hero):
-            self.asset_outputs[asset.id] = out
+        out = add_object(self.store, self.built, self.request, asset, hero=hero)
+        self.asset_outputs[asset.id] = out or ""  # "": its accepted hero is reused
 
     def _add(
         self, pack: str, spec: dict[str, Any], *, who: Subject | None = None, **fields: Any
