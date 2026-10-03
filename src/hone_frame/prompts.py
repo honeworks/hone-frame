@@ -55,6 +55,9 @@ def compose(
 ) -> Composed:
     """The prompt for this output, written the dialect's way for its mode (change 0002)."""
     p = out.prompt_inputs
+    if p.get("fixed_prompt"):  # a pose-library mannequin: one fixed wording for every model (0005)
+        fixes = ("Fix from the last attempt: " + "; ".join(findings)) if findings else ""
+        return Composed(_join([p["fixed_prompt"], fixes]), dialect.name, "fixed", 0, "")
     if p.get("prompt_override"):  # a promotion keeps its own wording (0001)
         head = OPERATIONS.get(str(p.get("operation")), "")
         fixes = ("Fix from the last attempt: " + "; ".join(findings)) if findings else ""

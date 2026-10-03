@@ -57,6 +57,8 @@ def _all_prompts(store: hf.ProjectStore, style: str, profile: str) -> list[tuple
         plan = store.plan(request)
         assert not plan.errors, plan.errors
         for out in plan.outputs:
+            if out.pack == "pose-library":  # a mannequin: one fixed wording, checked on its own
+                continue
             dialect = store.workspace.dialects.for_model(out.model)
             found.append((out, compose(out, _refs(store, out), [], dialect)))
     return found

@@ -327,3 +327,31 @@ when = "character"
 name = "style"
 question = "Does it match the requested art style?"
 required = false
+
+[[presets]]
+id = "pose-reference"
+version = 1
+name = "Pose reference"
+description = "A pose-library mannequin (change 0005): the requested pose, the whole figure, a plain mannequin, a white background."
+
+[[presets.values.checks]]
+name = "pose"
+question = "Name the body position the mannequin is in, then compare it with 'Requested pose'. A different position is a fail."
+required = true
+
+[[presets.values.checks]]
+name = "whole_figure"
+question = "Is the whole mannequin visible from head to feet, nothing cropped?"
+required = true
+
+[[presets.values.checks]]
+name = "plain_mannequin"
+question = "Is it a plain wooden artist's mannequin with no face, hair or clothes (not a person)?"
+required = true
+
+[[presets.values.checks]]
+name = "clean_background"
+question = "Is the background plain white, with no scenery, floor or other objects (a stool the pose sits on is fine)?"
+required = true
+when = "clean_background"
+

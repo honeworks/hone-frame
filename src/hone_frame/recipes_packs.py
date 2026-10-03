@@ -12,7 +12,16 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from hone_frame.errors import InvalidRequest
-from hone_frame.recipes import OBJECT_FRAMING, WHITE, Built, base_inputs, reference_lighting, view_flags
+from hone_frame.pose_library import pose_reference
+from hone_frame.recipes import (
+    OBJECT_FRAMING,
+    WHITE,
+    Built,
+    base_inputs,
+    fragment,
+    reference_lighting,
+    view_flags,
+)
 from hone_frame.records import Subject, SubjectLink
 from hone_frame.references import ACCEPTED
 from hone_frame.requests import CharacterPacks, Dependency, PlannedOutput, PlannedRef
@@ -149,6 +158,7 @@ class _PackMaker:
         self.lighting = reference_lighting(built, request)
         self.identity: dict[str, Any] = {}
         self.asset_outputs: dict[str, str] = {}  # asset id -> its output in this request
+        self.mannequins: dict[str, str] = {}  # pose -> its mannequin's output in this request
 
     def ref(self, image_id: str, subject: Subject, role: str) -> PlannedRef:
         return PlannedRef.model_validate(
@@ -168,6 +178,10 @@ class _PackMaker:
         fields: dict[str, Any] = {k: list(v) for k, v in self.identity.items()}
         flags = ["identity_ref", "character"] + [k for k in ("expression", "pose") if spec.get(k)]
         flags += ["state"] if spec.get("state") or spec.get("outfit") else []
+        if pack == "poses" and spec.get("pose"):  # the mannequin of the pose library (change 0005)
+            words = fragment(self.built.choices, "pose", str(spec["pose"]))
+            for k, v in pose_reference(self.store, self.built, words, self.mannequins).items():
+                fields.setdefault(k, []).extend(v)
         if asset_id := spec.get("asset_id"):  # an action: its belonging is the object reference
             v = self.built.choices.variation.id
             image = None if asset_id in self.asset_outputs else accepted_hero(self.store, asset_id, v)

@@ -93,6 +93,9 @@ def view(c: Ctx) -> str:
     noun = NOUN.get(str(part.get("kind")), "subject")
     where = str(c.camera.get("view") or "from the same angle")
     lead = f"now {c.inputs['pose']}, " if _pose_leads(c) else ""  # an edit model keeps the pose it is shown
+    mannequin = next((n for n, (r, _) in enumerate(c.refs, 1) if r.role == "pose"), None)
+    if lead and mannequin:  # the pose library's mannequin shows it (change 0005)
+        lead = f"in exactly the body pose of the wooden mannequin in image {mannequin} ({c.inputs['pose']}), "
     sentence = f"Show the same {noun} as in image 1, {part.get('name')}, {lead}{where}"
     if c.inputs.get("full_body"):
         sentence += ", the whole figure from head to feet"

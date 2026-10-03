@@ -15,8 +15,8 @@ def test_every_pack_from_one_hero(ws: hf.Workspace) -> None:
     hero, *rest = plan.outputs
     assert (hero.pack, hero.item, hero.depends_on) == ("hero", "Hero", [])
     assert [o.pack for o in rest if o.pack == "hero"] == []
-    assert all(o.depends_on[0].output == hero.id for o in rest if o.pack != "assets")
-    assert {o.pack for o in plan.outputs} == set(packs()) - {"states"}  # Rostam has no other states
+    assert all(o.depends_on[0].output == hero.id for o in rest if o.pack not in ("assets", "pose-library"))
+    assert {o.pack for o in plan.outputs} == (set(packs()) - {"states"}) | {"pose-library"}  # no other states
     assert [o.item for o in rest if o.pack == "outfits"] == ["Feast"]
     assert [o.item for o in rest if o.pack == "actions"] == ["Mace"]
     action = next(o for o in rest if o.pack == "actions")
@@ -50,7 +50,7 @@ def test_packs_left_out_and_items_added(ws: hf.Workspace) -> None:
             custom={"outfits": ["party clothing"], "poses": ["drawing a bow"]},
         )
     )
-    assert {o.pack for o in plan.outputs} == {"hero", "outfits", "poses"}
+    assert {o.pack for o in plan.outputs} == {"hero", "outfits", "poses", "pose-library"}
     party = next(o for o in plan.outputs if o.item == "party clothing")
     assert party.pack == "outfits" and party.prompt_inputs["outfit"] == "party clothing"
     assert next(o for o in plan.outputs if o.item == "drawing a bow").prompt_inputs["pose"] == "drawing a bow"
@@ -80,4 +80,8 @@ def test_without_an_accepted_hero_the_hero_always_comes_first(ws: hf.Workspace) 
     only = hf.CharacterPacks(
         subject_id="char_001", packs=["poses"], custom={"poses": ["bowing"]}, only_custom=True
     )
-    assert [(o.pack, o.item) for o in p.plan(only).outputs] == [("hero", "Hero"), ("poses", "bowing")]
+    assert [(o.pack, o.item) for o in p.plan(only).outputs] == [
+        ("hero", "Hero"),
+        ("pose-library", "bowing"),
+        ("poses", "bowing"),
+    ]  # the mannequin of the pose comes before the pose (change 0005)
