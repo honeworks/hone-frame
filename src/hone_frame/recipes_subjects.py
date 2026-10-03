@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Any
 from hone_frame.errors import InvalidRequest
 from hone_frame.recipes import (
     HERO_CAMERA,
-    OBJECT_FRAMING,
     JUDGING,
+    OBJECT_FRAMING,
     Built,
     base_inputs,
     reference_lighting,
