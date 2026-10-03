@@ -73,6 +73,9 @@ class RunRecord(Record):
     state: Literal["queued", "running", "finished"] = "queued"
     flow_run_id: str | None = None
     rerun_of: dict[str, str] | None = None
+    then: list[dict[str, Any]] = Field(
+        default_factory=list[dict[str, Any]]
+    )  # requests to submit when done (0005)
     created_at: str
     started_at: str | None = None
     ended_at: str | None = None

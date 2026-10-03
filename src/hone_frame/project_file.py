@@ -46,6 +46,8 @@ class StateIn(_In):
 class ObjectIn(_In):
     name: str
     description: str = ""
+    must: list[str] = Field(default_factory=list[str])
+    never: list[str] = Field(default_factory=list[str])
     size: str = ""
     materials: str = ""
     colours: str = ""
@@ -59,6 +61,8 @@ class CharacterIn(_In):
     build: str = ""
     features: str = ""
     outfit: str = ""
+    must: list[str] = Field(default_factory=list[str])  # always shown (change 0005)
+    never: list[str] = Field(default_factory=list[str])  # never shown
     states: list[StateIn] = Field(default_factory=list[StateIn])
     belongings: list[ObjectIn] = Field(default_factory=list[ObjectIn])
 
@@ -66,6 +70,8 @@ class CharacterIn(_In):
 class PlaceIn(_In):
     name: str
     description: str = ""
+    must: list[str] = Field(default_factory=list[str])
+    never: list[str] = Field(default_factory=list[str])
     anchors: str = ""
     materials: str = ""
     viewpoints: str = ""
@@ -85,11 +91,19 @@ class SceneIn(_In):
     objects: list[str] = Field(default_factory=list[str])  # world objects or belongings, by name
 
 
+class VariationIn(_In):
+    name: str
+    style: str  # a style_pack preset id
+    direction: str = ""  # how this variation is drawn, in a few words
+
+
 class ProjectIn(_In):
     name: str
     brief: str = ""
     direction: str = ""
-    style: str = "cinematic-realism"  # a style_pack preset id; for a new project only when omitted
+    style: str = "cinematic-realism"  # the first variation's style pack; for a new project only when omitted
+    look: str = ""  # the world's look guide (change 0005)
+    variations: list[VariationIn] = Field(default_factory=list[VariationIn])  # more ways of drawing it
 
 
 class ProjectFile(_In):
@@ -175,17 +189,33 @@ def _project(ws: Workspace, p: ProjectIn) -> tuple[ProjectStore, bool]:
         raise InvalidRequest(f"project style {p.style!r} is not a style pack; use one of {styles}")
     existing = next((x for x in ws.projects() if x.name == p.name), None)
     if existing is None:
-        return ws.create_project(p.name, brief=p.brief, direction=p.direction, style_pack=p.style), True
+        store = ws.create_project(p.name, brief=p.brief, direction=p.direction, style_pack=p.style)
+        if p.look:
+            store.update(look=p.look)
+        _variations(store, p.variations, styles)
+        return store, True
     given = p.model_dump(exclude_unset=True)
-    wanted = {
-        k: given[key]
-        for key, k in (("brief", "brief"), ("direction", "direction"), ("style", "style_pack"))
-        if key in given
-    }
+    keys = (("brief", "brief"), ("direction", "direction"), ("style", "style_pack"), ("look", "look"))
+    wanted = {k: given[key] for key, k in keys if key in given}
     store = ws.project(existing.id)
     if any(getattr(existing, k) != v for k, v in wanted.items()):
         store.update(**wanted)
+    _variations(store, p.variations, styles)
     return store, False
+
+
+def _variations(store: ProjectStore, wanted: list[VariationIn], styles: list[str]) -> None:
+    """Add the file's variations that are missing (by name) and update those that changed."""
+    for w in wanted:
+        if w.style not in styles:
+            raise InvalidRequest(
+                f"variation {w.name!r}: style {w.style!r} is not a style pack; use one of {styles}"
+            )
+        found = next((v for v in store.info.all_variations() if v.name == w.name), None)
+        if found is None:
+            store.add_variation(w.name, style_pack=w.style, direction=w.direction, active=False)
+        elif (found.style_pack, found.direction) != (w.style, w.direction):
+            store.edit_variation(found.id, style_pack=w.style, direction=w.direction)
 
 
 def _fields(item: BaseModel, mapping: dict[str, str]) -> dict[str, str]:
@@ -213,6 +243,9 @@ def _subject(
     }
     if "description" in given or found is None:
         wanted["description"] = item.description
+    for key in ("must", "never"):
+        if key in given or found is None:
+            wanted[key] = list(getattr(item, key, []))
     if states is not None and ("states" in given or found is None):
         wanted["states"] = [s.model_dump() for s in states]
     if found is None:
@@ -263,6 +296,7 @@ def project_file(store: ProjectStore) -> dict[str, Any]:
     def keyed(subject: Subject, mapping: dict[str, str]) -> dict[str, Any]:
         out: dict[str, Any] = {"name": subject.name, "description": subject.description}
         out |= {key: str(subject.fields[f]) for key, f in mapping.items() if subject.fields.get(f)}
+        out |= {key: list(getattr(subject, key)) for key in ("must", "never") if getattr(subject, key)}
         return out
 
     characters = [
@@ -288,6 +322,10 @@ def project_file(store: ProjectStore) -> dict[str, Any]:
             "brief": info.brief,
             "direction": info.direction,
             "style": info.style_pack,
+            "look": info.look,
+            "variations": [
+                {"name": v.name, "style": v.style_pack, "direction": v.direction} for v in info.variations
+            ],
         },
         "characters": characters,
         "places": [keyed(p, PLACE) for p in subjects if p.kind == "environment"],
