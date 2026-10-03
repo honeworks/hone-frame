@@ -3,6 +3,7 @@ again after an edit it versions only what changed and keeps what the file leaves
 refused with the place of the error (change 0004)."""
 
 import json
+from collections.abc import Mapping
 from pathlib import Path
 
 import pytest
@@ -33,7 +34,7 @@ def test_import_creates_everything(ws: hf.Workspace) -> None:
     assert p.info.style_pack == "historical-epic"
 
 
-def _write(tmp_path: Path, data: dict[str, object]) -> Path:
+def _write(tmp_path: Path, data: Mapping[str, object]) -> Path:
     path = tmp_path / "project.json"
     path.write_text(json.dumps(data))
     return path
