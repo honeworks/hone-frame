@@ -39,6 +39,7 @@ class Pack(BaseModel):
     from_states: list[str] = Field(default_factory=list[str])
     from_assets: bool = False
     empty_hands: bool = True
+    context: str = "short"  # "full": the item brings something new, so the world's look guide goes too (0005)
     items: list[dict[str, Any]] = Field(default_factory=list[dict[str, Any]])
 
 
@@ -49,11 +50,13 @@ def packs() -> dict[str, Pack]:
     return {name: Pack.model_validate(row) for name, row in tomllib.loads(text)["packs"].items()}
 
 
-def accepted_hero(store: ProjectStore, subject_id: str) -> str | None:
-    """The character's latest accepted hero image, or None."""
+def accepted_hero(store: ProjectStore, subject_id: str, variation: str | None = None) -> str | None:
+    """The latest accepted hero image of a character or object in the variation (the active one by
+    default, change 0005), or None."""
+    v = variation or store.info.variation_of().id
     heroes = [
         i
-        for i in store.images(subject_id=subject_id)
+        for i in store.images(subject_id=subject_id, variation=v)
         if len(i.subjects) == 1 and i.status in ACCEPTED and (i.pack == "hero" or i.label.lower() == "hero")
     ]
     return heroes[-1].id if heroes else None
@@ -110,7 +113,7 @@ def character_packs(store: ProjectStore, request: CharacterPacks, built: Built) 
         )
     built.warnings += carried_objects(subject)
     maker = _PackMaker(store, request, built, subject)
-    hero = None if request.redraw_hero else accepted_hero(store, subject.id)
+    hero = None if request.redraw_hero else accepted_hero(store, subject.id, built.choices.variation.id)
     maker.identity = maker.hero() if hero is None else {"references": [maker.ref(hero, subject, "identity")]}
     for name in [n for n in packs() if n in chosen and n != "hero"]:
         extra = request.custom.get(name, [])
@@ -166,7 +169,8 @@ class _PackMaker:
         flags = ["identity_ref", "character"] + [k for k in ("expression", "pose") if spec.get(k)]
         flags += ["state"] if spec.get("state") or spec.get("outfit") else []
         if asset_id := spec.get("asset_id"):  # an action: its belonging is the object reference
-            image = None if asset_id in self.asset_outputs else accepted_hero(self.store, asset_id)
+            v = self.built.choices.variation.id
+            image = None if asset_id in self.asset_outputs else accepted_hero(self.store, asset_id, v)
             if image:
                 fields.setdefault("references", []).append(
                     self.ref(image, self.store.subject(asset_id), "object")
@@ -219,6 +223,7 @@ class _PackMaker:
                 reference=True,
                 background=WHITE,
                 empty_hands=empty_hands,
+                context=packs()[pack].context,
                 outfit=spec.get("outfit"),
                 state=spec.get("state"),
                 lighting=self.lighting,

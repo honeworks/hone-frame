@@ -39,7 +39,9 @@ class PresetChoices:
     ) -> None:
         self.catalog = store.workspace.presets
         project: Project = store.info
-        pack = self.catalog.get("style_pack", request.presets.get("style_pack") or project.style_pack)
+        self.variation = project.variation_of(request.variation or None)  # change 0005
+        self.look = project.look_guide
+        pack = self.catalog.get("style_pack", request.presets.get("style_pack") or self.variation.style_pack)
         self.layers: list[dict[str, str]] = [
             request.presets,
             overrides or {},

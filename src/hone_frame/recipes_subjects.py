@@ -143,10 +143,13 @@ def interaction(store: ProjectStore, request: Interaction, built: Built) -> None
     action = (preset.prompt.suffix if preset else request.action).format(
         character=character.name, asset=asset.name
     )
-    refs = ref_images(store, _ref(character.id, "identity")) + ref_images(store, _ref(asset.id, "object"))
+    v = built.choices.variation.id
+    refs = ref_images(store, _ref(character.id, "identity"), v) + ref_images(
+        store, _ref(asset.id, "object"), v
+    )
     subjects = [character, asset]
     if request.environment_id:
-        refs += ref_images(store, _ref(request.environment_id, "environment"))
+        refs += ref_images(store, _ref(request.environment_id, "environment"), v)
         subjects.append(store.subject(request.environment_id))
     if request.pose_image:
         store.image(request.pose_image)

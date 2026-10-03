@@ -198,6 +198,7 @@ class Producer:
             dialect=how,
             negative=self.negative,
             result=result,
+            variation=self.run.plan.variation,
         )
         image = self.store.add_image(path, **fields)
         path.unlink(missing_ok=True)

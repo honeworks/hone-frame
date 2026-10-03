@@ -165,7 +165,11 @@ def base_inputs(
     inputs: dict[str, Any] = {
         "style_prefix": pack.prompt.prefix if pack else "",
         "style_suffix": pack.prompt.suffix if pack else "",
-        "negative": pack.prompt.negative if pack else "",
+        "negative": ", ".join(
+            x
+            for x in [pack.prompt.negative if pack else "", *(n for s, _ in who or [] for n in s.never)]
+            if x
+        ),
         "lighting": fragment(choices, "lighting", lighting),
         "camera": fragment(choices, "camera", camera),
         "camera_angle": camera_preset.values.get("camera_angle") if camera_preset else None,
@@ -177,10 +181,12 @@ def base_inputs(
             "suffix": pack.prompt.suffix,
             "short": pack.values.get("short", ""),
             "dialects": pack.values.get("dialects", {}),
+            "direction": choices.variation.direction,
         }
         if pack
         else {},
         "subject_parts": [subject_part(s, state) for s, state in who or []],
+        "look": choices.look,
         "expression": fragment(choices, "expression", values.pop("expression", None)),
         "pose": fragment(choices, "pose", values.pop("pose", None)),
         "note": request.note,
@@ -196,6 +202,8 @@ def subject_part(subject: Subject, state: str | None = None) -> dict[str, Any]:
         "description": subject.description,
         "fields": dict(subject.fields),
         "state": (found.description or found.name) if found else state,
+        "must": list(subject.must),
+        "never": list(subject.never),
     }
 
 
@@ -218,7 +226,7 @@ def scene_output(
     kind: str = "scene",
     judging: str = "scene-fidelity",
 ) -> PlannedOutput:
-    refs, errors = scene_refs(store, scene)
+    refs, errors = scene_refs(store, scene, built.choices.variation.id)
     built.errors += errors
     who = [(store.subject(r.subject_id, r.version), r.state) for r in scene.refs]
     request = RequestBase()

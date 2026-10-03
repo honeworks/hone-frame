@@ -50,6 +50,7 @@ def checks_for(catalog: PresetCatalog, out: PlannedOutput) -> list[dict[str, Any
     applicable = [
         c for c in checks if (not c.get("when") or c["when"] in flags) and c.get("unless") not in flags
     ]
+    applicable += subject_checks(out)
     if "preserve" in flags:
         applicable.append(
             {
@@ -177,3 +178,22 @@ def requested(out: PlannedOutput) -> list[str]:
     if p.get("empty_hands"):
         lines.append("Requested: empty hands, nothing held or carried.")
     return [line for line in lines if line]
+
+
+def subject_checks(out: PlannedOutput) -> list[dict[str, Any]]:
+    """A subject's own must and never lists as required checks (change 0005)."""
+    parts: list[dict[str, Any]] = list(out.prompt_inputs.get("subject_parts") or [])
+    must = [str(m) for p in parts for m in _items(p.get("must"))]
+    never = [str(n) for p in parts for n in _items(p.get("never"))]
+    found: list[dict[str, Any]] = []
+    if must:
+        question = "Are all of these visible where the view allows: " + "; ".join(must) + "?"
+        found.append({"name": "must_shown", "required": True, "question": question})
+    if never:
+        question = "Is none of these in the picture: " + "; ".join(never) + "? Any one of them is a fail."
+        found.append({"name": "never_shown", "required": True, "question": question})
+    return found
+
+
+def _items(value: Any) -> list[Any]:
+    return list(value) if isinstance(value, list) else []  # pyright: ignore[reportUnknownArgumentType]

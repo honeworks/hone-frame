@@ -71,6 +71,7 @@ def plan(store: ProjectStore, request: RequestBase | dict[str, Any]) -> Plan:
         warnings=list(dict.fromkeys(warnings)),
         errors=list(dict.fromkeys(errors)),
         sheet_layout=built.sheet_layout,
+        variation=built.choices.variation.id,
     )
     result.estimate = estimate_plan(store.workspace, result)
     return result

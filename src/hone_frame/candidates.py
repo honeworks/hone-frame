@@ -70,6 +70,7 @@ def image_fields(
     negative: str | None,
     result: Generated,
     dialect: tuple[str, str] | None = None,
+    variation: str = "",
 ) -> dict[str, Any]:
     """The `ImageRecord` fields of a stored candidate (design §4.3)."""
     generation = Generation(
@@ -100,6 +101,7 @@ def image_fields(
         "source": "promoted" if out.parent else "generated",
         "pack": out.pack,
         "item": out.item,
+        "variation": variation or None,
     }
 
 

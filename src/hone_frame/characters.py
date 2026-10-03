@@ -34,10 +34,18 @@ def pack_of(image_pack: str | None, label: str) -> tuple[str, str] | None:
     return None
 
 
-def _latest_outputs(store: ProjectStore, subject_id: str) -> dict[tuple[str, str], dict[str, Any]]:
-    """Per (pack, item), the newest output made for this character, with its run."""
+def variation_id(store: ProjectStore, variation: str | None) -> str:
+    """The variation asked for, or the project's active one (change 0005)."""
+    return store.info.variation_of(variation or None).id
+
+
+def _latest_outputs(store: ProjectStore, subject_id: str, v: str) -> dict[tuple[str, str], dict[str, Any]]:
+    """Per (pack, item), the newest output made for this character in variation `v`, with its run."""
     found: dict[tuple[str, str], dict[str, Any]] = {}
+    first = store.info.first_variation
     for run in all_runs(store):  # oldest first: later runs win
+        if (run.plan.variation or first) != v:
+            continue
         planned = [o for o in run.plan.outputs if o.subjects and o.subjects[0].subject_id == subject_id]
         if not planned:
             continue
@@ -51,9 +59,9 @@ def _latest_outputs(store: ProjectStore, subject_id: str) -> dict[tuple[str, str
     return found
 
 
-def _accepted(store: ProjectStore, subject_id: str) -> dict[tuple[str, str], ImageRecord]:
+def _accepted(store: ProjectStore, subject_id: str, v: str) -> dict[tuple[str, str], ImageRecord]:
     found: dict[tuple[str, str], ImageRecord] = {}
-    for image in store.images(subject_id=subject_id):
+    for image in store.images(subject_id=subject_id, variation=v):
         if image.status in ACCEPTED and image.subjects[0].subject_id == subject_id:
             key = pack_of(image.pack, image.item or image.label)
             if key:
@@ -83,11 +91,12 @@ def _item_view(
     }
 
 
-def character_page(store: ProjectStore, subject_id: str) -> dict[str, Any]:
-    """The character's packs: every item it should have, with what exists for it so far."""
+def character_page(store: ProjectStore, subject_id: str, variation: str | None = None) -> dict[str, Any]:
+    """The character's packs in a variation: every item it should have, with what exists for it so far."""
+    v = variation_id(store, variation)
     subject = store.subject(subject_id)
-    latest = _latest_outputs(store, subject_id)
-    accepted = _accepted(store, subject_id)
+    latest = _latest_outputs(store, subject_id, v)
+    accepted = _accepted(store, subject_id, v)
     rows: list[dict[str, Any]] = []
     for name, pack in packs().items():
         if name == "assets":
@@ -106,22 +115,24 @@ def character_page(store: ProjectStore, subject_id: str) -> dict[str, Any]:
     return {
         "subject": subject.model_dump(mode="json"),
         "warnings": carried_objects(subject),
-        "hero": image_card(store, store.image(h)) if (h := accepted_hero(store, subject_id)) else None,
+        "variation": v,
+        "hero": image_card(store, store.image(h)) if (h := accepted_hero(store, subject_id, v)) else None,
         "packs": rows,
-        "assets": [world_card(store, a) for a in owned_assets(store, subject_id)],
-        "sheet": _sheet_of(store, subject_id),
+        "assets": [world_card(store, a, v) for a in owned_assets(store, subject_id)],
+        "sheet": _sheet_of(store, subject_id, v),
     }
 
 
-def character_cards(store: ProjectStore) -> list[dict[str, Any]]:
-    """The project's characters with their hero and how many pack items are accepted."""
+def character_cards(store: ProjectStore, variation: str | None = None) -> list[dict[str, Any]]:
+    """The project's characters with their hero and how many pack items are accepted in a variation."""
+    v = variation_id(store, variation)
     cards: list[dict[str, Any]] = []
     for subject in store.subjects("character"):
-        accepted = _accepted(store, subject.id)
+        accepted = _accepted(store, subject.id, v)
         total = 1 + sum(
             len(pack_items(store, subject, n, [])) for n in packs() if n not in ("hero", "assets")
         )
-        hero = accepted_hero(store, subject.id)
+        hero = accepted_hero(store, subject.id, v)
         cards.append(
             subject.model_dump(mode="json")
             | {
@@ -134,30 +145,35 @@ def character_cards(store: ProjectStore) -> list[dict[str, Any]]:
     return cards
 
 
-def world_card(store: ProjectStore, subject: Subject) -> dict[str, Any]:
-    hero = accepted_hero(store, subject.id)
+def world_card(store: ProjectStore, subject: Subject, variation: str | None = None) -> dict[str, Any]:
+    hero = accepted_hero(store, subject.id, variation_id(store, variation))
     return subject.model_dump(mode="json") | {"hero": image_card(store, store.image(hero)) if hero else None}
 
 
-def world(store: ProjectStore) -> list[dict[str, Any]]:
+def world(store: ProjectStore, variation: str | None = None) -> list[dict[str, Any]]:
     """Places and objects that belong to the project, not to one character."""
-    return [world_card(store, s) for s in store.subjects() if s.kind != "character" and s.owner is None]
+    v = variation_id(store, variation)
+    return [world_card(store, s, v) for s in store.subjects() if s.kind != "character" and s.owner is None]
 
 
-def world_requests(store: ProjectStore, subject_ids: list[str] | None) -> list[SubjectReferences]:
+def world_requests(
+    store: ProjectStore, subject_ids: list[str] | None, variation: str | None = None
+) -> list[SubjectReferences]:
     """One reference request per chosen world asset; by default those without an accepted hero."""
+    v = variation_id(store, variation)
     if subject_ids is None:
-        subject_ids = [s["id"] for s in world(store) if s["hero"] is None]
-    return [SubjectReferences(subject_id=i) for i in subject_ids]
+        subject_ids = [s["id"] for s in world(store, v) if s["hero"] is None]
+    return [SubjectReferences(subject_id=i, variation=v) for i in subject_ids]
 
 
 # ------------------------------------------------------------------------------------------ model sheet
 
 
-def model_sheet_recipe(store: ProjectStore, subject_id: str) -> SheetRecipe:
+def model_sheet_recipe(store: ProjectStore, subject_id: str, variation: str | None = None) -> SheetRecipe:
     """The character model sheet from the accepted pack images: hero and turnaround, then expressions."""
+    v = variation_id(store, variation)
     subject = store.subject(subject_id)
-    accepted = _accepted(store, subject_id)
+    accepted = _accepted(store, subject_id, v)
     figures = [(k, accepted[k]) for k in accepted if k[0] in ("hero", "turnaround")]
     faces = [(k, accepted[k]) for k in accepted if k[0] == "expressions"]
     if not figures:
@@ -174,7 +190,7 @@ def model_sheet_recipe(store: ProjectStore, subject_id: str) -> SheetRecipe:
         if fields.get(key)
     ]
     return SheetRecipe(
-        name=f"{subject.name} model sheet",
+        name=sheet_name(store, subject, v),
         layout=MODEL_SHEET,
         images=[i.id for _, i in figures + faces],
         labels=[k[1] for k, _ in figures + faces],
@@ -184,8 +200,15 @@ def model_sheet_recipe(store: ProjectStore, subject_id: str) -> SheetRecipe:
     )
 
 
-def _sheet_of(store: ProjectStore, subject_id: str) -> dict[str, Any] | None:
-    name = f"{store.subject(subject_id).name} model sheet"
+def sheet_name(store: ProjectStore, subject: Subject, v: str) -> str:
+    """One model sheet per character and variation; the first variation keeps the plain name."""
+    if v == store.info.first_variation:
+        return f"{subject.name} model sheet"
+    return f"{subject.name} model sheet ({store.info.variation_of(v).name})"
+
+
+def _sheet_of(store: ProjectStore, subject_id: str, v: str) -> dict[str, Any] | None:
+    name = sheet_name(store, store.subject(subject_id), v)
     sheet = next(
         (s for s in store.sheets() if s.recipe.name == name and s.recipe.layout == MODEL_SHEET), None
     )
