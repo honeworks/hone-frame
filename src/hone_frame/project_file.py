@@ -101,9 +101,9 @@ class ProjectIn(_In):
     name: str
     brief: str = ""
     direction: str = ""
-    style: str = "cinematic-realism"  # the first variation's style pack; for a new project only when omitted
+    style: str = "cinematic-realism"  # the style pack when no `variations` are given
     look: str = ""  # the world's look guide (change 0005)
-    variations: list[VariationIn] = Field(default_factory=list[VariationIn])  # more ways of drawing it
+    variations: list[VariationIn] = Field(default_factory=list[VariationIn])  # the first: the first variation
 
 
 class ProjectFile(_In):

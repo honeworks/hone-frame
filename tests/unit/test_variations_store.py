@@ -147,3 +147,12 @@ def test_a_new_project_from_a_file_starts_with_its_first_variation(tmp_path: Pat
         ("flat", "Flat", "clean-2d-animation"),
     ]
     assert not ws.import_file(path).updated  # importing again adds nothing
+
+
+def test_a_bad_first_variation_style_creates_nothing(tmp_path: Path) -> None:
+    ws = hf.Workspace(tmp_path / "ws", models=FakeModels())
+    path = tmp_path / "w.json"
+    path.write_text(json.dumps({"project": {"name": "W", "variations": [{"name": "A", "style": "nope"}]}}))
+    with pytest.raises(InvalidRequest, match="variation style 'nope' is not a style pack"):
+        ws.import_file(path)
+    assert ws.projects() == []
