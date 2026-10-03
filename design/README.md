@@ -65,6 +65,7 @@ chooses a paid model.
 | [`changes/0005-world-variations.md`](changes/0005-world-variations.md) | variations of one world, the look guide, must/never lists, the pose library, object packs, whole-world runs |
 | [`changes/0006-approvals-and-options.md`](changes/0006-approvals-and-options.md) | approvals, hero casting, a stronger judge, issue presets, clean-up |
 | [`history/`](history/) | the owner's product brief, kept in full |
+| [`research/`](research/README.md) | experiments, root cause analyses, tools worth using, and the backlog of ideas not yet designed |
 | [`decisions.md`](decisions.md) | small implementation choices, and the items awaiting owner review |
 
 A new design change starts as a record in `changes/` with status `proposed`; see
