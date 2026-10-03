@@ -74,7 +74,7 @@ export async function generateEverything() {
         h("div", {}, h("strong", {}, `${plan.images} images`), ` in ${plan.runs.length} runs, then ${plan.scenes} scene${plan.scenes === 1 ? "" : "s"} once the characters are made.`),
         h("div", {}, `About ${duration(plan.estimate_s)}`, h("span", { class: "caption" }, plan.measured ? ` (${plan.seconds_per_image} s per image, measured on this machine)` : " (a first guess until runs have been measured)")),
         h("ul", { class: "caption", style: "margin:0;padding-left:18px" }, plan.runs.map((r) => h("li", {}, `${r.title}: ${r.images} images`, r.errors.length ? ` — ${r.errors[0]}` : "")),
-          (plan.scene_runs || []).map((r) => h("li", {}, `Scene ${r.title}: ${r.images} images (after the characters)`))));
+          (plan.scene_runs || []).map((r) => h("li", {}, `Scene ${r.title}: ${r.images} images (after the characters)`, r.errors?.length ? ` — ${r.errors[0]}` : ""))));
     } catch (error) { replace(summary, h("div", { class: "notice danger" }, error.message)); }
   };
   profile.addEventListener("change", estimate);

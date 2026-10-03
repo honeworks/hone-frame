@@ -73,8 +73,9 @@ def world_plan(
         )
     scenes: list[dict[str, Any]] = []
     for request in scene_requests(store, v, profile=profile, selection=selection):
-        counted = plan(store, request).counts  # counted now; it runs once the characters are made
-        scenes.append({"title": store.scene(str(request["scene_id"])).name, "images": counted.images})
+        planned = plan(store, request)  # counted now; it runs once the characters are made
+        problems = [e for e in planned.errors if "no accepted image" not in e]  # heroes come first
+        scenes.append({"title": planned.title, "images": planned.counts.images, "errors": problems})
     seconds = per_image_seconds(store.workspace)
     images = sum(r["images"] for r in rows) + sum(r["images"] for r in scenes)
     return {
