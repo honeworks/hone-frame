@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 import hone_frame as hf
+from hone_frame.judging import checks_for
 from hone_frame.presets import PresetCatalog
 from hone_frame.project_file import import_path
 from hone_frame.prompts import ASKED, Composed, compose, planner_problem
@@ -188,3 +189,51 @@ def test_objects_in_the_hands_are_reported(rostam_project: hf.ProjectStore) -> N
         assert any("mace" in w and "Belongings" in w for w in warnings)
     finally:
         rostam_project.edit_subject(rostam.id, fields=rostam.fields)
+
+
+def test_references_show_nobody_else(rostam_project: hf.ProjectStore) -> None:
+    """A hero is alone, a place is empty, an object has nobody holding it (change 0006: a look guide that
+    describes warriors filled places and object images with people)."""
+    rostam = rostam_project.subjects("character")[0]
+    place = rostam_project.subjects("environment")[0]
+    hero = rostam_project.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["hero"])).outputs[0]
+    hall = rostam_project.plan(hf.SubjectReferences(subject_id=place.id)).outputs[0]
+    for out, words, flag in (
+        (hero, "only rostam, alone", "solo"),
+        (hall, "the place is empty", "empty_place"),
+    ):
+        text = compose(out, [], [], rostam_project.workspace.dialects.for_model(out.model)).text.lower()
+        assert words in text and flag in out.conditions
+
+
+def test_the_look_guide_only_where_people_are_drawn(tmp_path: Path) -> None:
+    ws = hf.Workspace(tmp_path / "ws", models=FakeModels())
+    p = ws.project(import_path(ws, FILE).project)
+    p.update(look="LOOKGUIDE warriors in lamellar")
+    rostam, place = p.subjects("character")[0], p.subjects("environment")[0]
+    rakhsh = next(s for s in p.subjects("asset") if s.owner is None)
+    scene = p.scenes()[0]
+    outs = {
+        "hero": p.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["hero"])).outputs[0],
+        "place": p.plan(hf.SubjectReferences(subject_id=place.id)).outputs[0],
+        "object": p.plan(hf.SubjectReferences(subject_id=rakhsh.id)).outputs[0],
+        "scene": p.plan(hf.SceneShot(scene_id=scene.id)).outputs[0],
+    }
+    texts = {k: compose(o, [], [], ws.dialects.for_model(o.model)).text for k, o in outs.items()}
+    assert "LOOKGUIDE" in texts["hero"] and "LOOKGUIDE" in texts["scene"]
+    assert "LOOKGUIDE" not in texts["place"] and "LOOKGUIDE" not in texts["object"]
+    assert "The object alone" in texts["object"] and "object_alone" in outs["object"].conditions
+    catalog = ws.presets
+    names = {k: [c["name"] for c in checks_for(catalog, o)] for k, o in outs.items()}
+    assert "solo" in names["hero"] and "no_people" in names["place"] and "object_alone" in names["object"]
+
+
+def test_solo_only_on_heroes(rostam_project: hf.ProjectStore) -> None:
+    rostam = rostam_project.subjects("character")[0]
+    packs_plan = rostam_project.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["hero", "poses"]))
+    refs_plan = rostam_project.plan(hf.SubjectReferences(subject_id=rostam.id))
+    for out in [*packs_plan.outputs, *refs_plan.outputs]:
+        if out.kind != "character":
+            continue
+        hero = out.label == "Hero"
+        assert ("solo" in out.conditions) is hero and bool(out.prompt_inputs.get("solo")) is hero, out.label

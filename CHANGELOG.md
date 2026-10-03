@@ -32,6 +32,9 @@ All notable changes to this project are documented here. The format follows
 - A magnifier on every image in the dashboard.
 
 ### Fixed
+- Places came out full of people and objects with a warrior holding them when the look guide described
+  costumes; places are now empty, heroes alone, objects alone, and the judge checks each. A queued run
+  that is canceled now shows as canceled.
 - Pose, expression, outfit, state, action, gaze and "Generate again" notes were cut from prompts to fit a
   model's word budget (most poses came out standing); they are now never dropped, and neither are the
   framing and the style. The planner's rewrite must keep them, and the judge is told what was asked.

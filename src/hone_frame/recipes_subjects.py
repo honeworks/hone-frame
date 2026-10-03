@@ -36,6 +36,7 @@ def subject_references(store: ProjectStore, request: SubjectReferences, built: B
     common = {"subjects": [link], "judging": JUDGING[subject.kind]}
     lighting = reference_lighting(built, request)
     look, look_flags = reference_look(subject.kind)
+    solo = subject.kind == "character"
     if request.hero_image:
         store.image(request.hero_image)
         hero_ref: dict[str, Any] = {
@@ -54,12 +55,13 @@ def subject_references(store: ProjectStore, request: SubjectReferences, built: B
             "Hero",
             subject.kind,
             references=own,
-            conditions=(["identity_ref"] if own else []) + look_flags,
+            conditions=(["identity_ref"] if own else []) + look_flags + (["solo"] if solo else []),
             **common,
             prompt_inputs=base_inputs(
                 built.choices,
                 request,
                 **look,
+                solo=solo,  # a hero is drawn anew: only this character in it (D-039)
                 who=[(subject, None)],
                 full_body=subject.kind == "character",
                 reference=True,

@@ -140,3 +140,9 @@ def test_progress_while_running(tmp_path: Path) -> None:
     assert [s["progress"]["done"] for s in seen] == [1, 3, 5]
     assert seen[0]["progress"]["planned"] == 6 and seen[0]["progress"]["current"] == "indeterminate"
     assert seen[1]["stage"] == "judging" and seen[1]["current"]["round"] == 2
+
+
+def test_a_queued_run_can_be_canceled(sample: hf.ProjectStore) -> None:
+    run = sample.submit(hf.SubjectReferences(subject_id="char_001", selection=hf.Selection(rounds=1)))
+    assert sample.cancel(run.id).status == "canceled"  # it never starts, and says so
+    assert hf.Runner(sample.workspace).next_queued() is None

@@ -181,9 +181,9 @@ def status(store: ProjectStore, run: RunRecord, outs: list[OutputRecord]) -> tup
         return ("pausing", message) if live else ("paused", message)
     if live:
         return ("pausing", f"will stop after the current call ({action})") if action else ("running", "")
-    if run.state == "queued":
+    if run.state == "queued" and action != "cancel":
         return ("paused", "paused before it started") if action == "pause" else ("queued", "")
-    if action in ("pause", "cancel"):
+    if action in ("pause", "cancel"):  # a canceled queued run too
         return ("paused" if action == "pause" else "canceled"), f"{action} requested"
     if run.state == "running":
         return "paused", "interrupted: its process stopped; resume to continue"

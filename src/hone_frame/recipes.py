@@ -46,11 +46,15 @@ def view_flags(camera: str | None) -> list[str]:
 
 def reference_look(kind: str) -> tuple[dict[str, Any], list[str]]:
     """A character's or object's reference image: a white background and, for a character, empty hands
-    (change 0003); the prompt inputs and the judging conditions that check them. Places keep their own."""
+    (change 0003) and nobody else in the picture; a place's reference is empty of people (change 0006: a
+    look guide that describes warriors filled places with crowds). The prompt inputs and the judging
+    conditions that check them."""
     if kind == "environment":
-        return {}, []
+        return {"empty_place": True}, ["empty_place"]
     hands = kind == "character"
-    return {"background": WHITE, "empty_hands": hands}, ["clean_background"] + (["no_props"] if hands else [])
+    look: dict[str, Any] = {"background": WHITE, "empty_hands": hands, "object_alone": not hands}
+    flags = ["clean_background"] + (["no_props"] if hands else ["object_alone"])  # `solo`: heroes, by caller
+    return look, flags
 
 
 def reference_lighting(built: Built, request: RequestBase) -> str:

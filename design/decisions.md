@@ -384,3 +384,14 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
   now provide.
 - **Reason:** the owner asked for them as options, not defaults; neither may slow down development work.
 
+## D-039: nobody else in a reference image; the look guide only where people are drawn  (2026-10-03)
+
+- **Choice:** a place's reference images are asked to be empty (`empty_place`, judged `no_people`), a
+  character's hero shows only that character (`solo`, judged where the prompt asks it: heroes and other
+  pictures drawn anew, not edits of the same person), and every object reference (object packs and
+  `SubjectReferences` of an object) stays alone (`object_alone`); and the look guide goes only into prompts that draw people (characters, scenes),
+  not into a place's or an object's own images.
+- **Reason:** in the first overnight run, a look guide that describes warriors' costumes turned the White
+  Fortress and the palace hall into crowds of warriors and nobles, which the judge passed. With these
+  changes the same places came out empty, and the hero alone on white.
+
