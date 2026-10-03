@@ -527,7 +527,8 @@ character-identity, object-fidelity and interaction-plausibility profiles ask wh
 plain white) and, for characters with empty hands, `no_props` (character-identity asks whether the hands
 are empty). An object pack's images (change 0006) carry `object_alone`: the prompt has the required
 `alone` section ("The object alone: no person, no hands, nobody holding, wearing or riding it") and
-object-fidelity asks whether anyone is in the picture. Likewise a character drawn anew carries `solo`
+object-fidelity asks whether anyone is in the picture; so do an object's `SubjectReferences` images.
+Likewise a character drawn anew carries `solo`
 ("Only Rostam, alone", judged `solo`) and a place's reference `empty_place` ("The place is empty: no
 people", judged `no_people`) (D-039).
 

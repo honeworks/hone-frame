@@ -79,7 +79,8 @@ def subject_references(store: ProjectStore, request: SubjectReferences, built: B
             subject.kind,
             **common,
             **hero_ref,
-            conditions=_conditions(subject.kind, spec, state) + look_flags,
+            conditions=_conditions(subject.kind, spec, state)
+            + [f for f in look_flags if f != "solo"],  # an edit
             prompt_inputs=base_inputs(
                 built.choices,
                 request,

@@ -58,7 +58,7 @@ def reference_look(kind: str) -> tuple[dict[str, Any], list[str]]:
         "solo": hands,
         "object_alone": not hands,
     }
-    flags = ["clean_background"] + (["no_props", "solo"] if hands else ["object_alone"])
+    flags = ["clean_background"] + (["no_props", "solo"] if hands else ["object_alone"])  # solo: heroes only
     return look, flags
 
 

@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 import hone_frame as hf
+from hone_frame.judging import checks_for
 from hone_frame.presets import PresetCatalog
 from hone_frame.project_file import import_path
 from hone_frame.prompts import ASKED, Composed, compose, planner_problem
@@ -203,3 +204,25 @@ def test_references_show_nobody_else(rostam_project: hf.ProjectStore) -> None:
     ):
         text = compose(out, [], [], rostam_project.workspace.dialects.for_model(out.model)).text.lower()
         assert words in text and flag in out.conditions
+
+
+def test_the_look_guide_only_where_people_are_drawn(tmp_path: Path) -> None:
+    ws = hf.Workspace(tmp_path / "ws", models=FakeModels())
+    p = ws.project(import_path(ws, FILE).project)
+    p.update(look="LOOKGUIDE warriors in lamellar")
+    rostam, place = p.subjects("character")[0], p.subjects("environment")[0]
+    rakhsh = next(s for s in p.subjects("asset") if s.owner is None)
+    scene = p.scenes()[0]
+    outs = {
+        "hero": p.plan(hf.CharacterPacks(subject_id=rostam.id, packs=["hero"])).outputs[0],
+        "place": p.plan(hf.SubjectReferences(subject_id=place.id)).outputs[0],
+        "object": p.plan(hf.SubjectReferences(subject_id=rakhsh.id)).outputs[0],
+        "scene": p.plan(hf.SceneShot(scene_id=scene.id)).outputs[0],
+    }
+    texts = {k: compose(o, [], [], ws.dialects.for_model(o.model)).text for k, o in outs.items()}
+    assert "LOOKGUIDE" in texts["hero"] and "LOOKGUIDE" in texts["scene"]
+    assert "LOOKGUIDE" not in texts["place"] and "LOOKGUIDE" not in texts["object"]
+    assert "The object alone" in texts["object"] and "object_alone" in outs["object"].conditions
+    catalog = ws.presets
+    names = {k: [c["name"] for c in checks_for(catalog, o)] for k, o in outs.items()}
+    assert "solo" in names["hero"] and "no_people" in names["place"] and "object_alone" in names["object"]
