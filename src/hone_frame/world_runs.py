@@ -71,12 +71,17 @@ def world_plan(
                 "errors": planned.errors,
             }
         )
+    scenes: list[dict[str, Any]] = []
+    for request in scene_requests(store, v, profile=profile, selection=selection):
+        counted = plan(store, request).counts  # counted now; it runs once the characters are made
+        scenes.append({"title": store.scene(str(request["scene_id"])).name, "images": counted.images})
     seconds = per_image_seconds(store.workspace)
-    images = sum(r["images"] for r in rows)
+    images = sum(r["images"] for r in rows) + sum(r["images"] for r in scenes)
     return {
         "variation": v,
         "runs": rows,
-        "scenes": len(store.scenes()),
+        "scenes": len(scenes),
+        "scene_runs": scenes,
         "images": images,
         "seconds_per_image": round(seconds, 1),
         "estimate_s": round(images * seconds),

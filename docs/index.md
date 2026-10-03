@@ -16,6 +16,7 @@ exactly the references you chose; and watch it all in a local dashboard. The des
 | [models.md](models.md) | the `Models` port: hone-models by default, `FakeModels` for tests |
 | [dashboard.md](dashboard.md) | the local dashboard: views, API, security |
 | [cli.md](cli.md) | the command line |
+| [variations.md](variations.md) | variations of one world, the look guide, must and never, generate everything |
 | [project-files.md](project-files.md) | a whole project (characters, belongings, world, scenes) in one TOML or JSON file |
 
 The runnable examples are in [examples/](../examples/README.md).

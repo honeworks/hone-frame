@@ -198,6 +198,11 @@ def _project(ws: Workspace, p: ProjectIn) -> tuple[ProjectStore, bool]:
     keys = (("brief", "brief"), ("direction", "direction"), ("style", "style_pack"), ("look", "look"))
     wanted = {k: given[key] for key, k in keys if key in given}
     store = ws.project(existing.id)
+    if existing.variations and "style_pack" in wanted:  # the style is the first variation's (0005)
+        first = existing.all_variations()[0]
+        if first.style_pack != wanted["style_pack"]:
+            store.edit_variation(first.id, style_pack=wanted["style_pack"])
+        wanted.pop("style_pack")
     if any(getattr(existing, k) != v for k, v in wanted.items()):
         store.update(**wanted)
     _variations(store, p.variations, styles)

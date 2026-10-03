@@ -29,13 +29,14 @@ def test_look_guide_where_it_belongs(tmp_path: Path) -> None:
     assert LOOK in prompts[("hero", "Hero")] and LOOK in prompts[("outfits", "Feast")]
     assert LOOK not in prompts[("expressions", "Happy")]  # the hero image shows it already
     assert "Always visible: a long scar across the left cheek" in prompts[("expressions", "Happy")]
-    judged = [c.prompt for c in fake.asked if "quality judge" in c.prompt]
-    assert all(
-        "- never_shown: Is none of these in the picture: plate armour; a cape" in j
-        for j in judged
-        if "Rostam" in j
-    )
-    negatives = [g.inputs.get("negative", "") for g in fake.generated]
+    judged = [c.prompt for c in fake.asked if "quality judge" in c.prompt and "Rostam" in c.prompt]
+    assert judged
+    assert all("- never_shown: Is none of these in the picture: plate armour; a cape" in j for j in judged)
+    assert all("- must_shown: Are all of these visible" in j and "left cheek" in j for j in judged)
+    prompts_sent = [g.prompt for g in fake.generated]
+    assert prompts_sent and not any("plate armour" in t for t in prompts_sent)  # never in a positive prompt
+    negatives = [str(g.inputs.get("negative", "")) for g in fake.generated]
+    assert negatives and all("plate armour" in n and "a cape" in n for n in negatives if n)
     assert any("plate armour" in n for n in negatives)
 
 

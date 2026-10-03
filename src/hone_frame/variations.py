@@ -48,12 +48,15 @@ def edit_variation(store: ProjectStore, variation_id: str, **changes: Any) -> Va
         raise InvalidRequest(f"cannot change {bad} of a variation; change its name, style_pack or direction")
     if "style_pack" in changes:
         store.workspace.presets.get("style_pack", str(changes["style_pack"]))
+    if "name" in changes and not str(changes["name"]).strip():
+        raise InvalidRequest("a variation needs a name")
     with store.lock():
         project = store.info
+        project.variation_of(variation_id)  # an unknown id is refused before anything changes
         found = [
-            v.model_copy(update=changes) if v.id == variation_id else v for v in project.all_variations()
+            Variation.model_validate(v.model_dump() | changes) if v.id == variation_id else v
+            for v in project.all_variations()
         ]
-        project.variation_of(variation_id)
         data = project.model_dump() | {"variations": [v.model_dump() for v in found], "updated_at": now()}
         write_json(store.root / "project.json", Project.model_validate(data).model_dump(mode="json"))
     return store.info.variation_of(variation_id)
