@@ -49,8 +49,8 @@ def _latest_outputs(store: ProjectStore, subject_id: str, v: str) -> dict[tuple[
         planned = [o for o in run.plan.outputs if o.subjects and o.subjects[0].subject_id == subject_id]
         if not planned:
             continue
-        v: RunView = view(store, run)
-        records = {o.id: o for o in v.outputs}
+        shown: RunView = view(store, run)
+        records = {o.id: o for o in shown.outputs}
         for out in planned:
             key = pack_of(out.pack, out.item or out.label)
             record: OutputRecord | None = records.get(out.id)
