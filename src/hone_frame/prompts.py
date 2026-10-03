@@ -129,14 +129,16 @@ def planner_problem(answer: str, draft: Composed) -> str | None:
     if "image 1" in draft.text.lower() and "image 1" not in answer.lower():
         return "the reference images are no longer named"
     for asked in draft.asked:
-        if not kept_words(asked, answer):
+        rest = draft.text.lower().replace(asked.lower(), " ")
+        if not kept_words(asked, answer, common=rest):
             return f"what the image is for was dropped ({asked!r})"
     return None
 
 
-def kept_words(phrase: str, answer: str) -> bool:
-    """Whether `answer` still says `phrase`: most of its content words (four letters or more) appear."""
-    words = set(re.findall(r"[a-z]{4,}", phrase.lower()))
+def kept_words(phrase: str, answer: str, *, common: str = "") -> bool:
+    """Whether `answer` still says `phrase`: most of its content words (four letters or more) appear.
+    Words that the rest of the draft (`common`) also has prove nothing and are not counted."""
+    words = set(re.findall(r"[a-z]{4,}", phrase.lower())) - set(re.findall(r"[a-z]{4,}", common))
     if not words:
         return True
     found = sum(1 for w in words if w in answer.lower())

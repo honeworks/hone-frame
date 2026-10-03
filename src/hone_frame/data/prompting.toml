@@ -17,7 +17,7 @@ models = ["flux.2-klein*", "flux.2*"]
 summary = "FLUX.2 klein: 40 to 120 words, subject first; with references, describe the change"
 [dialects.flux-klein.generate]
 sections = ["shot", "look", "subject", "outfit", "features", "must", "pose", "expression", "gaze", "action", "state", "scene", "background", "props", "lighting", "style_lead", "note", "fixes"]
-max_words = 120
+max_words = 150  # a hero drawn from words alone also carries the look guide (change 0005)
 style = "short"
 rules = "Write 40 to 120 words. Put the subject first, then the environment, then the style; nouns matter more than adjectives. One idea per sentence; no lists of synonyms."
 [dialects.flux-klein.view]

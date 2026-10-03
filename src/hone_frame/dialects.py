@@ -18,7 +18,7 @@ SECTIONS = (
     "expression", "pose", "gaze", "state", "frame", "background", "props", "lighting", "style_lead",
     "style_close", "text_refs", "note", "fixes", "look", "must",
 )  # fmt: skip
-# always kept: what the image is, its framing, its style and its look (change 0004)
+# always kept: what the image is, its framing, its style and its look (changes 0004, 0005)
 REQUIRED = {
     "camera_phrase",
     "shot",
@@ -30,6 +30,8 @@ REQUIRED = {
     "props",
     "style_lead",
     "fixes",
+    "look",  # the world's look guide (change 0005)
+    "must",
 }
 
 
