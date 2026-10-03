@@ -70,7 +70,7 @@ def test_project_files_carry_look_variations_must_never(tmp_path: Path) -> None:
     path = tmp_path / "w.json"
     path.write_text(json.dumps(data))
     p = ws.project(ws.import_file(path).project)
-    assert p.info.look == "lamellar coats" and [v.name for v in p.info.all_variations()][1:] == ["Flat"]
+    assert p.info.look == "lamellar coats" and [v.name for v in p.info.all_variations()] == ["Flat"]
     back = p.project_file()
     assert back["project"]["look"] == "lamellar coats" and back["characters"][0]["never"] == ["a cape"]
     path.write_text(json.dumps(back))
@@ -132,3 +132,18 @@ def test_scene_rows_keep_real_plan_errors_only(tmp_path: Path) -> None:
     (p.root / "subjects" / f"{place}.json").unlink()  # its place is gone: a real plan error
     duel_row = next(r for r in p.world_plan()["scene_runs"] if place in " ".join(r["errors"]))
     assert duel_row["images"] == 0
+
+
+def test_a_new_project_from_a_file_starts_with_its_first_variation(tmp_path: Path) -> None:
+    ws = hf.Workspace(tmp_path / "ws", models=FakeModels())
+    data = {"project": {"name": "W", "variations": [
+        {"name": "Realistic", "style": "historical-epic", "direction": "warm"},
+        {"name": "Flat", "style": "clean-2d-animation"}]}}  # fmt: skip
+    path = tmp_path / "w.json"
+    path.write_text(json.dumps(data))
+    p = ws.project(ws.import_file(path).project)
+    assert [(v.id, v.name, v.style_pack) for v in p.info.all_variations()] == [
+        ("main", "Realistic", "historical-epic"),
+        ("flat", "Flat", "clean-2d-animation"),
+    ]
+    assert not ws.import_file(path).updated  # importing again adds nothing

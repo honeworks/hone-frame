@@ -23,7 +23,7 @@ example: four characters, their belongings, three places, a shared object and tw
 | Section | Keys |
 |---|---|
 | `format_version` | `"1"` |
-| `[project]` | `name` (required), `brief`, `direction`, `style` (the first variation's style pack, e.g. `historical-epic`), `look` (the world's look guide: what things look like, in concrete sentences), `variations` (more ways of drawing it: a list of `{name, style, direction}`) |
+| `[project]` | `name` (required), `brief`, `direction`, `style` (the style pack when there are no `variations`, e.g. `historical-epic`), `look` (the world's look guide: what things look like, in concrete sentences), `variations` (the ways of drawing it, a list of `{name, style, direction}`; the first is the project's first variation) |
 | `[[characters]]` | `name`, `description`, `appearance`, `build`, `features`, `outfit`, `must` and `never` (lists: what every image always or never shows), `states` (a list of `{name, kind, description}`; kind is `outfit`, `expression`, `condition`, `lighting` or `other`) |
 | `[[characters.belongings]]` | objects that belong to that character: `name`, `description`, `size`, `materials`, `colours`, `details`, `must`, `never` |
 | `[[places]]` | `name`, `description`, `anchors`, `materials`, `viewpoints`, `recurring_objects` |

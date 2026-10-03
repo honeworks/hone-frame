@@ -189,9 +189,15 @@ def _project(ws: Workspace, p: ProjectIn) -> tuple[ProjectStore, bool]:
         raise InvalidRequest(f"project style {p.style!r} is not a style pack; use one of {styles}")
     existing = next((x for x in ws.projects() if x.name == p.name), None)
     if existing is None:
-        store = ws.create_project(p.name, brief=p.brief, direction=p.direction, style_pack=p.style)
+        first = p.variations[0] if p.variations else None
+        style = first.style if first else p.style
+        if style not in styles:
+            raise InvalidRequest(f"variation style {style!r} is not a style pack; use one of {styles}")
+        store = ws.create_project(p.name, brief=p.brief, direction=p.direction, style_pack=style)
         if p.look:
             store.update(look=p.look)
+        if first:  # the file's first variation is the project's first one, not another next to it
+            store.edit_variation(store.info.first_variation, name=first.name, direction=first.direction)
         _variations(store, p.variations, styles)
         return store, True
     given = p.model_dump(exclude_unset=True)
