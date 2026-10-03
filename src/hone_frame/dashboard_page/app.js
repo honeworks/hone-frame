@@ -1,5 +1,5 @@
 // The shell: navigation, the project selector, hash routing. Each view renders into <main>.
-import { api, h, icon, replace, state, failure } from "./core.js";
+import { api, h, icon, replace, state, failure, watchRuns } from "./core.js";
 import * as project from "./views/project.js";
 import * as characters from "./views/characters.js";
 import * as world from "./views/world.js";
@@ -112,6 +112,7 @@ async function start() {
     location.hash = `#/library/search/${encodeURIComponent(q)}`;
   });
   window.addEventListener("hashchange", route);
+  watchRuns();
   window.addEventListener("hf:projects", async () => { await loadWorkspace(); route(); });
   route();
 }

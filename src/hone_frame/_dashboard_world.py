@@ -8,6 +8,7 @@ from hone_frame._dashboard_api import ID, P, api, json_body
 from hone_frame._dashboard_data import image_card
 from hone_frame.characters import belonging_row, variation_id
 from hone_frame.cleanup import cleanup, cleanup_candidates
+from hone_frame.issues import issues
 from hone_frame.recipes_packs import accepted_hero
 from hone_frame.records import Selection
 from hone_frame.workspace import Workspace
@@ -52,6 +53,11 @@ def use_variation(ws: Workspace, project_id: str, variation: str, **_: Any) -> d
     return _variations(ws, project_id)
 
 
+def _options(data: dict[str, Any]) -> dict[str, Any]:
+    """The approval and judge modes chosen when starting (change 0006)."""
+    return {k: str(data[k]) for k in ("approval", "judge_mode") if data.get(k)}
+
+
 def _selection(data: dict[str, Any]) -> Selection | None:
     rounds = data.get("rounds")
     return Selection(rounds=int(rounds)) if rounds else None
@@ -62,7 +68,7 @@ def plan_world(ws: Workspace, project_id: str, *, body: Any, **_: Any) -> dict[s
     data = json_body(body) if body is not None else {}
     store = ws.project(project_id)
     return world_plan(store, data.get("variation") or None, profile=str(data.get("profile") or ""),
-                      selection=_selection(data))  # fmt: skip
+                      selection=_selection(data), options=_options(data))  # fmt: skip
 
 
 @api("POST", P + "/world/generate-all")
@@ -70,7 +76,7 @@ def generate_all(ws: Workspace, project_id: str, *, body: Any, **_: Any) -> dict
     data = json_body(body) if body is not None else {}
     store = ws.project(project_id)
     return generate_world(store, data.get("variation") or None, profile=str(data.get("profile") or ""),
-                          selection=_selection(data))  # fmt: skip
+                          selection=_selection(data), options=_options(data))  # fmt: skip
 
 
 @api("GET", P + "/objects/" + ID)
@@ -102,3 +108,9 @@ def clean_up(ws: Workspace, project_id: str, *, body: Any, **_: Any) -> dict[str
     if data.get("dry_run"):
         return {"images": len(cleanup_candidates(store, what, variation))}
     return cleanup(store, what, variation)
+
+
+@api("GET", "/issues")
+def standard_issues(ws: Workspace, **_: Any) -> list[dict[str, str]]:
+    """The standard issues "Generate again" offers (change 0006)."""
+    return [i.model_dump(include={"id", "label", "group"}) for i in issues().values()]

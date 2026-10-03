@@ -1,5 +1,5 @@
 // Queue: the run table, and the run page of mockup 1 (stages, current task, evaluation, live activity).
-import { api, clock, duration, empty, failure, field, h, icon, img, pill, presetOptions, progressBar, range, replace, select, state, toast, words } from "../core.js";
+import { api, clock, duration, empty, failure, field, h, icon, img, issuePicker, pill, presetOptions, progressBar, range, replace, select, state, toast, words } from "../core.js";
 
 const LIVE = new Set(["running", "pausing", "queued"]);
 
@@ -248,7 +248,8 @@ function pickDialog(project, run, o, images) {
   dialog.showModal();
 }
 
-function redoDialog(project, run, o) {
+async function redoDialog(project, run, o) {
+  const issues = await issuePicker();
   const note = h("textarea", { class: "input", placeholder: "What was wrong and what you want instead, e.g. seen from directly behind, no face visible, both hands empty" });
   const profile = select(presetOptions("profile"), run.profile.id, { "aria-label": "Profile" });
   const rounds = h("input", { class: "input", type: "number", min: 1, max: 10, value: run.selection.rounds, "aria-label": "Rounds" });
@@ -257,7 +258,7 @@ function redoDialog(project, run, o) {
       event.preventDefault();
       try {
         const redo = await api(`/runs/${project}/${run.id}/rerun`, { method: "POST",
-          body: { output: o.id, note: note.value, profile: profile.value, rounds: Number(rounds.value) } });
+          body: { output: o.id, note: note.value, profile: profile.value, rounds: Number(rounds.value), issues: issues.values() } });
         dialog.close();
         toast(`${o.label}: a new attempt is queued.`);
         location.hash = `#/queue/${redo.project}/${redo.id}`;
@@ -265,7 +266,8 @@ function redoDialog(project, run, o) {
     } },
     h("h2", {}, `Generate ${o.label} again`),
     h("p", { class: "caption", style: "margin:0" }, "A new run for this one output, with the same subject and references. The current candidates stay in the library with their findings."),
-    field("What should change", note, "Added to the prompt."),
+    h("div", { class: "overline" }, "What is wrong"), issues.node,
+    field("What should change", note, "Added to the prompt, with the fixes of what you ticked."),
     h("div", { class: "row", style: "flex-wrap:nowrap" }, field("Profile", profile, "Final uses Qwen-Image-Edit, which has camera-angle control (good for side and back views)."), field("Rounds", rounds)),
     h("div", { class: "row" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", onclick: () => dialog.close() }, "Cancel"),
       h("button", { class: "btn primary", type: "submit" }, "Generate again"))));

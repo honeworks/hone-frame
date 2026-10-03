@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from hone_frame.runs import RunRecord, set_control
+from hone_frame.runs import RunRecord, all_runs, control, control_message, set_control
 
 if TYPE_CHECKING:
     from hone_frame.events import EventLog
@@ -32,3 +32,15 @@ def checkpoint(store: ProjectStore, run: RunRecord, out: PlannedOutput, log: Eve
     message = f"Waiting for your approval: {out.label} and what came before it"
     set_control(store, run.id, "approve", message)
     log.write("approval_needed", output=out.id, message=message)
+
+
+def waiting_for_approval(store: ProjectStore, subject_id: str | None = None) -> list[dict[str, str]]:
+    """The runs that wait for the person's approval, optionally only those that make `subject_id`."""
+    found: list[dict[str, str]] = []
+    for run in all_runs(store):
+        if control(store, run.id) != "approve":
+            continue
+        subjects = {s.subject_id for o in run.plan.outputs for s in o.subjects}
+        if subject_id is None or subject_id in subjects:
+            found.append({"run": run.id, "title": run.title, "message": control_message(store, run.id)})
+    return found

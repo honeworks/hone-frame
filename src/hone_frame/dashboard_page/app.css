@@ -185,6 +185,7 @@ dialog.lightbox:not([open]) { display: none; }
 .lightbox-img { width: 100%; height: 100%; object-fit: contain; cursor: zoom-in; }
 .lightbox-img.actual { width: auto; height: auto; max-width: none; max-height: none; object-fit: none; cursor: zoom-out; }
 .variation-bar { gap: var(--s2); }
+.issue-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: var(--s3); }
 .thumb-sm { width: 56px; height: 56px; border-radius: var(--r-thumb); object-fit: cover; background: var(--surface-sunken); flex: none; }
 .placeholder-img { color: var(--ink-muted); font-size: 12px; }
 

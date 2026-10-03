@@ -22,6 +22,7 @@ from hone_frame.recipes_packs import (
 from hone_frame.records import ImageRecord, Scene, SceneRef, SheetRecipe, Subject
 from hone_frame.references import ACCEPTED
 from hone_frame.requests import CharacterPacks, RequestBase, SubjectReferences
+from hone_frame.run_options import waiting_for_approval
 from hone_frame.runs import OutputRecord, RunView, all_runs, view
 from hone_frame.sheets import MODEL_SHEET
 
@@ -119,6 +120,7 @@ def character_page(store: ProjectStore, subject_id: str, variation: str | None =
     return {
         "subject": subject.model_dump(mode="json"),
         "warnings": carried_objects(subject) + unstable_features(subject),
+        "approvals": waiting_for_approval(store, subject_id),
         "variation": v,
         "hero": image_card(store, store.image(h)) if (h := accepted_hero(store, subject_id, v)) else None,
         "packs": rows,

@@ -1,6 +1,6 @@
 // Variations and the world's look guide (change 0005): one world, several ways of drawing it. The switcher
 // changes the active variation for every page; "Generate everything" makes a variation's whole world.
-import { api, duration, failure, field, h, icon, presetOptions, projectPath, replace, select, state, toast } from "../core.js";
+import { api, askToNotify, duration, failure, field, h, icon, presetOptions, projectPath, replace, runOptions, select, state, toast } from "../core.js";
 
 export function activeVariation(project) {
   const all = project?.variations?.length ? project.variations : [{ id: "main", name: styleName(project?.style_pack), style_pack: project?.style_pack }];
@@ -65,8 +65,9 @@ export function lookPanel(project) {
 export async function generateEverything() {
   const profile = select(presetOptions("profile"), "draft", { "aria-label": "Quality" });
   const rounds = h("input", { class: "input", type: "number", min: 1, max: 10, value: 2, "aria-label": "Attempts" });
+  const options = runOptions();
   const summary = h("div", { class: "stack", style: "gap:6px" }, h("p", { class: "caption" }, "Working out what would be made…"));
-  const body = () => ({ profile: profile.value, rounds: Number(rounds.value) || 2 });
+  const body = () => ({ profile: profile.value, rounds: Number(rounds.value) || 2, ...options.values() });
   const estimate = async () => {
     try {
       const plan = await api(projectPath("/world/plan"), { method: "POST", body: body() });
@@ -84,6 +85,7 @@ export async function generateEverything() {
       e.preventDefault();
       try {
         const started = await api(projectPath("/world/generate-all"), { method: "POST", body: body() });
+        askToNotify();
         dialog.close();
         toast(`Queued ${started.runs.length} runs${started.scenes_after ? `; ${started.scenes_after} scenes follow when the characters are done` : ""}. Follow them in the Queue.`);
         refresh();
@@ -93,6 +95,7 @@ export async function generateEverything() {
     h("p", { class: "caption", style: "margin:0" }, "Every place and object without an image, every character's packs, then the scenes, for the variation shown. They run one after another; leave it overnight."),
     summary,
     h("div", { class: "row", style: "flex-wrap:nowrap" }, field("Quality", profile), field("Attempts per image", rounds)),
+    options.nodes,
     h("div", { class: "row" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", onclick: () => dialog.close() }, "Cancel"),
       h("button", { class: "btn primary", type: "submit" }, "Start"))));
   document.body.append(dialog);
@@ -110,3 +113,30 @@ export async function compareSection(subjectId) {
       h("div", { class: "thumb" }, r.hero ? h("img", { src: r.hero.url, alt: r.variation.name }) : h("span", { class: "placeholder-img" }, "Not made yet")),
       h("div", { class: "meta" }, h("span", { class: "name" }, r.variation.name), h("span", { class: "caption" }, styleName(r.variation.style_pack)))))));
 }
+
+export async function cleanUpDialog(project) {
+  const variations = (project.variations || []).filter((v) => v.id !== project.variation);
+  const what = select([["unchosen", "Candidates that were not chosen"], ...variations.map((v) => [`variation:${v.id}`, `Every image of the variation ${v.name}`])], "unchosen", { "aria-label": "What to delete" });
+  const count = h("p", { class: "caption", style: "margin:0" }, "Counting…");
+  const body = () => what.value.startsWith("variation:") ? { what: "variation", variation: what.value.slice(10) } : { what: "unchosen" };
+  const recount = async () => {
+    try { const r = await api(projectPath("/cleanup"), { method: "POST", body: { ...body(), dry_run: true } }); count.textContent = `${r.images} images would be deleted; images still in use (references, scenes, sheets) are kept.`; }
+    catch (error) { count.textContent = error.message; }
+  };
+  what.addEventListener("change", recount);
+  const dialog = h("dialog", { "aria-label": "Clean up", style: "width:min(560px, calc(100vw - 32px))" },
+    h("form", { class: "stack", onsubmit: async (e) => {
+      e.preventDefault();
+      if (!confirm("Delete these images? This cannot be undone.")) return;
+      try { const r = await api(projectPath("/cleanup"), { method: "POST", body: body() }); dialog.close(); toast(`Deleted ${r.deleted} images; kept ${r.kept_in_use} still in use.`); refresh(); }
+      catch (error) { failure(error); }
+    } }, h("h2", {}, "Clean up"), h("p", { class: "caption", style: "margin:0" }, "Free disk space. Chosen images are never deleted."),
+    field("Delete", what), count,
+    h("div", { class: "row" }, h("span", { class: "spacer" }), h("button", { class: "btn", type: "button", onclick: () => dialog.close() }, "Cancel"),
+      h("button", { class: "btn danger", type: "submit" }, "Delete"))));
+  document.body.append(dialog);
+  dialog.addEventListener("close", () => dialog.remove());
+  dialog.showModal();
+  recount();
+}
+

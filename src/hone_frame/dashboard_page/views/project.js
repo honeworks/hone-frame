@@ -1,10 +1,10 @@
 // The project home (change 0003): the brief and style, the characters, the world, the scenes and what is
 // running. "Generate assets" here makes the world's places and objects; characters have their own page.
 import { api, downloadProject, failure, field, h, icon, importButton, pill, presetOptions, progressBar, projectPath, range, replace, select, state, toast } from "../core.js";
-import { characterTile } from "./characters.js";
+import { approvalNotice, characterTile } from "./characters.js";
 import { subjectDialog } from "./subject_form.js";
 import { worldDialog, worldTile } from "./world.js";
-import { generateEverything, lookPanel, variationBar } from "./variations.js";
+import { cleanUpDialog, generateEverything, lookPanel, variationBar } from "./variations.js";
 
 export async function render(main) {
   const data = await api(projectPath("/home"));
@@ -24,8 +24,10 @@ export async function render(main) {
       h("div", { class: "row" }, importButton("Import a file"),
         h("button", { class: "btn", onclick: () => downloadProject(p.id), title: "The whole project as a file you can edit and import again" }, "Download as file"),
         h("button", { class: "btn", onclick: () => editProject(p) }, "Edit project"),
+        h("button", { class: "btn", onclick: () => cleanUpDialog(p) }, "Clean up"),
         h("button", { class: "btn", onclick: () => worldDialog(data.world) }, "Generate assets"),
         h("button", { class: "btn primary", onclick: generateEverything, title: "Every place, object, character and scene of this variation" }, "Generate everything"))),
+    (data.approvals || []).map((a) => h("div", { style: "margin-bottom:12px" }, approvalNotice(a))),
     lookPanel(p),
     next ? h("section", { class: "panel steps", style: "margin-bottom:24px" }, h("h2", {}, "Next step"),
       h("ol", {}, steps.map(([done, title, href, text]) => h("li", { class: done ? "done" : (title === next[1] ? "current" : "") },
