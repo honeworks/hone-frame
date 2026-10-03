@@ -101,6 +101,7 @@ def image_fields(
         "source": "promoted" if out.parent else "generated",
         "pack": out.pack,
         "item": out.item,
+        "tags": _tags(out),  # view:, state:, turn (change 0007)
         "variation": variation or None,
     }
 
@@ -112,3 +113,8 @@ def round_findings(images: list[ImageRecord]) -> list[str]:
         return []
     best = max(judged, key=lambda i: i.evaluation.overall if i.evaluation else 0.0)
     return findings(best.evaluation)
+
+
+def _tags(out: PlannedOutput) -> list[str]:
+    found: list[Any] = list(out.prompt_inputs.get("tags") or [])
+    return [str(t) for t in found]

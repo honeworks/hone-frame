@@ -12,7 +12,16 @@ reading only the repository). It found six blockers in the first draft (no per-o
 Qwen turning views would get the default "front view" camera phrase; hone-models drops a command's
 `meta`; the action check named the wrong image; required parameter checks would make passes rare; worn
 elements would get "holds and uses" actions) and a scope of several days. This version takes its
-proposed edits: **scope for one day: §1 (A–F), §2 reduced, §3 reduced, §5 reduced, §6 (duplicates
+proposed edits. A second independent review of the revised record found three more blockers, taken
+here: the duplicate-view check must not run on items meant to look alike (only on turning views, against
+the hero and views of another angle); the Multiple-Angles LoRA is at strength 0 in the workflow, so turn
+items must set `lora_strength = 1.0` (and the compose dialect loses its camera phrase); a base output
+that ends in `needs_review` would stall its dependants, so a dependency falls back to the best available
+candidate with a `used_best_available` event. Its decisions are taken too: `not_assessable` passes the
+`parameters` check in both the verdict and the pick; camera values use the exact preset strings; the
+belonging is a subject of its action; the file and record key is `parameters`; the only default action
+pose is for `long` objects, worded without an object; one tool entry `frame-vision`; marks fold into
+`parameters`. **Scope for one day: §1 (A–F), §2 reduced, §3 reduced, §5 reduced, §6 (duplicates
 required, the model checks advisory), §7, §8, §9; §4 and the place page deferred.**
 
 ## Context

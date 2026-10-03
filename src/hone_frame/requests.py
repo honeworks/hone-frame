@@ -158,6 +158,8 @@ class ResolvedProfile(Record):
     planner: str | None = None
     generator: str
     editor: str | None = None
+    turn_editor: str | None = None  # views that turn the subject (change 0007)
+    compose_editor: str | None = None  # actions and scenes: several references combined (change 0007)
     judge: str | None = None
     upscaler: str | None = None
     size: str = "1024x1024"

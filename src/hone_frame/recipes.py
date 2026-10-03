@@ -209,7 +209,7 @@ def subject_part(subject: Subject, state: str | None = None) -> dict[str, Any]:
         "must": list(subject.must),
         "never": list(subject.never),
         "id": subject.id,
-        "params": dict(subject.params),
+        "parameters": dict(subject.parameters),
     }
 
 

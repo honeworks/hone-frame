@@ -141,11 +141,23 @@ class ModelCheck:
                 )
             return self.profile.upscaler, "upscaler"
         if out.references or out.depends_on:
+            routed = self._routed(out)
+            if routed:
+                return routed
             if self.profile.editor is None:
                 self.warnings.append(f"{out.label}: the {self.profile.id} profile has no editor; text only")
                 return self.profile.generator, "generator"
             return self.profile.editor, "editor"
         return self.profile.generator, "generator"
+
+    def _routed(self, out: PlannedOutput) -> tuple[str, str] | None:
+        """Per-output routing (change 0007): a turning view to the turn editor, an action or a scene to the
+        compose editor, when the profile names one."""
+        if out.prompt_inputs.get("editor") == "turn" and self.profile.turn_editor:
+            return self.profile.turn_editor, "editor"
+        if out.kind in ("interaction", "scene", "coverage") and self.profile.compose_editor:
+            return self.profile.compose_editor, "editor"
+        return None
 
     def judge(self, auto_judge: bool) -> None:
         if not auto_judge:

@@ -4,13 +4,15 @@ into facts the judge checks. The token choice per kind of image is data (`data/p
 
 from __future__ import annotations
 
+import re
 import tomllib
 from functools import cache
 from importlib import resources
 from typing import Any
 
-FACE_WORDS = ("face", "cheek", "brow", "forehead", "lip", "chin", "eye", "nose", "jaw", "mouth", "ear")
-BACK_WORDS = ("back", "shoulder", "neck", "nape")
+FACE_WORDS = {"face", "cheek", "cheeks", "brow", "brows", "forehead", "lip", "lips", "chin", "eye", "eyes",
+              "nose", "jaw", "mouth", "ear", "ears"}  # fmt: skip
+BACK_WORDS = {"back", "shoulder", "shoulders", "neck", "nape"}
 BUILD_CLASS = {"slight": "slight", "lean": "slight", "average": "average", "athletic": "average",
                "heavy": "heavy", "massive": "heavy"}  # fmt: skip
 
@@ -33,8 +35,8 @@ def _mark_words(mark: dict[str, str]) -> str:
     return words
 
 
-def _where(mark: dict[str, str]) -> str:
-    return f"{mark.get('what', '')} {mark.get('where', '')}".lower()
+def _where(mark: dict[str, str]) -> set[str]:
+    return set(re.findall(r"[a-z]+", f"{mark.get('what', '')} {mark.get('where', '')}".lower()))
 
 
 def tokens(params: dict[str, Any]) -> dict[str, str]:
@@ -49,9 +51,9 @@ def tokens(params: dict[str, Any]) -> dict[str, str]:
         "body": table()["body"].get(str(p.get("body", "")), str(p.get("body", ""))),
         "hair": hair,
         "beard": beard,
-        "face_marks": "; ".join(_mark_words(m) for m in marks if any(w in _where(m) for w in FACE_WORDS)),
-        "body_marks": "; ".join(_mark_words(m) for m in marks if not any(w in _where(m) for w in FACE_WORDS)),
-        "back_marks": "; ".join(_mark_words(m) for m in marks if any(w in _where(m) for w in BACK_WORDS)),
+        "face_marks": "; ".join(_mark_words(m) for m in marks if bool(FACE_WORDS & _where(m))),
+        "body_marks": "; ".join(_mark_words(m) for m in marks if not bool(FACE_WORDS & _where(m))),
+        "back_marks": "; ".join(_mark_words(m) for m in marks if bool(BACK_WORDS & _where(m))),
     }
 
 

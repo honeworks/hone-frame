@@ -50,11 +50,13 @@ def own_fields(part: dict[str, Any]) -> list[str]:
 def identity(c: Ctx) -> str:
     """Who each person is, in the few words this kind of image needs (root cause D). In `compose` mode one
     line per character; otherwise the first subject's."""
-    parts = [p for p in c.parts if p.get("kind") == "character" and p.get("params")]
+    parts = [p for p in c.parts if p.get("kind") == "character" and p.get("parameters")]
     if c.mode != "compose":
         parts = parts[:1]
     kind = image_kind(c.inputs, c.faces_away)
-    lines = [f"{p.get('name')}: {line}" for p in parts if (line := identity_line(dict(p["params"]), kind))]
+    lines = [
+        f"{p.get('name')}: {line}" for p in parts if (line := identity_line(dict(p["parameters"]), kind))
+    ]
     return ". ".join(lines)
 
 
