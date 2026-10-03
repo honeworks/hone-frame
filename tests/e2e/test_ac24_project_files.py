@@ -110,3 +110,30 @@ def test_the_cli_imports_and_writes_back(ws: hf.Workspace, tmp_path: Path) -> No
     out = tmp_path / "back.json"
     written = CliRunner().invoke(app, ["export-file", "rostam-and-sohrab", str(out), "--home", str(ws.root)])
     assert written.exit_code == 0 and json.loads(out.read_text())["project"]["name"] == "Rostam and Sohrab"
+
+
+def test_scene_references_from_a_file_keep_the_suggested_ones(ws: hf.Workspace, tmp_path: Path) -> None:
+    store = ws.project(ws.import_file(FILE).project)
+    duel = next(s for s in store.scenes() if s.name == "Duel")
+    lasso = next(s for s in store.subjects("asset") if s.name == "Rostam's lasso")
+    store.save_scene(
+        duel.model_copy(
+            update={"refs": [*duel.refs, hf.SceneRef(subject_id=lasso.id, role="object", suggested=True)]}
+        )
+    )
+    same = {"project": {"name": "Rostam and Sohrab"}, "scenes": [store.project_file()["scenes"][0]]}
+    same["scenes"][0]["objects"] = ["Rakhsh", "Rostam's mace", "Sohrab's spear"]  # as in the file
+    assert ws.import_file(_write(tmp_path, same)).unchanged == ["scene Duel"]
+    same["scenes"][0]["objects"] = ["Rakhsh"]  # the file drops two objects
+    assert ws.import_file(_write(tmp_path, same)).updated == ["scene Duel"]
+    duel = next(s for s in store.scenes() if s.name == "Duel")
+    names = [(store.subject(r.subject_id).name, r.suggested) for r in duel.refs]
+    assert ("Rostam's mace", False) not in names and ("Rakhsh", False) in names
+    assert ("Rostam's lasso", True) in names  # the planner's suggestion survives
+
+
+def test_an_explicit_style_changes_the_project(ws: hf.Workspace, tmp_path: Path) -> None:
+    store = ws.project(ws.import_file(FILE).project)
+    data = {"project": {"name": "Rostam and Sohrab", "style": "clean-2d-animation"}}
+    assert ws.import_file(_write(tmp_path, data)).project == store.id
+    assert store.info.style_pack == "clean-2d-animation" and store.info.brief.startswith("The tragedy")
