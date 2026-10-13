@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import atexit
+import os
 import threading
 from contextlib import ExitStack
 from importlib import resources
@@ -38,6 +39,7 @@ class HoneModels:
 
     def __init__(self, extra: list[Path] | None = None) -> None:
         self.paths = [FRAME_REGISTRY, *(extra or [])]
+        os.environ.setdefault("HONE_FRAME_TOOLS_DIR", str(FRAME_REGISTRY.parent / "tools"))  # 0007's tools
         self._registry: Any = None
         self._servers = ExitStack()
         self._open: set[str] = set()

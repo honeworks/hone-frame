@@ -1,0 +1,157 @@
+# Independent style test. Import this file from the dashboard or CLI.
+# Model choice, image size, seeds and generation rounds are run/profile settings.
+format_version = "1"
+
+[project]
+name = "Mina's Morning - Painterly fantasy"
+brief = "Mina wakes up with messy hair, brushes her teeth and hair, makes espresso, and eats oatmeal for breakfast."
+direction = "A quiet morning at home, simple rooms, one clear action per image."
+style = "painterly-fantasy"
+look = "A contemporary home with cream walls and light wood. A mint-green nightdress, blue toothbrush, silver espresso machine and white breakfast bowl."
+variations = [{ name = "Painterly fantasy", style = "painterly-fantasy", direction = "Visible brushwork, warm colours, clear readable actions." }]
+
+[[characters]]
+name = "Mina"
+description = "Mina, a twenty-five-year-old woman enjoying a quiet morning at home."
+appearance = "oval face, brown eyes, medium warm skin tone, shoulder-length dark brown hair with a side part"
+build = "average height and build"
+outfit = "plain mint-green cotton nightdress and cream slippers"
+parameters = { sex = "a woman", age = "about twenty-five", body = "average", hair_length = "shoulder-length", hair_colour = "dark brown" }
+garments = [
+  { name = "mint-green nightdress", details = "plain mint-green cotton nightdress, loose fit, long sleeves, calf-length hem" },
+  { name = "cream slippers", details = "plain cream closed-toe slippers" },
+]
+states = [
+  { name = "Bed hair", kind = "condition", description = "hair loosely tangled with a few strands sticking out; face, hair length and clothes unchanged" },
+  { name = "Brushed hair", kind = "condition", description = "hair smooth and neatly brushed with the same side part; face, hair length and clothes unchanged" },
+]
+
+[[characters.belongings]]
+name = "Blue toothbrush"
+description = "a simple blue manual toothbrush"
+size = "18 centimetres long"
+materials = "blue plastic, white bristles"
+colours = "blue handle, white bristles"
+details = "straight blue handle and small oval head with white bristles"
+shape = "long"
+use_pose = "right elbow bent, right hand near the mouth, left arm lowered"
+
+[[characters.belongings]]
+name = "Wooden hairbrush"
+description = "a small wooden paddle hairbrush"
+size = "20 centimetres long"
+materials = "wood, dark bristles"
+colours = "light brown wood, dark brown bristles"
+details = "oval paddle head, short straight handle, one bed of dark bristles"
+shape = "flat"
+use_pose = "right elbow raised, right hand beside the hair, left arm lowered"
+
+[[places]]
+name = "Bedroom"
+description = "a small tidy bedroom with cream walls"
+anchors = "wooden bed against the back wall, window to its left, small bedside table to its right"
+materials = "cream plaster, light wood, white cotton bedding"
+viewpoints = "from the doorway looking toward the bed"
+recurring_objects = "white pillow and white duvet"
+
+[[places]]
+name = "Bathroom"
+description = "a small bathroom with a white basin below a plain pale-blue wall"
+anchors = "rectangular white basin centred on a wooden vanity, single chrome tap behind the basin"
+materials = "pale-blue tiles, white ceramic, light wood, chrome"
+viewpoints = "from the side of the basin at eye level"
+
+[[places]]
+name = "Kitchen"
+description = "a small tidy kitchen with cream cabinets"
+anchors = "straight wooden counter against the back wall, window on the left, small wooden table in front"
+materials = "cream painted cabinets, light wood, white wall tiles"
+viewpoints = "from the doorway looking toward the counter"
+recurring_objects = "one wooden chair beside the table"
+
+[[objects]]
+name = "Espresso machine"
+description = "a compact silver espresso machine with a white cup on its drip tray"
+size = "30 centimetres tall, countertop size"
+materials = "brushed steel, black plastic handle, white ceramic cup"
+colours = "silver body, black handle, white cup"
+details = "one group head, black portafilter handle pointing right, one round button above the group head, white cup beneath the short spouts"
+
+[[objects]]
+name = "Oatmeal bowl"
+description = "a white ceramic bowl of oatmeal with one silver spoon"
+size = "18 centimetres wide"
+materials = "white ceramic, cooked oats, stainless steel spoon"
+colours = "white bowl, beige oatmeal, silver spoon"
+details = "plain round bowl, thick oatmeal, one simple spoon"
+shape = "round"
+
+# One visible moment per scene. The scene importer does not bind a named
+# character state; hair changes are therefore written in the scene itself.
+# Each scene names at most three subjects to keep reference use small.
+
+[[scenes]]
+name = "01 - Waking up"
+description = "Mina sits on the edge of the bed in her mint-green nightdress. Her hair is loosely tangled with a few strands sticking out."
+action = "She rubs one eye with her right hand; her left hand rests on the bed."
+expression = "sleepy, eyes half open"
+camera = "medium"
+characters = ["Mina"]
+places = ["Bedroom"]
+
+[[scenes]]
+name = "02 - Brushing teeth"
+description = "Mina stands beside the bathroom basin in her mint-green nightdress. Her hair is still messy."
+action = "She holds the blue toothbrush in her right hand with the bristles against her front teeth. Her left hand rests on the basin."
+expression = "relaxed"
+camera = "medium"
+characters = ["Mina"]
+places = ["Bathroom"]
+objects = ["Blue toothbrush"]
+
+[[scenes]]
+name = "03 - Brushing hair"
+description = "Mina stands beside the bed in her mint-green nightdress. Her shoulder-length hair is partly tangled."
+action = "She holds the wooden hairbrush in her right hand, with its bristles touching the hair beside her right ear. Her left arm hangs down."
+expression = "focused"
+camera = "medium"
+characters = ["Mina"]
+places = ["Bedroom"]
+objects = ["Wooden hairbrush"]
+
+[[scenes]]
+name = "04 - Hair brushed"
+description = "Mina stands beside the bed. Her hair is now smooth and neatly brushed with the same side part. The mint-green neckline is visible."
+action = "She looks toward the camera with her hands lowered."
+expression = "a small contented smile"
+camera = "close-up"
+characters = ["Mina"]
+places = ["Bedroom"]
+
+[[scenes]]
+name = "05 - Starting the espresso"
+description = "Mina stands beside the espresso machine on the kitchen counter. She wears her mint-green nightdress and her hair is neatly brushed."
+action = "She presses the round button with her right index finger. The white cup rests on the drip tray beneath the spouts."
+expression = "focused"
+camera = "medium"
+characters = ["Mina"]
+places = ["Kitchen"]
+objects = ["Espresso machine"]
+
+[[scenes]]
+name = "06 - Espresso pouring"
+description = "The espresso machine sits on the kitchen counter. The white cup rests directly beneath the group head. Only the machine and cup fill the frame."
+action = "A thin brown stream of espresso falls from the spout into the white cup."
+camera = "detail"
+places = ["Kitchen"]
+objects = ["Espresso machine"]
+
+[[scenes]]
+name = "07 - Eating oatmeal"
+description = "Mina sits at the kitchen table in her mint-green nightdress. Her hair is neatly brushed. The white oatmeal bowl is in front of her."
+action = "She raises one spoonful of oatmeal toward her mouth with her right hand. Her left hand rests beside the bowl."
+expression = "calm and content"
+camera = "medium"
+characters = ["Mina"]
+places = ["Kitchen"]
+objects = ["Oatmeal bowl"]

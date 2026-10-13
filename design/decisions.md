@@ -412,3 +412,12 @@ These entries are in effect but not yet confirmed by the owner. When the owner d
   constraint of its own.
 - **Reason:** the planner copied the old example, "the whole figure from head to feet is visible", into
   the Battle plain's establishing shot (and into object prompts), asking a landscape for a figure.
+
+## D-047: an over-budget prompt may reach 1.8 times its word budget  (2026-10-13, change 0007)
+
+- **Choice:** with 0007's garments and parameters, a prompt that cannot fit is sent whole up to 1.8 times
+  its dialect's `max_words` (the prompt matrix test pins this bound); a compose prompt for Qwen-Image-Edit
+  never carries the Multiple-Angles camera phrase.
+- **Reason:** 0007 sends what was asked instead of cutting it (garment details); the longest prompts of
+  the matrix reach about 1.7 times the budget. The camera phrase moves the camera of a scene the
+  references already frame.

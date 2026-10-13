@@ -18,6 +18,7 @@ class RequestBase(Record):
     note: str = ""
     title: str = ""
     variation: str = ""  # a variation id (change 0005); empty: the project's active one
+    use_best_available: bool = False  # unattended: a dependency nothing passed goes on from its best (0007)
     approval: Literal["auto", "base", "each"] = "auto"  # when the run waits for the person (0006)
     judge_mode: Literal["default", "strong_base", "strong_all"] = "default"  # the stronger judge (0006)
 
@@ -158,6 +159,8 @@ class ResolvedProfile(Record):
     planner: str | None = None
     generator: str
     editor: str | None = None
+    turn_editor: str | None = None  # views that turn the subject (change 0007)
+    compose_editor: str | None = None  # actions and scenes: several references combined (change 0007)
     judge: str | None = None
     upscaler: str | None = None
     size: str = "1024x1024"

@@ -108,6 +108,22 @@ def import_file(path: Path, home: Home = None, as_json: Json = False) -> None:
     _print(report.model_dump(), as_json, lines)
 
 
+@app.command("export-project")
+def export_project_cmd(
+    project: str,
+    out: Annotated[
+        Path | None, typer.Argument(help="The zip file to write (default <project>-export.zip).")
+    ] = None,
+    home: Home = None,
+) -> None:
+    """Export a whole project as a zip: records, images, runs, flows (prompts, spans, logs), manifest."""
+    from hone_frame.export_project import export_project  # noqa: PLC0415 - loaded only for this command
+
+    store = Workspace(home).project(project)
+    target = out or Path(f"{project}-export.zip")
+    typer.echo(str(export_project(store, target)))
+
+
 @app.command("export-file")
 def export_file(project: str, out: Path, home: Home = None) -> None:
     """Write a project as a project file (JSON) to edit and import again."""

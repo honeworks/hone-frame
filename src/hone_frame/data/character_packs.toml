@@ -43,9 +43,9 @@ custom = "pose"
 items = [
   { item = "Standing", camera = "front", pose = "neutral-standing", full_body = true },
   { item = "Walking", camera = "three-quarter", pose = "walking, mid-stride, one foot in front of the other, arms swinging", full_body = true },
-  { item = "Running", camera = "three-quarter", pose = "running fast, leaning forward, one foot off the ground, arms pumping", full_body = true },
-  { item = "Seated", camera = "front", pose = "sitting on a plain wooden stool, hands resting on the knees", full_body = true },
-  { item = "Kneeling", camera = "front", pose = "kneeling on one knee, back straight", full_body = true },
+  { item = "Running", camera = "three-quarter", pose = "running fast, leaning forward, one foot off the ground, arms pumping", full_body = true, pose_kind = "run" },
+  { item = "Seated", camera = "front", pose = "sitting on a plain wooden stool, hands resting on the knees", full_body = true, pose_kind = "sit" },
+  { item = "Kneeling", camera = "front", pose = "kneeling on one knee, back straight", full_body = true, pose_kind = "kneel" },
   { item = "Fighting stance", camera = "front", pose = "a ready fighting stance, knees bent, fists raised", full_body = true },
 ]
 

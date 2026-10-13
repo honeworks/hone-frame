@@ -22,6 +22,7 @@ from hone_frame.testing import FakeModels
 
 STYLES = [p.id for p in PresetCatalog().list("style_pack")]
 PROFILES = ["draft", "standard", "final"]
+OVER_BUDGET = 1.8  # an over-budget prompt is sent whole, never cut, up to this factor (0007, D-047)
 CUSTOM = {
     "expressions": ["grief-stricken, eyes full of tears"],
     "poses": ["drawing a bow, the string pulled back to the cheek"],
@@ -83,7 +84,8 @@ def test_every_pack_prompt_keeps_what_it_is_for(
         assert ("the object alone" in text) is bool(p.get("object_alone")), f"{where}: nobody with an object"
         if out.pack == "actions" or out.kind == "asset":
             assert "empty hands" not in text, where
-        assert len(composed.text.split()) <= composed.max_words * (1.5 if composed.over_budget else 1), where
+        budget = OVER_BUDGET if composed.over_budget else 1  # 0007, D-047: sent long, never cut
+        assert len(composed.text.split()) <= composed.max_words * budget, where
         _no_contradictions(out, composed, where)
     assert {k: v > 0 for k, v in checked.items()} == dict.fromkeys(
         ("pose", "expression", "outfit", "state", "action"), True
@@ -107,8 +109,10 @@ def _no_contradictions(out: PlannedOutput, composed: Composed, where: str) -> No
         assert "helmet" in text and "boots" in text, f"{where}: a piece of the outfit forgotten"
     if p.get("outfit"):
         assert "tiger-skin coat worn over" not in text, f"{where}: the usual outfit kept in an outfit change"
-    if composed.dialect == "qwen-edit":
+    if composed.dialect == "qwen-edit" and composed.mode != "compose":
         assert composed.text.startswith("<sks> "), f"{where}: camera phrase not first"
+    if composed.dialect == "qwen-edit" and composed.mode == "compose":  # 0007: no LoRA phrase in a scene
+        assert "<sks>" not in composed.text, f"{where}: a camera phrase in a compose prompt"
     assert not re.search(r"\.\s*\.", composed.text) and composed.text.endswith("."), f"{where}: punctuation"
     sentences = [s.strip() for s in composed.text.split(". ") if s.strip()]
     assert len(sentences) == len(set(sentences)), f"{where}: a sentence repeated"

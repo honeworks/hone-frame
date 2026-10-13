@@ -4,6 +4,9 @@ and items are data (`data/object_packs.toml`)."""
 
 from __future__ import annotations
 
+import tomllib
+from functools import cache
+from importlib import resources
 from typing import TYPE_CHECKING, Any
 
 from hone_frame.errors import InvalidRequest
@@ -65,9 +68,25 @@ def add_object(
     else:
         identity = {"references": [maker.ref(hero)]}
     for name in [n for n in catalog if n in chosen and n != "hero"]:
-        for item in pack_items(store, obj, name, (custom or {}).get(name, []), only_extra=only_custom):
+        items = pack_items(store, obj, name, (custom or {}).get(name, []), only_extra=only_custom)
+        if name == "views" and (by_shape := shape_views(obj)) and not only_custom:
+            items = by_shape + [i for i in items if i.get("item") in (custom or {}).get(name, [])]
+        for item in sorted(items, key=lambda i: i.get("editor") == "turn"):  # turning views together
             maker.add(name, item, **{k: list(v) for k, v in identity.items()})
     return hero_output
+
+
+@cache
+def _shapes() -> dict[str, Any]:
+    text = (resources.files("hone_frame") / "data" / "object_packs.toml").read_text(encoding="utf-8")
+    return dict(tomllib.loads(text).get("shapes", {}))
+
+
+def shape_views(obj: Subject) -> list[dict[str, Any]]:
+    """The views of an object's `shape` (change 0007: a bow's front, back and side are the same picture),
+    or none when it has no shape (the pack's own list is used)."""
+    shape = str(obj.fields.get("shape") or "")
+    return [dict(i) for i in _shapes().get(shape, {}).get("views", [])]
 
 
 class _ObjectMaker:
@@ -86,6 +105,15 @@ class _ObjectMaker:
             if spec.get("detail") and details
             else OBJECT_FRAMING
         )
+        turn = spec.get("editor") == "turn"
+        camera_data = {k: spec[k] for k in ("azimuth", "elevation", "distance") if k in spec}
+        extra: dict[str, Any] = {
+            "editor": spec.get("editor"),
+            "lora_strength": 1.0 if turn else None,  # the Multiple-Angles LoRA is off in the workflow
+            "distinct": turn and str(self.obj.fields.get("shape")) != "round",
+            "same_subject": refs,
+            "tags": [f"view:{spec['item']}"] + (["turn"] if turn else []),
+        }
         out = self.built.add(
             spec["item"],
             "asset",
@@ -106,6 +134,8 @@ class _ObjectMaker:
                 lighting=self.lighting,
                 camera=spec.get("camera"),
                 framing=framing,
+                **camera_data,
+                **extra,
             ),
             **fields,
         )

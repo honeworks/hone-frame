@@ -22,11 +22,18 @@ def resolve_refs(
     refs = list(out.references)
     for dep in out.depends_on:
         record = load_output(store, run.id, dep.output)
-        if record is None or record.status != "done" or record.selected is None:
+        chosen = record.selected if record and record.status == "done" else None
+        best = record.best_available if record is not None and record.status == "needs_review" else None
+        if record is not None and chosen is None and best and run.plan.request.get("use_best_available"):
+            chosen = best  # an unattended run goes on from the best when nothing passed (change 0007)
+            EventLog(run_dir(store, run.id) / "events.jsonl").write(
+                "used_best_available", output=out.id, message=f"{record.label}: {chosen} (nothing passed)"
+            )
+        if chosen is None:
             label = record.label if record else dep.output
             _wait(store, run, out, f"waiting for an accepted {label} ({dep.output})")
         else:
-            image = store.image(record.selected)
+            image = store.image(chosen)
             subject = image.subjects[0].subject_id if len(image.subjects) == 1 else None
             refs.append(PlannedRef(image_id=image.id, subject_id=subject, role=dep.role))
     limit = store.workspace.settings.max_reference_px

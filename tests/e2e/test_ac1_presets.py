@@ -36,7 +36,7 @@ EXPECTED = {
         "reverse",
         "pov",
     },
-    "profile": {"draft", "standard", "final", "custom"},
+    "profile": {"draft", "standard", "final", "custom", "quality"},
     "selection": {"batch-then-judge", "sequential-judge-refine", "all-rounds", "stop-on-pass", "manual-pick"},
     "sheet_layout": {
         "four-view-turnaround",

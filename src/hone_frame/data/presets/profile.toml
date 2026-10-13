@@ -28,3 +28,11 @@ version = 1
 name = "Custom"
 description = "Your own planner, generator, editor, judge, size and settings, saved with the project."
 values = { planner = "gemma4-12b", generator = "z-image-turbo", editor = "flux.2-klein-4b", judge = "qwen2.5vl-7b", size = "1024x1024", settings = {} }
+
+[[presets]]
+id = "quality"
+version = 1
+name = "Quality (experimental)"
+description = "Change 0007: z-image heroes, FLUX.2 klein edits, Qwen-Image-Edit for views that turn and for actions and scenes."
+values = { planner = "gemma4-12b", generator = "z-image-turbo", editor = "flux.2-klein-4b", turn_editor = "qwen-image-edit-2511", compose_editor = "qwen-image-edit-2511", judge = "qwen2.5vl-7b", size = "1024x1024", settings = {} }
+

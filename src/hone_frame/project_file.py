@@ -52,6 +52,15 @@ class ObjectIn(_In):
     materials: str = ""
     colours: str = ""
     details: str = ""
+    shape: str = ""  # figure / long / flat / soft / round: which views it gets (change 0007)
+    worn: bool = False  # a worn element (a crown, an armlet), not used in actions
+    worn_on: str = ""  # where it is worn: "his head", "his right upper arm"
+    use_pose: str = ""  # how the owner holds it in an action, without the object: "both arms raised"
+
+
+class GarmentIn(_In):
+    name: str
+    details: str = ""
 
 
 class CharacterIn(_In):
@@ -65,6 +74,8 @@ class CharacterIn(_In):
     never: list[str] = Field(default_factory=list[str])  # never shown
     states: list[StateIn] = Field(default_factory=list[StateIn])
     belongings: list[ObjectIn] = Field(default_factory=list[ObjectIn])
+    garments: list[GarmentIn] = Field(default_factory=list[GarmentIn])  # change 0007
+    parameters: dict[str, Any] = Field(default_factory=dict[str, Any])  # sex, age, body, hair, beard, marks
 
 
 class PlaceIn(_In):
@@ -76,6 +87,7 @@ class PlaceIn(_In):
     materials: str = ""
     viewpoints: str = ""
     recurring_objects: str = ""
+    states: list[StateIn] = Field(default_factory=list[StateIn])  # light and weather (change 0007)
 
 
 class SceneIn(_In):
@@ -162,18 +174,29 @@ def import_file(ws: Workspace, data: ProjectFile) -> ImportReport:
     store, created = _project(ws, data.project)
     report = ImportReport(project=store.id, created=[f"project {store.id}"] if created else [])
     for c in data.characters:
-        char = _subject(
-            store, report, kind="character", item=c, fields=_fields(c, CHARACTER), states=c.states
-        )
+        fields = _fields(c, CHARACTER) | _extra(c)
+        char = _subject(store, report, kind="character", item=c, fields=fields, states=c.states)
         for b in c.belongings:
-            _subject(store, report, kind="asset", item=b, fields=_fields(b, OBJECT), owner=char.id)
+            _subject(
+                store, report, kind="asset", item=b, fields=_fields(b, OBJECT) | _extra(b), owner=char.id
+            )
     for p in data.places:
-        _subject(store, report, kind="environment", item=p, fields=_fields(p, PLACE))
+        _subject(store, report, kind="environment", item=p, fields=_fields(p, PLACE), states=p.states)
     for o in data.objects:
-        _subject(store, report, kind="asset", item=o, fields=_fields(o, OBJECT))
+        _subject(store, report, kind="asset", item=o, fields=_fields(o, OBJECT) | _extra(o))
     for s in data.scenes:
         _scene(store, report, s)
     return report
+
+
+EXTRA = ("garments", "shape", "worn", "worn_on", "use_pose")  # change 0007, kept as they are in `fields`
+
+
+def _extra(item: CharacterIn | ObjectIn) -> dict[str, Any]:
+    """Change 0007's fields, kept in the subject's `fields`: garments; an object's shape, worn, use pose."""
+    given = item.model_dump(exclude_unset=True)
+    keys = EXTRA[:1] if isinstance(item, CharacterIn) else EXTRA[1:]
+    return {k: given[k] for k in keys if k in given}
 
 
 def _check_names(data: ProjectFile) -> None:
@@ -242,7 +265,7 @@ def _subject(
     *,
     kind: str,
     item: CharacterIn | ObjectIn | PlaceIn,
-    fields: dict[str, str],
+    fields: dict[str, Any],
     owner: str | None = None,
     states: list[StateIn] | None = None,
 ) -> Subject:
@@ -258,6 +281,8 @@ def _subject(
     for key in ("must", "never"):
         if key in given or found is None:
             wanted[key] = list(getattr(item, key, []))
+    if isinstance(item, CharacterIn) and ("parameters" in given or found is None):
+        wanted["parameters"] = dict(item.parameters)
     if states is not None and ("states" in given or found is None):
         wanted["states"] = [s.model_dump() for s in states]
     if found is None:
@@ -309,6 +334,8 @@ def project_file(store: ProjectStore) -> dict[str, Any]:
         out: dict[str, Any] = {"name": subject.name, "description": subject.description}
         out |= {key: str(subject.fields[f]) for key, f in mapping.items() if subject.fields.get(f)}
         out |= {key: list(getattr(subject, key)) for key in ("must", "never") if getattr(subject, key)}
+        out |= {k: subject.fields[k] for k in EXTRA if subject.fields.get(k) not in (None, "", [], False)}
+        out |= {"parameters": dict(subject.parameters)} if subject.parameters else {}
         return out
 
     characters = [
@@ -340,7 +367,11 @@ def project_file(store: ProjectStore) -> dict[str, Any]:
             ],
         },
         "characters": characters,
-        "places": [keyed(p, PLACE) for p in subjects if p.kind == "environment"],
+        "places": [
+            keyed(p, PLACE) | ({"states": [s.model_dump() for s in p.states]} if p.states else {})
+            for p in subjects
+            if p.kind == "environment"
+        ],
         "objects": [keyed(o, OBJECT) for o in subjects if o.kind == "asset" and o.owner is None],
         "scenes": scenes,
     }

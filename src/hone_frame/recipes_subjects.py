@@ -34,7 +34,7 @@ def subject_references(store: ProjectStore, request: SubjectReferences, built: B
         else ("object" if subject.kind == "asset" else "identity")
     )
     common = {"subjects": [link], "judging": JUDGING[subject.kind]}
-    lighting = reference_lighting(built, request)
+    lighting = reference_lighting(built, request, subject.kind)
     look, look_flags = reference_look(subject.kind)
     solo = subject.kind == "character"
     if request.hero_image:
@@ -123,8 +123,14 @@ def _presentation(
         raise InvalidRequest(f"no {category} preset chosen")
     specs: list[dict[str, Any]] = [dict(o) for o in preset.values.get("outputs", [])]
     if kind := preset.values.get("from_states"):
+        found: list[Any] = kind if isinstance(kind, list) else [kind]  # pyright: ignore[reportUnknownVariableType]
+        kinds = [str(k) for k in found]  # a list: several state kinds (change 0007)
         base = {k: preset.values[k] for k in ("camera", "pose") if k in preset.values}
-        specs += [{"label": s.name, "state": s.name, **base} for s in subject.states if s.kind == kind]
+        specs += [
+            {"label": s.name, "state": s.name, **base, "tags": [f"state:{s.name}"]}
+            for s in subject.states
+            if s.kind in kinds
+        ]
     specs += [{"label": e, "expression": e, "camera": "close-up"} for e in request.expressions]
     specs += [{"label": p, "pose": p, "camera": "wide"} for p in request.poses]
     specs += [{"label": s, "state": s, "camera": "front"} for s in request.states]

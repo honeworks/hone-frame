@@ -181,7 +181,7 @@ required = false
 
 [[presets]]
 id = "interaction-plausibility"
-version = 3
+version = 4
 name = "Interaction plausibility"
 description = "A character using an object: identity of both, believable contact, hands and orientation."
 
@@ -193,7 +193,7 @@ when = "identity_ref"
 
 [[presets.values.checks]]
 name = "object"
-question = "Is the object the same as the object reference?"
+question = "Is the object the one in image 3, the object reference: the same shape, head, details and colours (change 0007)?"
 required = true
 when = "object_ref"
 

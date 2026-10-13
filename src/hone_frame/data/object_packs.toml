@@ -18,3 +18,46 @@ items = [
   { item = "Top", camera = "from directly above, looking straight down" },
   { item = "Detail", camera = "a close-up of its most distinctive detail", detail = true },
 ]
+
+# Views by shape (change 0007): an object with a `shape` gets these views instead of the list above.
+# `azimuth`, `elevation` and `distance` are the Multiple-Angles LoRA's words (Qwen-Image-Edit's camera
+# phrase); `editor = "turn"` sends the view to the profile's turn editor with the LoRA on. There is no
+# top view: "from above" is a high-angle shot.
+
+[shapes.figure]   # an animal: like a character's turnaround
+views = [
+  { item = "Front", camera = "straight from the front", azimuth = "front view", elevation = "eye-level shot", distance = "wide shot", editor = "turn" },
+  { item = "3/4", camera = "a three-quarter view from the front right", azimuth = "front-right quarter view", elevation = "eye-level shot", distance = "wide shot", editor = "turn" },
+  { item = "Side", camera = "from the side, in profile", azimuth = "right side view", elevation = "eye-level shot", distance = "wide shot", editor = "turn" },
+  { item = "Back", camera = "from directly behind", azimuth = "back view", elevation = "eye-level shot", distance = "wide shot", editor = "turn" },
+  { item = "Detail", camera = "a close-up of its most distinctive detail", detail = true },
+]
+
+[shapes.long]   # a weapon or a staff
+views = [
+  { item = "Side", camera = "the whole length from the side, in profile", azimuth = "right side view", elevation = "eye-level shot", distance = "medium shot", editor = "turn" },
+  { item = "Head-on", camera = "straight from the front, the head facing the camera", azimuth = "front view", elevation = "eye-level shot", distance = "medium shot", editor = "turn" },
+  { item = "Head", camera = "a close-up of its head", detail = true },
+  { item = "Grip", camera = "a close-up of the grip and the haft below the head" },
+]
+
+[shapes.flat]   # a bow, a shield, a banner
+views = [
+  { item = "Face-on", camera = "straight from the front, the flat side facing the camera", azimuth = "front view", elevation = "eye-level shot", distance = "medium shot", editor = "turn" },
+  { item = "Edge-on", camera = "turned to show its edge and thickness", azimuth = "right side view", elevation = "eye-level shot", distance = "medium shot", editor = "turn" },
+  { item = "Detail", camera = "a close-up of its most distinctive detail", detail = true },
+]
+
+[shapes.soft]   # a lasso, a cloth
+views = [
+  { item = "Laid out", camera = "laid out flat, seen from above", azimuth = "front view", elevation = "high-angle shot", distance = "medium shot", editor = "turn" },
+  { item = "Detail", camera = "a close-up of its most distinctive detail", detail = true },
+]
+
+[shapes.round]   # a vessel, a helmet, a crown
+views = [
+  { item = "Front", camera = "straight from the front", azimuth = "front view", elevation = "eye-level shot", distance = "medium shot", editor = "turn" },
+  { item = "Side", camera = "from the side", azimuth = "right side view", elevation = "eye-level shot", distance = "medium shot", editor = "turn" },
+  { item = "Above", camera = "from above", azimuth = "front view", elevation = "high-angle shot", distance = "medium shot", editor = "turn" },
+  { item = "Detail", camera = "a close-up of its most distinctive detail", detail = true },
+]

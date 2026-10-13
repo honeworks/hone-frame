@@ -29,7 +29,11 @@ def write_prompt(self: Producer, found: list[str]) -> str:
             message=f"{len(prompt.split())} words, over the {draft.max_words}-word guide for "
             f"{draft.dialect}; sent whole rather than without what was asked",
         )
-    if self.profile.planner and draft.mode not in ("promotion", "fixed"):
+    composed_only = self.out.kind in (
+        "interaction",
+        "scene",
+    )  # its rewrites dropped the roles (0007, cause C)
+    if self.profile.planner and draft.mode not in ("promotion", "fixed") and not composed_only:
         prompt = _planned(self, draft, dialect, found) or prompt
     self.save(prompt=prompt)
     self.log.write("planned", output=self.out.id, message=prompt, dialect=draft.dialect, mode=draft.mode)
