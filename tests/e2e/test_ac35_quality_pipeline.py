@@ -138,11 +138,13 @@ def test_ac42_identical_views_fail_without_the_judge(
     monkeypatch.delenv("HONE_FRAME_TOOLS_PYTHON", raising=False)
     p = _project(tmp_path, fake)
     view = _run(p, hf.CharacterPacks(subject_id=_named(p, "Kaveh's banner").id))
-    turned = [o for o in view.outputs if o.label in ("Face-on", "Edge-on")]
-    assert all(o.status == "needs_review" for o in turned)  # the fakes draw one flat colour: the same
-    image = p.image(turned[0].candidates[0])
+    face, edge = (next(o for o in view.outputs if o.label == n) for n in ("Face-on", "Edge-on"))
+    assert face.status == "done"  # a front view may match the hero, often drawn from the front already
+    assert edge.status == "needs_review"  # the fakes draw one flat colour: the same as the hero
+    image = p.image(edge.candidates[0])
     assert image.evaluation is not None and image.evaluation.judge == "measured"
+    assert "Edge-on looks the same as" in image.evaluation.summary
     judged = [c.prompt for c in fake.asked if "quality judge" in c.prompt]
-    assert not any("Face-on" in j for j in judged)
+    assert not any("Edge-on" in j for j in judged)
     events = (p.workspace.root / "projects").rglob("events.jsonl")
     assert any("measured_skipped" in e.read_text() for e in events)

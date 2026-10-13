@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from hone_frame.store import ProjectStore
 
 HEAD = ("head", "neck", "brow", "forehead", "ear", "face")
-DEFAULT_USE = {"long": "both arms raised high overhead, the hands closed together around an empty grip"}
+DEFAULT_USE = {"long": "both arms raised high overhead, both fists together"}  # body words only
 
 
 def is_worn(asset: Subject) -> bool:

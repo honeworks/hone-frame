@@ -2,6 +2,9 @@
 
 ## Status
 
+`accepted` 2026-10-13: **merged on the owner's request** (first planned as an experiment never to be
+merged); change 0008 then replaces most of it.
+
 `proposed` 2026-10-04: **experimental, on branch `exp/quality-pipeline`, never to be merged.** The
 owner asked for "the best version using the libraries we found" so they can compare it with `main`
 before deciding what to keep. It is built, then measured on a full world (Zahhak, realistic epic), and
@@ -159,16 +162,18 @@ called; a failing tool call is logged and the check skipped, never failed.
 
 ### 7. Action poses
 
-An action item names how the belonging is used (`use_pose` on the object, e.g. "drawing the bow, the
-string pulled back to the cheek", "raising the mace overhead with both hands"); without one, a default
+An action item names how the belonging is used (`use_pose` on the object, e.g. "both arms raised high
+overhead, both fists together"); without one, a default
 per shape (`long`: raised overhead; `flat` bow: drawing). The pose library draws the mannequin in that
 pose with empty hands; the action is made by Qwen-Image-Edit (three references: the character, the
 belonging, the mannequin).
 
 Actions get a `pose` reference like pose images; the action text is "<name>, <use_pose>, with
 <belonging>"; the mannequin prompt adds "empty hands, holding nothing". Default `use_pose` by shape:
-`long`: "raising it overhead with both hands"; a `flat` bow: "drawing the bow, the string pulled back to
-the cheek"; otherwise none (no mannequin).
+`long`: "both arms raised high overhead, both fists together"; otherwise none (no mannequin).
+
+The `use_pose` describes the body only, without naming the object: the smoke test drew the mannequin
+holding a hammer for "raising the mace overhead", despite "empty hands, holding nothing" (2026-10-04).
 
 ### 8. Mannequins by build
 

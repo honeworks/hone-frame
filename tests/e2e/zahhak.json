@@ -124,7 +124,7 @@
           "name": "Ox-headed mace",
           "description": "gorz-e gavsar, the heavy war mace Fereydun designed and the blacksmiths forged, its head cast in the shape of an ox's head",
           "shape": "long",
-          "use_pose": "raising the mace high overhead with both hands, ready to strike",
+          "use_pose": "both arms raised high overhead, both fists together, ready to strike down",
           "size": "about one metre long; the head is as big as a man's head",
           "materials": "a cast iron head, a wooden haft bound with leather, bronze fittings",
           "colours": "dark iron, worn brown leather, bronze",
@@ -133,7 +133,7 @@
       ],
       "parameters": {
         "sex": "a man",
-        "age": "about eighteen",
+        "age": "barely eighteen, with a youthful face",
         "hair_length": "shoulder-length",
         "hair_colour": "dark brown",
         "beard": "short",

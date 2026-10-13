@@ -67,7 +67,11 @@ def _others(p: Producer, image: ImageRecord) -> list[tuple[str, Path]]:
     """The subject's hero, and its other turning views (another angle) made before this candidate; never
     views meant to look alike (a character's Front, an expression, a place's state)."""
     roles = ("object", "environment", "identity")
-    found = [(name or "the reference", path) for ref, path, name in p.refs if ref.role in roles]
+    camera: dict[str, object] = dict(p.out.prompt_inputs.get("camera_values") or {})
+    front = camera.get("azimuth") == "front view"  # the hero is often drawn from the front already
+    found = (
+        [] if front else [(name or "the reference", path) for ref, path, name in p.refs if ref.role in roles]
+    )
     subject = image.subjects[0].subject_id if image.subjects else None
     for other in p.store.images(subject_id=subject) if subject else []:
         another = other.output_id != image.output_id or other.run_id != image.run_id
